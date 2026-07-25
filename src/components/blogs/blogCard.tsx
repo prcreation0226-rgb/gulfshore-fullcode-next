@@ -1,14 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Calendar, Clock, User } from "lucide-react";
+import { Calendar, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Image from "next/image";
 
 interface BlogArticleCardProps {
 	article: {
-		slug: number;
+		slug: string | number;
 		title: string;
 		description: string;
 		author: string;
@@ -33,11 +32,15 @@ export default function BlogArticleCard({
 			className="overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer flex flex-col w-full h-full border border-border/60 rounded-xl bg-card">
 			<div className="relative h-48 w-full overflow-hidden bg-muted">
 				<img
-					src={article.coverImage || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"}
+					src={
+						article.coverImage ||
+						"https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+					}
 					alt={article.title}
 					className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
 					onError={(e: any) => {
-						e.target.src = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80";
+						e.target.src =
+							"https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80";
 					}}
 				/>
 			</div>
@@ -52,13 +55,14 @@ export default function BlogArticleCard({
 						</Badge>
 					</div>
 
-				<h3 className="text-lg font-bold text-foreground mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-					{article.title}
-				</h3>
+					<h3 className="text-lg font-bold text-foreground mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+						{article.title}
+					</h3>
 
-				<p className="text-sm text-muted-foreground mb-4 line-clamp-3 flex-1">
-					{article.description}
-				</p>
+					<p className="text-sm text-muted-foreground mb-4 line-clamp-3 flex-1">
+						{article.description}
+					</p>
+				</div>
 
 				<div className="border-t border-border pt-3 space-y-2">
 					<div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -70,14 +74,11 @@ export default function BlogArticleCard({
 							<Calendar className="w-3.5 h-3.5" />
 							<span>
 								{article.publishedAt
-									? new Date(article.publishedAt).toLocaleDateString(
-											"en-US",
-											{
-												month: "short",
-												day: "numeric",
-												year: "numeric",
-											}
-									  )
+									? new Date(article.publishedAt).toLocaleDateString("en-US", {
+											month: "short",
+											day: "numeric",
+											year: "numeric",
+									  })
 									: ""}
 							</span>
 						</div>
