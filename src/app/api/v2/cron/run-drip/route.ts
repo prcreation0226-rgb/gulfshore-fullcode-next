@@ -3,10 +3,16 @@ import prisma from "@/lib/prisma";
 import twilio from "twilio";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+export const dynamic = "force-dynamic";
+
+const getResendClient = () => {
+	const key = process.env.RESEND_API_KEY || "re_dummy_key_for_build";
+	return new Resend(key);
+};
 
 export async function GET() {
 	try {
+		const resend = getResendClient();
 		// 1. Fetch all active campaigns
 		const campaigns = await prisma.dripCampaign.findMany({
 			where: { status: "active" },

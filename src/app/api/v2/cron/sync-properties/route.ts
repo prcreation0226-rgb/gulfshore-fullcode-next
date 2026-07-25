@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { syncTodaysActiveProperties } from "@/jobs/syncProperties";
 import prisma from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Auto-sync cron endpoint.
  * 
