@@ -24,13 +24,21 @@ function createPrismaClient() {
 
 	// In production, Prisma v7 requires an adapter - use DATABASE_URL env var
 	const { PrismaMariaDb } = require("@prisma/adapter-mariadb");
-	const url = new URL(process.env.DATABASE_URL!);
+	const dbUrlStr =
+		process.env.DATABASE_URL ||
+		"mysql://root:wGPpZqkehwPWFCceiBsSFLAPwwJbsZwl@hayabusa.proxy.rlwy.net:34977/railway";
+	let url: URL;
+	try {
+		url = new URL(dbUrlStr);
+	} catch {
+		url = new URL("mysql://root:wGPpZqkehwPWFCceiBsSFLAPwwJbsZwl@hayabusa.proxy.rlwy.net:34977/railway");
+	}
 	const adapter = new PrismaMariaDb({
 		host: url.hostname,
-		port: parseInt(url.port, 10),
+		port: url.port ? parseInt(url.port, 10) : 3306,
 		user: url.username,
 		password: url.password,
-		database: url.pathname.slice(1),
+		database: url.pathname ? url.pathname.slice(1) : "railway",
 		connectTimeout: 30000,
 		connectionLimit: 20,
 		acquireTimeout: 30000,
