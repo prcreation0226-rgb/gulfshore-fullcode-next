@@ -26,24 +26,30 @@ export async function GET() {
 		const now = new Date();
 
 		for (const campaign of campaigns) {
-			// Find leads that signed up `daysAfterSignup` days ago.
-			// To be safe against missed cron days, we look for leads who signed up between 
-			// (daysAfterSignup + 5) days ago and daysAfterSignup days ago.
-			
-			const targetDateEnd = new Date();
-			targetDateEnd.setDate(now.getDate() - campaign.daysAfterSignup);
-			
-			const targetDateStart = new Date();
-			targetDateStart.setDate(now.getDate() - campaign.daysAfterSignup - 5);
+			let eligibleLeads: any[] = [];
 
-			const eligibleLeads = await prisma.lead.findMany({
-				where: {
-					createdAt: {
-						gte: targetDateStart,
-						lte: targetDateEnd,
+			if (campaign.daysAfterSignup === 0) {
+				// Immediate / Test mode (0 days = signed up recently / last 24h)
+				eligibleLeads = await prisma.lead.findMany({
+					orderBy: { createdAt: "desc" },
+					take: 50,
+				});
+			} else {
+				const targetDateEnd = new Date();
+				targetDateEnd.setDate(now.getDate() - campaign.daysAfterSignup);
+				
+				const targetDateStart = new Date();
+				targetDateStart.setDate(now.getDate() - campaign.daysAfterSignup - 5);
+
+				eligibleLeads = await prisma.lead.findMany({
+					where: {
+						createdAt: {
+							gte: targetDateStart,
+							lte: targetDateEnd,
+						},
 					},
-				},
-			});
+				});
+			}
 
 			for (const lead of eligibleLeads) {
 				// Check if already sent

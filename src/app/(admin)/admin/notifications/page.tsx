@@ -137,12 +137,30 @@ export default function NotificationsPage() {
 						Manage and monitor your scheduled notification campaigns
 					</p>
 				</div>
-				<Link href="/admin/notifications/schedule">
-					<Button className="flex items-center gap-2">
-						<Plus className="h-4 w-4" />
-						Schedule New
+				<div className="flex items-center gap-3">
+					<Button
+						variant="outline"
+						className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950 font-medium flex items-center gap-2"
+						onClick={async () => {
+							try {
+								const res = await fetch("/api/v2/cron/run-drip");
+								const data = await res.json();
+								alert(data.message || "Instant test triggered successfully!");
+								fetchNotifications();
+							} catch {
+								alert("Failed to trigger instant test");
+							}
+						}}
+					>
+						⚡ Run Instant Test Now
 					</Button>
-				</Link>
+					<Link href="/admin/notifications/schedule">
+						<Button className="flex items-center gap-2">
+							<Plus className="h-4 w-4" />
+							Schedule New
+						</Button>
+					</Link>
+				</div>
 			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
