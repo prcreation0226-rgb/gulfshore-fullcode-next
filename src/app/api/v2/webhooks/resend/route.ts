@@ -4,7 +4,8 @@ import { generateText } from "ai";
 import prisma from "@/lib/prisma";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize with a fallback for build time, actual key is used at runtime
+const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy");
 
 export async function POST(req: NextRequest) {
 	try {
