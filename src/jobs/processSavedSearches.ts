@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { sendSMS } from "@/lib/twilio";
-import { buildPrismaWhereClause } from "@/lib/search-filters";
+import { buildQueryFromFilters } from "@/lib/search-filters";
 
 /**
  * Checks for new properties matching saved searches and sends SMS/Email alerts.
@@ -27,7 +27,7 @@ export async function processSavedSearches() {
 
 			// 3. Build the Prisma where clause from the saved JSON filters
 			const filtersObj = search.filters as any;
-			const baseWhere = buildPrismaWhereClause(filtersObj || {});
+			const baseWhere = buildQueryFromFilters(filtersObj || {});
 
 			// 4. Combine base filters with our time constraint and status Active
 			const finalWhere = {
