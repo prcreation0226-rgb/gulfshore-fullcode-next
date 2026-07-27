@@ -6,7 +6,7 @@ import { X, MessageSquare, Send } from "lucide-react";
 
 export default function AIChatWidget() {
 	const [isOpen, setIsOpen] = useState(false);
-	const { messages, input, handleInputChange, setInput, append, isLoading } = useChat({
+	const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
 		api: "/api/v2/ai/chat",
 	});
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -121,8 +121,7 @@ export default function AIChatWidget() {
 								if (e.key === 'Enter') {
 									e.preventDefault();
 									if (input && input.trim() && !isLoading) {
-										append({ role: 'user', content: input });
-										setInput('');
+										handleSubmit({ preventDefault: () => {} } as any);
 									}
 								}
 							}}
@@ -135,8 +134,7 @@ export default function AIChatWidget() {
 							onClick={(e) => {
 								e.preventDefault();
 								if (input && input.trim() && !isLoading) {
-									append({ role: 'user', content: input });
-									setInput('');
+									handleSubmit({ preventDefault: () => {} } as any);
 								}
 							}}
 							disabled={!input || !input.trim() || isLoading}
