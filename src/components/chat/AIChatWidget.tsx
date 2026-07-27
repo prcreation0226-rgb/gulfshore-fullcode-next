@@ -23,7 +23,11 @@ export default function AIChatWidget() {
 			{/* Chat Button */}
 			{!isOpen && (
 				<button
-					onClick={() => setIsOpen(true)}
+					type="button"
+					onClick={(e) => {
+						e.preventDefault();
+						setIsOpen(true);
+					}}
 					className="bg-primary text-white p-4 rounded-full shadow-lg hover:bg-primary/90 transition-all transform hover:scale-105 flex items-center gap-2"
 				>
 					<MessageSquare className="w-6 h-6" />
