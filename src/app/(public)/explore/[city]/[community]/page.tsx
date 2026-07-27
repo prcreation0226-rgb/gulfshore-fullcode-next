@@ -1,5 +1,6 @@
 "use server";
 import React, { Suspense } from "react";
+import prisma from "@/lib/prisma";
 import AreaInfoComponent from "../../areaInfoComponent";
 import capitalizeWords from "@/hooks/capitalize-letter";
 import CommunityListingsTabs from "./communityListingsTabs";
@@ -85,12 +86,36 @@ async function ExploreCommunity({
 	const formattedCommunity = community.replace(/\b\w/g, (c) =>
 		c.toUpperCase()
 	);
+
+	// Fetch community from DB for marketing content (description, images, videos)
+	const communityData = await prisma.community.findFirst({
+		where: { 
+			// Fallback slug matching
+			name: { equals: formattedCommunity }
+		}
+	});
+
 	return (
 		<div>
 			<AreaInfoComponent
 				city={formattedCity}
 				community={formattedCommunity}
+				communityData={communityData} // Pass to area info if needed, or render below
 			/>
+			
+			{/* Custom Marketing Content Area (Loopnet/Zillow style) */}
+			{communityData && communityData.description && (
+				<div className="bg-white border-y border-gray-200 py-12 mt-4">
+					<div className="container mx-auto px-4 max-w-4xl text-center">
+						<h2 className="text-3xl font-serif text-primary mb-6">About {formattedCommunity}</h2>
+						<div 
+							className="prose prose-lg mx-auto text-gray-700" 
+							dangerouslySetInnerHTML={{ __html: communityData.description }} 
+						/>
+					</div>
+				</div>
+			)}
+
 			<Suspense>
 				<div className="container mx-auto px-4 py-8">
 					<CommunityListingsTabs

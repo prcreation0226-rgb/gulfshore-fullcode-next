@@ -20,6 +20,16 @@ async function getMappedLead(id: string) {
 					createdAt: "desc",
 				},
 			},
+			aiChats: {
+				orderBy: { createdAt: "desc" },
+			},
+			tasks: {
+				orderBy: { createdAt: "desc" },
+			},
+			viewHistory: {
+				orderBy: { lastViewedAt: "desc" },
+				include: { property: true },
+			},
 		},
 	});
 
@@ -73,6 +83,16 @@ async function getMappedLead(id: string) {
 			message: i.message,
 			propertyId: i.propertyId,
 			createdAt: i.createdAt,
+		})),
+		aiChats: lead.aiChats,
+		tasks: lead.tasks,
+		viewHistory: lead.viewHistory.map(v => ({
+			_id: v.id,
+			propertyId: v.propertyId,
+			address: v.property?.FullAddress || "Unknown",
+			price: v.property?.ListPrice,
+			viewCount: v.viewCount,
+			lastViewedAt: v.lastViewedAt,
 		})),
 	};
 }

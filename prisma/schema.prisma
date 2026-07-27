@@ -137,6 +137,9 @@ model Lead {
 
   tags Json?
 
+  score      Int      @default(0)
+  scoreLabel String   @default("Cold")
+
   // Preferences / CRM data
   budgetMin Int?
   budgetMax Int?
@@ -155,6 +158,8 @@ model Lead {
   searchHistory   SearchHistory[]
   savedSearch     SavedSearch[]
   savedProperties SavedProperty[]
+  tasks           Task[]
+  aiChats         AIChatHistory[]
 
   @@map("lead")
 }
@@ -650,4 +655,34 @@ model Faq {
   city      City?    @relation(fields: [cityId], references: [id])
 
   @@map("faq")
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  leadId      String
+  title       String
+  description String?   @db.Text
+  dueDate     DateTime?
+  status      String    @default("pending") // pending, completed
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("task")
+}
+
+model AIChatHistory {
+  id        String   @id @default(cuid())
+  leadId    String
+  channel   String   // "website", "sms", "email"
+  role      String   // "user", "ai", "admin"
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("aichathistory")
 }

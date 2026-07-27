@@ -156,28 +156,62 @@ export default function DashboardPage() {
 				))}
 			</div>
 
-			{/* Trends Chart */}
-			{data.chartData && data.chartData.length > 0 && (
-				<Card className="mt-6 shadow-sm border border-border/80">
+			{/* Trends Chart & Hot Leads */}
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+				{data.chartData && data.chartData.length > 0 && (
+					<Card className="shadow-sm border border-border/80 lg:col-span-2">
+						<CardHeader className="pb-2">
+							<CardTitle className="text-lg font-bold">7-Day Platform Activity Trends</CardTitle>
+							<p className="text-xs text-muted-foreground">Compare new user registrations (Leads) against property inquiries & valuations (Inquiries)</p>
+						</CardHeader>
+						<CardContent className="h-[320px] w-full pt-4">
+							<ResponsiveContainer width="100%" height="100%">
+								<LineChart data={data.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+									<CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+									<XAxis dataKey="date" tickLine={false} className="text-xs font-semibold text-muted-foreground" />
+									<YAxis tickLine={false} className="text-xs font-semibold text-muted-foreground" allowDecimals={false} />
+									<Tooltip contentStyle={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
+									<Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
+									<Line type="monotone" dataKey="Leads" stroke="#10b981" strokeWidth={3} activeDot={{ r: 6 }} name="New Signups / Leads" />
+									<Line type="monotone" dataKey="Inquiries" stroke="#d90429" strokeWidth={3} activeDot={{ r: 6 }} name="Valuations & Requests" />
+								</LineChart>
+							</ResponsiveContainer>
+						</CardContent>
+					</Card>
+				)}
+
+				<Card className="shadow-sm border border-border/80 lg:col-span-1">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-lg font-bold">7-Day Platform Activity Trends</CardTitle>
-						<p className="text-xs text-muted-foreground">Compare new user registrations (Leads) against property inquiries & valuations (Inquiries)</p>
+						<CardTitle className="text-lg font-bold flex items-center gap-2"><Zap className="w-5 h-5 text-orange-500" fill="currentColor" /> Hot Lead Alerts</CardTitle>
+						<p className="text-xs text-muted-foreground">Leads that are highly engaged or ready to buy.</p>
 					</CardHeader>
-					<CardContent className="h-[320px] w-full pt-4">
-						<ResponsiveContainer width="100%" height="100%">
-							<LineChart data={data.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-								<CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-								<XAxis dataKey="date" tickLine={false} className="text-xs font-semibold text-muted-foreground" />
-								<YAxis tickLine={false} className="text-xs font-semibold text-muted-foreground" allowDecimals={false} />
-								<Tooltip contentStyle={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
-								<Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
-								<Line type="monotone" dataKey="Leads" stroke="#10b981" strokeWidth={3} activeDot={{ r: 6 }} name="New Signups / Leads" />
-								<Line type="monotone" dataKey="Inquiries" stroke="#d90429" strokeWidth={3} activeDot={{ r: 6 }} name="Valuations & Requests" />
-							</LineChart>
-						</ResponsiveContainer>
+					<CardContent className="pt-4 space-y-4">
+						{data.hotLeads && data.hotLeads.length > 0 ? (
+							data.hotLeads.map((lead: any) => (
+								<div key={lead.id} className="p-3 border border-orange-200 bg-orange-50/50 rounded-lg cursor-pointer hover:bg-orange-50 transition-colors" onClick={() => router.push(`/admin/leads/${lead.id}`)}>
+									<div className="flex justify-between items-start">
+										<div>
+											<h4 className="font-semibold text-sm text-gray-900">{lead.fullName || lead.email.split('@')[0]}</h4>
+											<p className="text-xs text-muted-foreground">{lead.phone || lead.email}</p>
+										</div>
+										<span className="bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
+											{lead.scoreLabel}
+										</span>
+									</div>
+									<div className="mt-2 text-xs text-orange-800 flex items-center justify-between">
+										<span>Score: {lead.score}/100</span>
+										<span>{new Date(lead.updatedAt).toLocaleDateString()}</span>
+									</div>
+								</div>
+							))
+						) : (
+							<div className="text-center py-8">
+								<p className="text-sm text-muted-foreground">No hot leads right now.</p>
+							</div>
+						)}
 					</CardContent>
 				</Card>
-			)}
+			</div>
 		</div>
 	);
 }

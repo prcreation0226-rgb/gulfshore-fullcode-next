@@ -410,6 +410,60 @@ export default function LeadProfilePage() {
 							</div>
 						</CardContent>
 					</Card>
+
+					{/* LEAD TIMELINE */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2"><Calendar className="w-5 h-5 text-primary"/> Contact Timeline & AI History</CardTitle>
+							<CardDescription>
+								Live feed of properties viewed, searches, and AI chats.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div className="space-y-4">
+								
+								{/* AI Chats */}
+								{lead.aiChats?.length > 0 && (
+									<div className="space-y-2">
+										<h4 className="text-sm font-semibold text-gray-500 uppercase">AI Conversations</h4>
+										{lead.aiChats.map((chat: any) => (
+											<div key={chat.id} className={`p-3 text-sm rounded-lg border ${chat.role === 'ai' ? 'bg-primary/10 border-primary/20 ml-6' : 'bg-gray-50 border-gray-200 mr-6'}`}>
+												<div className="flex justify-between items-center mb-1">
+													<span className="font-bold text-xs capitalize">{chat.role === 'ai' ? '🤖 AI Assistant' : '👤 Lead'} ({chat.channel})</span>
+													<span className="text-xs text-gray-400">{new Date(chat.createdAt).toLocaleString()}</span>
+												</div>
+												<p className="text-gray-700 whitespace-pre-wrap">{chat.message}</p>
+											</div>
+										))}
+									</div>
+								)}
+
+								{/* Viewed Properties */}
+								{lead.viewHistory?.length > 0 && (
+									<div className="space-y-2 mt-6">
+										<h4 className="text-sm font-semibold text-gray-500 uppercase">Properties Viewed</h4>
+										{lead.viewHistory.map((view: any) => (
+											<div key={view._id} className="flex justify-between items-center p-3 text-sm bg-blue-50 border border-blue-100 rounded-lg">
+												<div>
+													<Link href={`/properties/${view.propertyId}`} target="_blank" className="font-semibold text-blue-700 hover:underline">{view.address}</Link>
+													<p className="text-xs text-blue-600 mt-0.5">Price: {view.price ? `$${view.price.toLocaleString()}` : "N/A"}</p>
+												</div>
+												<div className="text-right">
+													<Badge variant="outline" className="bg-white text-xs">Viewed {view.viewCount} times</Badge>
+													<p className="text-[10px] text-gray-500 mt-1">Last: {new Date(view.lastViewedAt).toLocaleDateString()}</p>
+												</div>
+											</div>
+										))}
+									</div>
+								)}
+
+								{(!lead.aiChats?.length && !lead.viewHistory?.length) && (
+									<p className="text-sm text-muted-foreground text-center py-4">No timeline activity yet.</p>
+								)}
+
+							</div>
+						</CardContent>
+					</Card>
 				</div>
 
 				{/* RIGHT SIDE */}

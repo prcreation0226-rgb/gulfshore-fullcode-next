@@ -81,6 +81,23 @@ export async function GET() {
 		}
 		const chartData = await Promise.all(chartPromises);
 
+		const hotLeads = await prisma.lead.findMany({
+			where: {
+				scoreLabel: { in: ["Hot", "Ready to Buy", "Ready to Sell"] }
+			},
+			orderBy: { updatedAt: "desc" },
+			take: 5,
+			select: {
+				id: true,
+				fullName: true,
+				email: true,
+				phone: true,
+				score: true,
+				scoreLabel: true,
+				updatedAt: true
+			}
+		});
+
 		const res = {
 			TotalCities: totalCities,
 			TotalCommunities: totalCommunities,
@@ -92,7 +109,8 @@ export async function GET() {
 			TotalWishlistedProperties: totalWishlistedProperties,
 			TotalPropertyViews: totalPropertyViews,
 			LastSocialMediaUploadTime: new Date().toISOString(),
-			chartData: chartData
+			chartData: chartData,
+			hotLeads: hotLeads
 		};
 
 		// Store in cache
