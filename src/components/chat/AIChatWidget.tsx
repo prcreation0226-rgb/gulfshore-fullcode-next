@@ -6,7 +6,8 @@ import { X, MessageSquare, Send } from "lucide-react";
 
 export default function AIChatWidget() {
 	const [isOpen, setIsOpen] = useState(false);
-	const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+	const [localInput, setLocalInput] = useState("");
+	const { messages, append, isLoading } = useChat({
 		api: "/api/v2/ai/chat",
 	});
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -17,6 +18,13 @@ export default function AIChatWidget() {
 			messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
 		}
 	}, [messages]);
+
+	const handleSend = () => {
+		if (localInput && localInput.trim() && !isLoading) {
+			append({ role: 'user', content: localInput });
+			setLocalInput('');
+		}
+	};
 
 	return (
 		<div className="fixed bottom-6 right-6 z-50">
@@ -115,14 +123,12 @@ export default function AIChatWidget() {
 					<div className="p-3 bg-white border-t border-gray-100 flex items-center gap-2">
 						<input
 							type="text"
-							value={input}
-							onChange={handleInputChange}
+							value={localInput}
+							onChange={(e) => setLocalInput(e.target.value)}
 							onKeyDown={(e) => {
 								if (e.key === 'Enter') {
 									e.preventDefault();
-									if (input && input.trim() && !isLoading) {
-										handleSubmit({ preventDefault: () => {} } as any);
-									}
+									handleSend();
 								}
 							}}
 							placeholder="Type your message..."
@@ -133,11 +139,9 @@ export default function AIChatWidget() {
 							type="button"
 							onClick={(e) => {
 								e.preventDefault();
-								if (input && input.trim() && !isLoading) {
-									handleSubmit({ preventDefault: () => {} } as any);
-								}
+								handleSend();
 							}}
-							disabled={!input || !input.trim() || isLoading}
+							disabled={!localInput || !localInput.trim() || isLoading}
 							className="bg-primary text-white p-2.5 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							<Send className="w-4 h-4 ml-0.5" />
