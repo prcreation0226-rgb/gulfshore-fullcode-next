@@ -146,6 +146,11 @@ const data = {
 			icon: IconUserCheck,
 		},
 		{
+			title: "AI Conversations",
+			url: "/admin/ai-chats",
+			icon: Bot,
+		},
+		{
 			title: "Contact Requests",
 			url: "/admin/contact-requests",
 			icon: IconUserCheck,
