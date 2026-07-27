@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 
-export default function WeatherWidget({ city = "Naples" }) {
+export default function WeatherWidget({ city = "Naples" }: { city?: string }) {
 	useEffect(() => {
 		// Avoid adding the script multiple times
 		if (!document.getElementById("weatherwidget-io-js")) {
@@ -27,25 +27,29 @@ export default function WeatherWidget({ city = "Naples" }) {
 		sanibel: "26d45n82d02",
 	};
 
+	// Fallback to "Naples" if city is undefined or empty
+	const safeCity = city || "Naples";
+
 	// Normalize city name to match the key
-	const cityName =
-		city?.toLowerCase().trim().replace(/\s+/g, "-") || "";
+	const cityName = safeCity.toLowerCase().trim().replace(/\s+/g, "-");
 
 	// Safely get URL
-	const url = cityIds[cityName] + "/" + cityName;
+	const url = (cityIds[cityName] || cityIds["naples"]) + "/" + cityName;
+	
 	return (
 		<div className="py-4">
 			<a
 				className="weatherwidget-io"
 				href={`https://forecast7.com/en/${url}/?unit=us`}
-				data-label_1={city.toUpperCase() + " FL"}
+				data-label_1={safeCity.toUpperCase() + " FL"}
 				data-label_2="WEATHER"
 				data-font="Roboto"
 				data-icons="Climacons"
 				data-days="5"
 				data-theme="clear">
-				{city.toUpperCase()}, FL
+				{safeCity.toUpperCase()}, FL
 			</a>
 		</div>
 	);
 }
+

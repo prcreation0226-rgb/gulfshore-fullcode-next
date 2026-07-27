@@ -119,7 +119,7 @@ export default function AIChatWidget() {
 						/>
 						<button
 							type="submit"
-							disabled={!input.trim() || isLoading}
+							disabled={!input || !input.trim() || isLoading}
 							className="bg-primary text-white p-2.5 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							<Send className="w-4 h-4 ml-0.5" />
