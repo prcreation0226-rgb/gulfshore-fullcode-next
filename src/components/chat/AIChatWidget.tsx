@@ -112,23 +112,37 @@ export default function AIChatWidget() {
 					</div>
 
 					{/* Input Area */}
-					<form onSubmit={handleSubmit} className="p-3 bg-white border-t border-gray-100 flex items-center gap-2">
+					<div className="p-3 bg-white border-t border-gray-100 flex items-center gap-2">
 						<input
 							type="text"
 							value={input}
 							onChange={handleInputChange}
+							onKeyDown={(e) => {
+								if (e.key === 'Enter') {
+									e.preventDefault();
+									if (input && input.trim() && !isLoading) {
+										handleSubmit(e as any);
+									}
+								}
+							}}
 							placeholder="Type your message..."
 							className="flex-1 px-4 py-2 bg-gray-100 border-transparent focus:bg-white border focus:border-primary rounded-full outline-none transition-all text-sm"
 							disabled={isLoading}
 						/>
 						<button
-							type="submit"
+							type="button"
+							onClick={(e) => {
+								e.preventDefault();
+								if (input && input.trim() && !isLoading) {
+									handleSubmit(e as any);
+								}
+							}}
 							disabled={!input || !input.trim() || isLoading}
 							className="bg-primary text-white p-2.5 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							<Send className="w-4 h-4 ml-0.5" />
 						</button>
-					</form>
+					</div>
 				</div>
 			)}
 		</div>
