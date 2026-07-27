@@ -28,7 +28,23 @@ export async function GET() {
 		for (const campaign of campaigns) {
 			let eligibleLeads: any[] = [];
 
-			if (campaign.daysAfterSignup === 0) {
+			if (campaign.daysAfterSignup === -1) {
+				// 10 minutes mode for testing
+				const targetDateEnd = new Date();
+				targetDateEnd.setMinutes(now.getMinutes() - 10);
+				
+				const targetDateStart = new Date();
+				targetDateStart.setMinutes(now.getMinutes() - 10 - 60); // 1 hour window to catch it
+
+				eligibleLeads = await prisma.lead.findMany({
+					where: {
+						createdAt: {
+							gte: targetDateStart,
+							lte: targetDateEnd,
+						},
+					},
+				});
+			} else if (campaign.daysAfterSignup === 0) {
 				// Immediate / Test mode (0 days = signed up recently / last 24h)
 				eligibleLeads = await prisma.lead.findMany({
 					orderBy: { createdAt: "desc" },

@@ -700,6 +700,7 @@ function ScheduleNotificationContent() {
 													<SelectValue placeholder="Select when to send" />
 												</SelectTrigger>
 												<SelectContent>
+													<SelectItem value="-1">10 Minutes After (Test)</SelectItem>
 													<SelectItem value="0">Immediately</SelectItem>
 													<SelectItem value="1">1 Day After</SelectItem>
 													<SelectItem value="3">3 Days After</SelectItem>
