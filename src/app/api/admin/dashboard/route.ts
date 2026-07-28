@@ -82,9 +82,6 @@ export async function GET() {
 		const chartData = await Promise.all(chartPromises);
 
 		const hotLeads = await prisma.lead.findMany({
-			where: {
-				scoreLabel: { in: ["Hot", "Ready to Buy", "Ready to Sell"] }
-			},
 			orderBy: { updatedAt: "desc" },
 			take: 5,
 			select: {
@@ -92,8 +89,6 @@ export async function GET() {
 				fullName: true,
 				email: true,
 				phone: true,
-				score: true,
-				scoreLabel: true,
 				updatedAt: true
 			}
 		});

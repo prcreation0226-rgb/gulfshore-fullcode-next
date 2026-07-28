@@ -100,7 +100,6 @@ async function ExploreCommunity({
 			<AreaInfoComponent
 				city={formattedCity}
 				community={formattedCommunity}
-				communityData={communityData} // Pass to area info if needed, or render below
 			/>
 			
 			{/* Custom Marketing Content Area (Loopnet/Zillow style) */}

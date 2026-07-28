@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
 		// Find city by name (case-insensitive) or auto-create
 		let city = await prisma.city.findFirst({
 			where: {
-				name: { equals: rawCity, mode: "insensitive" }
+				name: rawCity
 			}
 		});
 

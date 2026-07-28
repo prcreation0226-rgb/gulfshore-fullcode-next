@@ -32,6 +32,7 @@ interface DashBoardStats {
 	TotalTours: number;
 	LastSocialMediaUploadTime: string;
 	chartData?: Array<{ date: string; Leads: number; Inquiries: number }>;
+	hotLeads?: any[];
 }
 
 export default function DashboardPage() {

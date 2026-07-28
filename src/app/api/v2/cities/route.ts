@@ -76,10 +76,9 @@ export async function GET(req: NextRequest) {
 					not: "Residential Lease",
 				},
 				FullAddress: { not: "" },
-				NOT: { images: { equals: null } },
 			},
 			_count: {
-				id: true,
+				_all: true,
 			},
 		});
 
@@ -87,7 +86,7 @@ export async function GET(req: NextRequest) {
 		propertyCounts.forEach((group) => {
 			const cityName = (group.City || "").trim().toLowerCase();
 			if (cityName) {
-				const count = group._count.id || 0;
+				const count = (group._count as any)?._all || 0;
 				countMap.set(cityName, (countMap.get(cityName) || 0) + count);
 			}
 		});

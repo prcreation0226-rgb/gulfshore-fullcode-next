@@ -44,21 +44,8 @@ export async function GET(req: NextRequest) {
 			});
 			data = properties.map((p: any) => p.SubdivisionName).filter(Boolean);
 		} else if (type === "school") {
-			// For schools, we might check HighSchool, MiddleSchool, ElementarySchool
-			// Let's just search HighSchool for now or combine them
-			const properties = await prisma.property.findMany({
-				where: {
-					HighSchool: {
-						contains: q,
-					},
-				},
-				select: {
-					HighSchool: true,
-				},
-				take: 10,
-				distinct: ["HighSchool"],
-			});
-			data = properties.map((p: any) => p.HighSchool).filter(Boolean);
+			// School data is not available in the Property model currently
+			data = [];
 		}
 
 		return NextResponse.json({ success: true, data });

@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, Edit, Star, StarOff } from "lucide-react";
 
 export default function EmailTemplatesPage() {
-	const [selectedTemplate, setSelectedTemplate] = useState(null);
+	const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
 	const [isEditing, setIsEditing] = useState(false);
 
 	// Mock data - in a real app, you would fetch this from your API

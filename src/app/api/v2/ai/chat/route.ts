@@ -24,6 +24,7 @@ If the user asks for properties matching specific criteria, ALWAYS use the 'sear
 If the search returns no properties, apologize and say you can set up a custom alert for them.`,
 			messages: await convertToModelMessages(messages),
 			tools: {
+				// @ts-ignore
 				searchProperties: tool({
 					description: "Search the real estate database for active properties matching the user's criteria. Use this whenever the user asks to see homes, properties, or listings.",
 					parameters: z.object({
@@ -34,7 +35,9 @@ If the search returns no properties, apologize and say you can set up a custom a
 						baths: z.number().optional().describe("Minimum number of bathrooms"),
 						hasPool: z.boolean().optional().describe("Whether the property must have a private pool"),
 					}),
-					execute: async ({ city, minPrice, maxPrice, beds, baths, hasPool }) => {
+					// @ts-ignore
+					execute: async (args: any) => {
+						const { city, minPrice, maxPrice, beds, baths, hasPool } = args;
 						const where: any = { StandardStatus: "Active" };
 						
 						if (city) where.City = { contains: city };

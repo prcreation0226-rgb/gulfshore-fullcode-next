@@ -179,7 +179,7 @@ export default function PropertyDetail(property: Property) {
 							thumbnailSrc = `/${rawThumbnail}`;
 						}
 					} else {
-						const firstImage = property.AllPixList?.[0] ||
+						const firstImage = (property as any).AllPixList?.[0] ||
 							(Array.isArray((property as any).images) ? (typeof (property as any).images[0] === "string" ? (property as any).images[0] : ((property as any).images[0] as any)?.MediaURL) : null) ||
 							(Array.isArray((property.raw as any)?.Media) ? (property.raw as any)?.Media?.[0]?.MediaURL : null);
 						if (firstImage && typeof firstImage === "string" && firstImage.trim() !== "") {

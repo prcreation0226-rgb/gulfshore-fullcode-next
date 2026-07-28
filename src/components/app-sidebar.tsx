@@ -8,6 +8,7 @@ import {
 	IconSettings,
 	IconUserCheck,
 	IconArticle,
+	IconRobot,
 } from "@tabler/icons-react";
 import {
 	ChevronDown,
@@ -148,7 +149,7 @@ const data = {
 		{
 			title: "AI Conversations",
 			url: "/admin/ai-chats",
-			icon: Bot,
+			icon: IconRobot,
 		},
 		{
 			title: "Contact Requests",
@@ -273,7 +274,7 @@ export function AppSidebar({
 							asChild
 							className="data-[slot=sidebar-menu-button]:!p-1.5">
 							<a href="#">
-				v				<Home className="!size-5" />
+								<Home className="!size-5" />
 								<span className="text-base font-semibold">
 									{siteName}
 								</span>

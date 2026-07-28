@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     try {
-        const { id } = params;
         const body = await req.json();
         
         const updateData: any = { ...body };
@@ -25,14 +25,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         
         return NextResponse.json({ success: true, data: updatedFaq });
     } catch (error: any) {
-        console.error(`Error in PUT /api/v2/faqs/${params.id}:`, error);
+        console.error(`Error in PUT /api/v2/faqs/${id}:`, error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     try {
-        const { id } = params;
         
         await prisma.faq.delete({
             where: { id }
@@ -40,7 +40,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
         
         return NextResponse.json({ success: true, message: "FAQ deleted successfully" });
     } catch (error: any) {
-        console.error(`Error in DELETE /api/v2/faqs/${params.id}:`, error);
+        console.error(`Error in DELETE /api/v2/faqs/${id}:`, error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }

@@ -190,6 +190,7 @@ export default function ContactForm({
 					email: "",
 					phone: "",
 					message: "",
+					userRole: "Buyer",
 				});
 				setPhoneNumber("");
 			} else setSubmitStatus("error");
