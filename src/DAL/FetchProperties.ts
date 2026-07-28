@@ -22,6 +22,7 @@ export async function FetchProperty(params: string) {
 
 		const res = await fetch(`${baseUrl}/api/v2/properties/${slug}`, {
 			method: "GET",
+			cache: "no-store",
 		});
 		const response = await res.json();
 
