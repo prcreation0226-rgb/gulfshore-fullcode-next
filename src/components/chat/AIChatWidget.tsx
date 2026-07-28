@@ -100,7 +100,10 @@ export default function AIChatWidget() {
 														{result.map((prop: any, i: number) => (
 															<a href={prop.link} target="_blank" rel="noreferrer" key={i} className="block bg-gray-50 p-2 rounded border hover:border-primary transition-colors text-xs text-gray-700">
 																<span className="font-semibold block truncate">{prop.address}</span>
-																<span className="text-primary font-medium">{prop.price}</span> &bull; {prop.beds} Beds, {prop.baths} Baths
+																<span className="text-primary font-medium">{prop.price}</span> 
+																{(prop.beds != null || prop.baths != null) && (
+																	<span> &bull; {prop.beds ?? 0} Beds, {prop.baths ?? 0} Baths</span>
+																)}
 															</a>
 														))}
 													</div>
