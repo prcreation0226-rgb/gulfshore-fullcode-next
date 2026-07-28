@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 
 import { useState, useRef, useEffect } from "react";
 import { X, MessageSquare, Send } from "lucide-react";
@@ -8,8 +9,8 @@ import { X, MessageSquare, Send } from "lucide-react";
 export default function AIChatWidget() {
 	const [isOpen, setIsOpen] = useState(false);
 	const [localInput, setLocalInput] = useState("");
-	const { messages, append, status } = useChat({
-		api: "/api/v2/ai/chat",
+	const { messages, sendMessage, status } = useChat({
+		transport: new DefaultChatTransport({ api: "/api/v2/ai/chat" }),
 	});
 	const isLoading = status === "submitted" || status === "streaming";
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -21,13 +22,19 @@ export default function AIChatWidget() {
 		}
 	}, [messages]);
 
+	// Scroll to bottom on new message
+	useEffect(() => {
+		if (messagesEndRef.current) {
+			messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+		}
+	}, [messages]);
+
 	const handleSend = () => {
 		if (localInput && localInput.trim() && !isLoading) {
-			append({ role: 'user', content: localInput });
+			sendMessage({ role: 'user', parts: [{ type: 'text', text: localInput }] });
 			setLocalInput('');
 		}
 	};
-
 	return (
 		<div className="fixed bottom-6 right-6 z-50">
 			{/* Chat Button */}
