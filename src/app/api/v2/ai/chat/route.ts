@@ -77,7 +77,7 @@ If the search returns no properties, apologize and say you can set up a custom a
 			},
 		});
 
-		return result.toDataStreamResponse();
+		return result.toUIMessageStreamResponse();
 	} catch (error: any) {
 		console.error("AI Chat Error:", error);
 		return Response.json({ error: "Failed to generate AI response" }, { status: 500 });
