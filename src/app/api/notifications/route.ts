@@ -37,7 +37,11 @@ export async function GET() {
 				title: d.name,
 				message: d.messageTemplate,
 				scheduledFor: null,
-				dripLabel: `Automated: ${d.daysAfterSignup} Days After`,
+				dripLabel: d.daysAfterSignup === -1 
+					? 'Automated: 10 Minutes After' 
+					: d.daysAfterSignup === 0 
+						? 'Automated: Immediately' 
+						: `Automated: ${d.daysAfterSignup} Days After`,
 				isDrip: true,
 				status: d.status === "active" ? "Scheduled" : "Draft",
 				propertyCriteria: {},
