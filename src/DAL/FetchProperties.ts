@@ -18,7 +18,10 @@ export default async function FetchProperties(params: string[]) {
 export async function FetchProperty(params: string) {
 	const slug = decodeURIComponent(params);
 	try {
-		const baseUrl = typeof window === 'undefined' ? (process.env.NEXT_PUBLIC_SERVER_URL?.replace(/\/$/, '') || "https://gulfshoregroup.com") : "";
+		let baseUrl = typeof window === 'undefined' ? (process.env.NEXT_PUBLIC_SERVER_URL?.replace(/\/$/, '') || "https://gulfshoregroup.com") : "";
+		if (typeof window === 'undefined' && !process.env.NEXT_PUBLIC_SERVER_URL && process.env.RAILWAY_PUBLIC_DOMAIN) {
+			baseUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+		}
 
 		const res = await fetch(`${baseUrl}/api/v2/properties/${slug}`, {
 			method: "GET",
@@ -30,7 +33,10 @@ export async function FetchProperty(params: string) {
 			return response.data;
 		}
 	} catch (error) {
-		const url = typeof window === 'undefined' ? (process.env.NEXT_PUBLIC_SERVER_URL?.replace(/\/$/, '') || "https://gulfshoregroup.com") : "";
+		let url = typeof window === 'undefined' ? (process.env.NEXT_PUBLIC_SERVER_URL?.replace(/\/$/, '') || "https://gulfshoregroup.com") : "";
+		if (typeof window === 'undefined' && !process.env.NEXT_PUBLIC_SERVER_URL && process.env.RAILWAY_PUBLIC_DOMAIN) {
+			url = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+		}
 		return redirect(`${url}/Florida-Real-Estate-Search`);
 	}
 }
