@@ -2,6 +2,7 @@ import { openai } from "@ai-sdk/openai";
 import { streamText, tool, convertToModelMessages } from "ai";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
+import UrlMaker from "@/hooks/url-maker";
 
 export const maxDuration = 60; // Allow up to 60 seconds
 
@@ -59,6 +60,9 @@ If the search returns no properties, apologize and say you can set up a custom a
 								PoolPrivateYN: true,
 								LivingArea: true,
 								PropertyType: true,
+								City: true,
+								Community: true,
+								MLSNumber: true,
 							}
 						});
 
@@ -70,7 +74,7 @@ If the search returns no properties, apologize and say you can set up a custom a
 							pool: p.PoolPrivateYN ? "Yes" : "No",
 							sqft: p.LivingArea,
 							type: p.PropertyType,
-							link: `/properties/${p.id}` // Link to the property detail page
+							link: UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined)
 						}));
 					},
 				}),
