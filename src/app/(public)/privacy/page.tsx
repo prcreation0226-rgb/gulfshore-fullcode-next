@@ -69,7 +69,7 @@ const PrivacyPage = () => {
 				</h2>
 				<p className="mb-4">
 					We only share data with trusted service providers and never
-					sell your personal info.
+					sell your personal info. We do not share or sell your personal mobile information or SMS opt-in data with any third parties or affiliates for marketing/promotional purposes.
 				</p>
 
 				<h2 className="text-lg font-bold mt-8 mb-2">7. Security</h2>
