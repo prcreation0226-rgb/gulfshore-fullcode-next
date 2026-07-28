@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { syncTodaysActiveProperties } from "@/jobs/syncProperties";
+import { processSavedSearches } from "@/jobs/processSavedSearches";
 
 export const dynamic = "force-dynamic";
 
@@ -129,7 +131,35 @@ export async function POST(req: NextRequest) {
 		const body = await req.json();
 		const { id } = body;
 
-		// Mock triggering a sync run
+		// If it's the MLS Sync, actually run it
+		if (id === "AUTO001") {
+			// Find the most recent BridgeModificationTimestamp in our DB
+			const lastSynced = await prisma.property.findFirst({
+				where: { StandardStatus: "Active" },
+				orderBy: { BridgeModificationTimestamp: "desc" },
+				select: { BridgeModificationTimestamp: true },
+			});
+	
+			// Look back 2 days from the last known modification to avoid gaps
+			let queryDate: string;
+			if (lastSynced?.BridgeModificationTimestamp) {
+				const lookback = new Date(
+					lastSynced.BridgeModificationTimestamp.getTime() - 2 * 24 * 60 * 60 * 1000
+				);
+				queryDate = lookback.toISOString().split("T")[0];
+			} else {
+				queryDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+					.toISOString()
+					.split("T")[0];
+			}
+			
+			console.log(`[Manual Admin Sync] Triggered — modification lookback: ${queryDate}`);
+			await syncTodaysActiveProperties({ count: 0, date: queryDate });
+		} else if (id === "AUTO002") {
+			console.log(`[Manual Admin Sync] Triggered Price Drop Notifications`);
+			await processSavedSearches();
+		}
+
 		return NextResponse.json({
 			success: true,
 			message: `Job ${id} triggered successfully!`,
