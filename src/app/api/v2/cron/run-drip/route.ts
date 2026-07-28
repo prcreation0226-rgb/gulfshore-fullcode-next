@@ -34,7 +34,7 @@ export async function GET() {
 				targetDateEnd.setMinutes(now.getMinutes() - 10);
 				
 				const targetDateStart = new Date();
-				targetDateStart.setMinutes(now.getMinutes() - 10 - 60); // 1 hour window to catch it
+				targetDateStart.setDate(now.getDate() - 7); // 7 days window to ensure we don't miss anyone if cron fails
 
 				eligibleLeads = await prisma.lead.findMany({
 					where: {
@@ -55,7 +55,7 @@ export async function GET() {
 				targetDateEnd.setDate(now.getDate() - campaign.daysAfterSignup);
 				
 				const targetDateStart = new Date();
-				targetDateStart.setDate(now.getDate() - campaign.daysAfterSignup - 5);
+				targetDateStart.setDate(now.getDate() - campaign.daysAfterSignup - 30); // 30 day window to catch older leads
 
 				eligibleLeads = await prisma.lead.findMany({
 					where: {
