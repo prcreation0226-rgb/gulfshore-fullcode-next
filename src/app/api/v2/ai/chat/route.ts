@@ -1,5 +1,5 @@
 import { openai } from "@ai-sdk/openai";
-import { streamText, tool } from "ai";
+import { streamText, tool, convertToModelMessages } from "ai";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 
@@ -21,7 +21,7 @@ Key qualifying questions you should naturally weave into the conversation:
 Always be concise. Do not write long paragraphs. 
 If the user asks for properties matching specific criteria, ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
 If the search returns no properties, apologize and say you can set up a custom alert for them.`,
-			messages,
+			messages: convertToModelMessages(messages),
 			tools: {
 				searchProperties: tool({
 					description: "Search the real estate database for active properties matching the user's criteria. Use this whenever the user asks to see homes, properties, or listings.",
