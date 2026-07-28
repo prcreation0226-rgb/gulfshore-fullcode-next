@@ -7,9 +7,10 @@ import { X, MessageSquare, Send } from "lucide-react";
 export default function AIChatWidget() {
 	const [isOpen, setIsOpen] = useState(false);
 	const [localInput, setLocalInput] = useState("");
-	const { messages, append, isLoading } = useChat({
+	const { messages, sendMessage, status } = useChat({
 		api: "/api/v2/ai/chat",
 	});
+	const isLoading = status === "submitted" || status === "streaming";
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
 	// Scroll to bottom on new message
@@ -21,7 +22,7 @@ export default function AIChatWidget() {
 
 	const handleSend = () => {
 		if (localInput && localInput.trim() && !isLoading) {
-			append({ role: 'user', content: localInput });
+			sendMessage({ role: 'user', content: localInput });
 			setLocalInput('');
 		}
 	};
