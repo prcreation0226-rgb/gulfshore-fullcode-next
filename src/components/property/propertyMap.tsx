@@ -20,7 +20,7 @@ const mapContainerStyle = {
 };
 
 export default function PropertyMap({ property, Latitude, Longitude }: PropertyMapProps) {
-	const [mapTypeId, setMapTypeId] = useState<"roadmap" | "satellite" | "hybrid" | "terrain">("roadmap");
+	const [mapTypeId, setMapTypeId] = useState<"roadmap" | "satellite" | "hybrid" | "terrain">("hybrid");
 	const [streetViewActive, setStreetViewActive] = useState(false);
 	const [showFema, setShowFema] = useState(false);
 	const [femaLoading, setFemaLoading] = useState(false);
@@ -33,7 +33,7 @@ export default function PropertyMap({ property, Latitude, Longitude }: PropertyM
 
 	const { isLoaded } = useJsApiLoader({
 		id: "google-map-script",
-		googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyBQwpzlVeV9AI6FETYYUmLt730XEKRdfAY",
+		googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
 	});
 
 	// close dropdown on click outside
@@ -67,7 +67,7 @@ export default function PropertyMap({ property, Latitude, Longitude }: PropertyM
 					const minY = originShift - (coord.y + 1) * tileWidth;
 					const maxY = originShift - coord.y * tileWidth;
 					const bbox = `${minX},${minY},${maxX},${maxY}`;
-					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=3857&layers=show%3A28&size=256,256&imageSR=3857&format=png32&transparent=true&f=image`;
+					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=3857&layers=show%3A28&size=256,256&imageSR=3857&format=png8&transparent=true&f=image`;
 				},
 				tileSize: new google.maps.Size(256, 256),
 				opacity: 0.35, // Made highly transparent so Satellite is visible
@@ -147,7 +147,8 @@ export default function PropertyMap({ property, Latitude, Longitude }: PropertyM
 			</h4>
 			<div className="relative" style={mapContainerStyle}>
 				
-				<div className="absolute top-4 left-4 z-50" ref={dropdownRef}>
+				{/* Unified Map controls dropdown card */}
+				<div className="absolute top-4 left-4 z-50 md:top-4 md:right-14 md:left-auto" ref={dropdownRef}>
 					<button
 						onClick={() => setDropdownOpen(!dropdownOpen)}
 						className="flex items-center gap-1.5 px-3 py-2 bg-white text-gray-800 border border-gray-200 rounded-lg shadow-md font-medium text-xs hover:bg-gray-50 transition-colors cursor-pointer"

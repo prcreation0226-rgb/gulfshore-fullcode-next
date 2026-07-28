@@ -50,7 +50,7 @@ export default function MapComponent({
 		lat: 26.142,
 		lng: -81.7948,
 	});
-	const [mapTypeId, setMapTypeId] = useState<"roadmap" | "satellite" | "hybrid" | "terrain">("roadmap");
+	const [mapTypeId, setMapTypeId] = useState<"roadmap" | "satellite" | "hybrid" | "terrain">("hybrid");
 
 	const [showDrone, setShowDrone] = useState(false);
 	const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -229,7 +229,7 @@ export default function MapComponent({
 					const minY = originShift - (coord.y + 1) * tileWidth;
 					const maxY = originShift - coord.y * tileWidth;
 					const bbox = `${minX},${minY},${maxX},${maxY}`;
-					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=3857&layers=show%3A28%2C32&size=256,256&imageSR=3857&format=png&transparent=true&f=image`;
+					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=3857&layers=show%3A28&size=256,256&imageSR=3857&format=png8&transparent=true&f=image`;
 				},
 				tileSize: new google.maps.Size(256, 256),
 				opacity: 0.65,
@@ -367,7 +367,7 @@ export default function MapComponent({
 	return (
 		<div className="h-full w-full grow relative rounded-xl">
 			{/* Unified Map controls dropdown card */}
-			<div className="absolute top-4 left-4 z-50" ref={dropdownRef}>
+			<div className="absolute top-4 left-4 z-50 md:top-4 md:right-14 md:left-auto" ref={dropdownRef}>
 				<button
 					onClick={() => setDropdownOpen(!dropdownOpen)}
 					className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-800 border border-gray-200 rounded-lg shadow-md font-medium text-sm hover:bg-gray-50 transition-colors cursor-pointer"
