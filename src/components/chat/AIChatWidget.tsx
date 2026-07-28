@@ -8,9 +8,9 @@ import { X, MessageSquare, Send } from "lucide-react";
 export default function AIChatWidget() {
 	const [isOpen, setIsOpen] = useState(false);
 	const [localInput, setLocalInput] = useState("");
-	const { messages, sendMessage, status } = useChat({
+	const { messages, append, status } = useChat({
 		api: "/api/v2/ai/chat",
-	} as any);
+	});
 	const isLoading = status === "submitted" || status === "streaming";
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -23,7 +23,7 @@ export default function AIChatWidget() {
 
 	const handleSend = () => {
 		if (localInput && localInput.trim() && !isLoading) {
-			sendMessage({ role: 'user', parts: [{ type: 'text', text: localInput }] });
+			append({ role: 'user', content: localInput });
 			setLocalInput('');
 		}
 	};
