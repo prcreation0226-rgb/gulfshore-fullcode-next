@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { useState, useRef, useEffect } from "react";
 import { X, MessageSquare, Send } from "lucide-react";
 
@@ -8,7 +9,7 @@ export default function AIChatWidget() {
 	const [isOpen, setIsOpen] = useState(false);
 	const [localInput, setLocalInput] = useState("");
 	const { messages, sendMessage, status } = useChat({
-		api: "/api/v2/ai/chat",
+		transport: new DefaultChatTransport({ api: "/api/v2/ai/chat" }),
 	});
 	const isLoading = status === "submitted" || status === "streaming";
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -22,7 +23,7 @@ export default function AIChatWidget() {
 
 	const handleSend = () => {
 		if (localInput && localInput.trim() && !isLoading) {
-			sendMessage({ role: 'user', content: localInput });
+			sendMessage({ role: 'user', parts: [{ type: 'text', text: localInput }] });
 			setLocalInput('');
 		}
 	};
@@ -86,18 +87,21 @@ export default function AIChatWidget() {
 											: "bg-white text-gray-800 border border-gray-100 rounded-tl-sm"
 									}`}
 								>
-									{m.content}
-									
-									{/* Handle tool invocations (if any) */}
-									{m.toolInvocations?.map((tool) => {
-										if (tool.toolName === "searchProperties" && "result" in tool) {
-											return (
-												<div key={tool.toolCallId} className="mt-3 space-y-2">
-													<p className="text-xs font-semibold text-primary border-b pb-1">Found Properties:</p>
-													{tool.result.map((prop: any, i: number) => (
-														<a href={prop.link} target="_blank" rel="noreferrer" key={i} className="block bg-gray-50 p-2 rounded border hover:border-primary transition-colors text-xs text-gray-700">
-															<span className="font-semibold block truncate">{prop.address}</span>
-															<span className="text-primary font-medium">{prop.price}</span> &bull; {prop.beds} Beds, {prop.baths} Baths
+									{m.parts?.map((part, index) => {
+										if (part.type === "text") {
+											return <span key={index}>{part.text}</span>;
+										}
+										if (part.type === "tool-invocation") {
+											const tool = part.toolInvocation;
+											if (tool.toolName === "searchProperties" && "result" in tool) {
+												return (
+													<div key={tool.toolCallId} className="mt-3 space-y-2">
+														<p className="text-xs font-semibold text-primary border-b pb-1">Found Properties:</p>
+														{tool.result.map((prop: any, i: number) => (
+															<a href={prop.link} target="_blank" rel="noreferrer" key={i} className="block bg-gray-50 p-2 rounded border hover:border-primary transition-colors text-xs text-gray-700">
+																<span className="font-semibold block truncate">{prop.address}</span>
+																<span className="text-primary font-medium">{prop.price}</span> &bull; {prop.beds} Beds, {prop.baths} Baths
+
 														</a>
 													))}
 												</div>
