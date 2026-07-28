@@ -101,11 +101,11 @@ export default function AIChatWidget() {
 															<a href={prop.link} target="_blank" rel="noreferrer" key={i} className="block bg-gray-50 p-2 rounded border hover:border-primary transition-colors text-xs text-gray-700">
 																<span className="font-semibold block truncate">{prop.address}</span>
 																<span className="text-primary font-medium">{prop.price}</span> &bull; {prop.beds} Beds, {prop.baths} Baths
-
-														</a>
-													))}
-												</div>
-											);
+															</a>
+														))}
+													</div>
+												);
+											}
 										}
 										return null;
 									})}
