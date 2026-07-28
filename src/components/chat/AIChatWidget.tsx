@@ -91,13 +91,13 @@ export default function AIChatWidget() {
 										if (part.type === "text") {
 											return <span key={index}>{part.text}</span>;
 										}
-										if (part.type === "tool-invocation") {
-											const tool = part.toolInvocation;
-											if (tool.toolName === "searchProperties" && "result" in tool) {
+										if (part.type === "tool-searchProperties" && "output" in part && part.output) {
+											const result: any = part.output;
+											if (Array.isArray(result)) {
 												return (
-													<div key={tool.toolCallId} className="mt-3 space-y-2">
+													<div key={part.toolCallId} className="mt-3 space-y-2">
 														<p className="text-xs font-semibold text-primary border-b pb-1">Found Properties:</p>
-														{tool.result.map((prop: any, i: number) => (
+														{result.map((prop: any, i: number) => (
 															<a href={prop.link} target="_blank" rel="noreferrer" key={i} className="block bg-gray-50 p-2 rounded border hover:border-primary transition-colors text-xs text-gray-700">
 																<span className="font-semibold block truncate">{prop.address}</span>
 																<span className="text-primary font-medium">{prop.price}</span> &bull; {prop.beds} Beds, {prop.baths} Baths
