@@ -273,7 +273,7 @@ export function AppSidebar({
 							asChild
 							className="data-[slot=sidebar-menu-button]:!p-1.5">
 							<a href="#">
-								<Home className="!size-5" />
+				v				<Home className="!size-5" />
 								<span className="text-base font-semibold">
 									{siteName}
 								</span>
