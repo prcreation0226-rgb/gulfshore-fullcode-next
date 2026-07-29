@@ -187,16 +187,17 @@ export async function syncTodaysActiveProperties({
 	count: number;
 	date?: string;
 }) {
-	// Fetch from 3 days ago by default for the modification pass
-	const threeDaysAgo = new Date();
-	threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-	const defaultDate = threeDaysAgo.toISOString().split("T")[0];
+	// Use the provided date from the cron router (which correctly looks back to last sync)
+	// or fallback to 7 days ago for safety.
+	const fallbackDate = new Date();
+	fallbackDate.setDate(fallbackDate.getDate() - 7);
+	const defaultDate = fallbackDate.toISOString().split("T")[0];
+	
 	const modificationDate = date || defaultDate;
-
-	// Always look back 2 days for new listings (catches anything listed recently)
-	const twoDaysAgo = new Date();
-	twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-	const newListingsDate = twoDaysAgo.toISOString().split("T")[0];
+	
+	// For new listings, also use the same lookback date to ensure we don't miss any properties
+	// that came on market while the cron job was inactive.
+	const newListingsDate = date || defaultDate;
 
 	console.log(`[Sync] === Bridge Sync Started ===`);
 	console.log(`[Sync] Modification pass date: ${modificationDate}`);
