@@ -15,12 +15,16 @@ export async function POST(req: Request) {
 		// Save the user's incoming message to DB
 		const lastUserMessage = messages[messages.length - 1];
 		if (lastUserMessage && lastUserMessage.role === "user") {
+			let messageText = lastUserMessage.content || "";
+			if (!messageText && lastUserMessage.parts) {
+				messageText = lastUserMessage.parts.map((p: any) => p.text || "").join("");
+			}
 			await prisma.aIChatHistory.create({
 				data: {
 					leadId: lead.id,
 					channel: "website",
 					role: "user",
-					message: lastUserMessage.content || "",
+					message: messageText,
 				}
 			});
 		}
