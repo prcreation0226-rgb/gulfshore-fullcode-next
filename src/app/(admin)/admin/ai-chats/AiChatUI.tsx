@@ -85,7 +85,7 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 													<h3 className="font-semibold text-gray-900 truncate">
 														{lead.firstName ? `${lead.firstName} ${lead.lastName || ""}` : (lead.email || lead.phone || "Unknown User")}
 													</h3>
-													<span className="text-[10px] text-gray-400 shrink-0 ml-2">
+													<span suppressHydrationWarning className="text-[10px] text-gray-400 shrink-0 ml-2">
 														{new Date(latestMessage.createdAt).toLocaleDateString()}
 													</span>
 												</div>
@@ -172,7 +172,7 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 											>
 												{chat.message && chat.message.trim().length > 0 ? chat.message : <span className="text-gray-400 italic">No text provided</span>}
 											</div>
-											<span className="text-[10px] text-gray-400 mt-1.5 px-2 font-medium">
+											<span suppressHydrationWarning className="text-[10px] text-gray-400 mt-1.5 px-2 font-medium">
 												{new Date(chat.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
 											</span>
 										</div>
