@@ -118,47 +118,71 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 				<div className={`flex-1 flex flex-col bg-[#F9FAFB] relative ${!selectedLeadId ? 'hidden md:flex' : 'flex'}`}>
 					{selectedThread ? (
 						<>
-							{/* Chat Header */}
-							<div className="bg-white border-b border-border/50 px-6 py-4 flex justify-between items-center shrink-0">
-								<div className="flex items-center gap-3">
-									<button 
-										className="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900"
-										onClick={() => setSelectedLeadId(null)}
-									>
-										<ArrowLeft className="w-5 h-5" />
-									</button>
-									<div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center shrink-0 hidden md:flex">
-										<User className="w-5 h-5 text-gray-500" />
-									</div>
-									<div>
-										<h2 className="font-bold text-gray-900 text-lg">
-											{selectedThread.lead.firstName ? `${selectedThread.lead.firstName} ${selectedThread.lead.lastName || ""}` : (selectedThread.lead.email || selectedThread.lead.phone)}
-										</h2>
-										<div className="flex gap-2 text-xs text-gray-500">
-											{selectedThread.lead.email && <span>{selectedThread.lead.email}</span>}
-											{selectedThread.lead.phone && <span>• {selectedThread.lead.phone}</span>}
+							{/* Chat Header with Tabs */}
+							<div className="bg-white border-b border-border/50 shrink-0 flex flex-col">
+								{/* Header Top Row */}
+								<div className="px-6 py-4 flex justify-between items-center">
+									<div className="flex items-center gap-3">
+										<button 
+											className="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900"
+											onClick={() => setSelectedLeadId(null)}
+										>
+											<ArrowLeft className="w-5 h-5" />
+										</button>
+										<div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 hidden md:flex">
+											<User className="w-5 h-5 text-primary" />
+										</div>
+										<div>
+											<h2 className="font-bold text-gray-900 text-lg">
+												{selectedThread.lead.firstName ? `${selectedThread.lead.firstName} ${selectedThread.lead.lastName || ""}` : (selectedThread.lead.email || selectedThread.lead.phone)}
+											</h2>
+											<div className="flex gap-2 text-xs text-gray-500 mt-0.5">
+												{selectedThread.lead.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3"/> {selectedThread.lead.email}</span>}
+												{selectedThread.lead.phone && <span className="flex items-center gap-1 ml-2"><Smartphone className="w-3 h-3"/> {selectedThread.lead.phone}</span>}
+											</div>
 										</div>
 									</div>
+									<Link 
+										href={`/admin/leads/${selectedLeadId}`}
+										className="text-xs bg-primary/10 text-primary hover:bg-primary hover:text-white px-4 py-2 rounded-full transition-colors font-semibold shadow-sm"
+									>
+										View Profile
+									</Link>
 								</div>
-								<Link 
-									href={`/admin/leads/${selectedLeadId}`}
-									className="text-xs bg-primary/10 text-primary hover:bg-primary hover:text-white px-4 py-2 rounded-full transition-colors font-semibold"
-								>
-									View Profile
-								</Link>
+								
+								{/* 3-Menu CRM Tabs */}
+								<div className="px-6 flex gap-6 border-t border-gray-100 overflow-x-auto no-scrollbar">
+									<button 
+										onClick={() => setFilter('all')} 
+										className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${filter === 'all' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+									>
+										All Timeline
+									</button>
+									<button 
+										onClick={() => setFilter('website')} 
+										className={`py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${filter === 'website' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+									>
+										<Globe className="w-4 h-4" /> Chatbot
+									</button>
+									<button 
+										onClick={() => setFilter('sms')} 
+										className={`py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${filter === 'sms' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+									>
+										<Smartphone className="w-4 h-4" /> SMS Chat
+									</button>
+									<button 
+										onClick={() => setFilter('email')} 
+										className={`py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${filter === 'email' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+									>
+										<Mail className="w-4 h-4" /> Email Thread
+									</button>
+								</div>
 							</div>
 
 							{/* Chat Messages */}
 							<div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[url('https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg')] bg-cover bg-center bg-fixed bg-no-repeat bg-opacity-20 relative">
 								{/* Subtle overlay to make text readable over the background pattern */}
-								<div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] pointer-events-none"></div>
-
-								<div className="relative z-10 flex justify-center gap-2 mb-4 sticky top-0 bg-white/80 backdrop-blur-md p-2 rounded-lg border border-gray-100 shadow-sm">
-									<button onClick={() => setFilter('all')} className={`px-3 py-1 text-xs font-medium rounded-full ${filter === 'all' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>All</button>
-									<button onClick={() => setFilter('website')} className={`px-3 py-1 text-xs font-medium rounded-full ${filter === 'website' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Website Chat</button>
-									<button onClick={() => setFilter('sms')} className={`px-3 py-1 text-xs font-medium rounded-full ${filter === 'sms' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>SMS</button>
-									<button onClick={() => setFilter('email')} className={`px-3 py-1 text-xs font-medium rounded-full ${filter === 'email' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Email</button>
-								</div>
+								<div className="absolute inset-0 bg-white/80 backdrop-blur-sm pointer-events-none"></div>
 
 								<div className="relative z-10 space-y-6">
 									<div className="text-center">
