@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 
 import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any, leadIds: string[] }) {
 	const searchParams = useSearchParams();
@@ -14,6 +15,14 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 	
 	const [selectedLeadId, setSelectedLeadId] = useState<string | null>(leadIds[0] || null);
 	const [filter, setFilter] = useState<'all' | 'website' | 'sms' | 'email'>(initialChannel);
+
+	// Sync sidebar clicks (URL changes) to the local filter state
+	useEffect(() => {
+		const channel = searchParams.get("channel");
+		if (channel) {
+			setFilter(channel as any);
+		}
+	}, [searchParams]);
 	const [searchTerm, setSearchTerm] = useState("");
 
 	const filteredLeadIds = leadIds.filter((leadId) => {
