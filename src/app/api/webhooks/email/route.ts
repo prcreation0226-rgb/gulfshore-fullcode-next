@@ -40,10 +40,19 @@ export async function POST(req: Request) {
 			}
 		}
 
-		console.log(`[Email Webhook Parsed Data] From: ${fromEmail}, Subject: ${subject}, Text length: ${textBody?.length}`);
+		// Extract just the new reply, remove the quoted history (e.g. "On Wed, Jul 29... wrote:")
+		const cleanTextBody = textBody
+			.split(/On\s+.*?\s+wrote:/i)[0] // Remove Gmail style quotes
+			.split(/-----Original Message-----/i)[0] // Remove Outlook style quotes
+			.split(/_{5,}/)[0] // Remove Yahoo style quotes
+			.split(/From:\s+/i)[0] // Remove iOS style quotes
+			.replace(/^>.*$/gm, "") // Remove remaining > quote lines
+			.trim();
 
-		if (!fromEmail || !textBody) {
-			console.error("[Email Webhook Error] Missing fields. Parsed as:", { fromEmail, subject, text: textBody ? 'Present' : 'Missing' });
+		console.log(`[Email Webhook Parsed Data] From: ${fromEmail}, Subject: ${subject}, Text length: ${cleanTextBody?.length}`);
+
+		if (!fromEmail || !cleanTextBody) {
+			console.error("[Email Webhook Error] Missing fields. Parsed as:", { fromEmail, subject, text: cleanTextBody ? 'Present' : 'Missing' });
 			return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
 		}
 
@@ -77,7 +86,7 @@ export async function POST(req: Request) {
 				leadId: lead.id,
 				channel: "email",
 				role: "user",
-				message: `Subject: ${subject}\n\n${textBody}`,
+				message: `Subject: ${subject}\n\n${cleanTextBody}`,
 			}
 		});
 

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 
 export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any, leadIds: string[] }) {
 	const [selectedLeadId, setSelectedLeadId] = useState<string | null>(leadIds[0] || null);
+	const [filter, setFilter] = useState<'all' | 'website' | 'sms' | 'email'>('all');
 	const [searchTerm, setSearchTerm] = useState("");
 
 	const filteredLeadIds = leadIds.filter((leadId) => {
@@ -21,6 +22,17 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 
 	const selectedThread = selectedLeadId ? groupedChats[selectedLeadId] : null;
 	const messages = selectedThread ? [...selectedThread.messages].reverse() : [];
+	
+	const filteredMessages = messages.filter((c: any) => {
+		// Filter out empty system messages
+		if (c.role !== 'ai' && (!c.message || c.message.trim().length === 0)) return false;
+		
+		// Apply channel filter
+		if (filter !== 'all') {
+			return c.channel === filter;
+		}
+		return true;
+	});
 
 	const channelIcon = (channel: string) => {
 		if (channel === 'sms') return <Smartphone className="w-4 h-4 text-blue-500" />;
@@ -141,6 +153,13 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 								{/* Subtle overlay to make text readable over the background pattern */}
 								<div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] pointer-events-none"></div>
 
+								<div className="relative z-10 flex justify-center gap-2 mb-4 sticky top-0 bg-white/80 backdrop-blur-md p-2 rounded-lg border border-gray-100 shadow-sm">
+									<button onClick={() => setFilter('all')} className={`px-3 py-1 text-xs font-medium rounded-full ${filter === 'all' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>All</button>
+									<button onClick={() => setFilter('website')} className={`px-3 py-1 text-xs font-medium rounded-full ${filter === 'website' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Website Chat</button>
+									<button onClick={() => setFilter('sms')} className={`px-3 py-1 text-xs font-medium rounded-full ${filter === 'sms' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>SMS</button>
+									<button onClick={() => setFilter('email')} className={`px-3 py-1 text-xs font-medium rounded-full ${filter === 'email' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Email</button>
+								</div>
+
 								<div className="relative z-10 space-y-6">
 									<div className="text-center">
 										<span className="bg-white/80 backdrop-blur-sm text-xs font-semibold text-gray-500 px-3 py-1 rounded-full shadow-sm border border-gray-100">
@@ -148,7 +167,7 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 										</span>
 									</div>
 									
-									{messages.filter((c: any) => c.role === 'ai' || (c.message && c.message.trim().length > 0)).map((chat: any) => (
+									{filteredMessages.map((chat: any) => (
 										<div key={chat.id} className={`flex flex-col ${chat.role === 'ai' ? 'items-end' : 'items-start'}`}>
 											<div className="flex items-center gap-1.5 mb-1 px-1">
 												{chat.role === 'user' ? (
