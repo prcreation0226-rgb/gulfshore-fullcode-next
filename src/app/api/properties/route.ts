@@ -36,7 +36,6 @@ export async function GET(req: NextRequest) {
 		if (query.get("city")) {
 			where.City = {
 				contains: query.get("city")!,
-				mode: "insensitive",
 			};
 		}
 		if (query.get("postalCode")) {
@@ -48,13 +47,11 @@ export async function GET(req: NextRequest) {
 		if (query.get("development")) {
 			where.Development = {
 				contains: query.get("development")!,
-				mode: "insensitive",
 			};
 		}
 		if (query.get("developmentName")) {
 			where.Community = {
 				contains: query.get("developmentName")!,
-				mode: "insensitive",
 			};
 		}
 
