@@ -59,7 +59,8 @@ export default async function SearchListingPage({
 	const communityMatch = await prisma.property.findFirst({
 		where: {
 			Community: {
-				contains: rawSlug
+				contains: rawSlug,
+				mode: "insensitive"
 			}
 		},
 		select: {
@@ -78,7 +79,8 @@ export default async function SearchListingPage({
 	const addressMatch = await prisma.property.findFirst({
 		where: {
 			FullAddress: {
-				contains: rawSlug
+				contains: rawSlug,
+				mode: "insensitive"
 			}
 		}
 	});
@@ -99,6 +101,7 @@ export default async function SearchListingPage({
 		where: {
 			SubdivisionName: {
 				contains: rawSlug,
+				mode: "insensitive"
 			},
 		},
 		select: {
