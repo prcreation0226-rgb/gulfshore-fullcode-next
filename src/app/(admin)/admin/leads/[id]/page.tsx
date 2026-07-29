@@ -37,6 +37,7 @@ import {
 	Plus,
 	Trash2,
 	Edit2,
+	CheckSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -80,6 +81,12 @@ export default function LeadProfilePage() {
 		tags: [] as string[],
 	});
 
+	// Tasks State
+	const [tasks, setTasks] = useState<any[]>([]);
+	const [newTaskTitle, setNewTaskTitle] = useState("");
+	const [newTaskDate, setNewTaskDate] = useState<Date | undefined>();
+	const [taskLoading, setTaskLoading] = useState(false);
+
 	// -------------------- FETCH LEAD --------------------
 	useEffect(() => {
 		if (!id) return;
@@ -105,7 +112,65 @@ export default function LeadProfilePage() {
 			}
 		};
 		fetchLead();
+		fetchTasks();
 	}, [id]);
+
+	const fetchTasks = async () => {
+		try {
+			const res = await fetch(`/api/leads/${id}/tasks`);
+			if (res.ok) {
+				const data = await res.json();
+				setTasks(data);
+			}
+		} catch (error) {
+			console.error("Failed to fetch tasks:", error);
+		}
+	};
+
+	const handleAddTask = async () => {
+		if (!newTaskTitle.trim()) return toast.error("Task title cannot be empty");
+		try {
+			setTaskLoading(true);
+			const res = await fetch(`/api/leads/${id}/tasks`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ title: newTaskTitle, dueDate: newTaskDate }),
+			});
+			if (!res.ok) throw new Error("Failed to add task");
+			setNewTaskTitle("");
+			setNewTaskDate(undefined);
+			fetchTasks();
+			toast.success("Task Added!");
+		} catch (err: any) {
+			toast.error(err.message);
+		} finally {
+			setTaskLoading(false);
+		}
+	};
+
+	const handleToggleTask = async (taskId: string, currentStatus: string) => {
+		try {
+			const newStatus = currentStatus === "completed" ? "pending" : "completed";
+			await fetch(`/api/leads/${id}/tasks/${taskId}`, {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ status: newStatus }),
+			});
+			fetchTasks();
+		} catch (err: any) {
+			toast.error("Failed to update task");
+		}
+	};
+
+	const handleDeleteTask = async (taskId: string) => {
+		try {
+			await fetch(`/api/leads/${id}/tasks/${taskId}`, { method: "DELETE" });
+			fetchTasks();
+			toast.success("Task Removed");
+		} catch (err: any) {
+			toast.error("Failed to delete task");
+		}
+	};
 
 	// -------------------- HANDLE ADD NOTE --------------------
 	const handleAddNote = async () => {
@@ -249,6 +314,16 @@ export default function LeadProfilePage() {
 		}
 	};
 
+	const getScoreColor = (label: string) => {
+		switch (label) {
+			case "Ready to Buy": return "bg-red-100 text-red-800 font-bold border-red-200";
+			case "Hot": return "bg-orange-100 text-orange-800";
+			case "Warm": return "bg-amber-100 text-amber-800";
+			case "Cold": return "bg-blue-100 text-blue-800";
+			default: return "bg-gray-100 text-gray-800";
+		}
+	};
+
 	if (loading)
 		return (
 			<div className="p-6 text-center text-muted-foreground">
@@ -311,6 +386,14 @@ export default function LeadProfilePage() {
 									{ label: "Email", value: <span>{lead.email}</span>, icon: Mail },
 									{ label: "Phone", value: <span>{lead.phone}</span>, icon: Phone },
 									{ label: "Source", value: <span>{lead.source}</span> },
+									{ 
+										label: "Score", 
+										value: (
+											<Badge className={getScoreColor(lead.scoreLabel)}>
+												{lead.scoreLabel || "Cold"} ({lead.score || 0} pts)
+											</Badge>
+										)
+									},
 									{
 										label: "Created",
 										value: <span>{new Date(lead.createdAt).toLocaleString()}</span>,
@@ -514,11 +597,60 @@ export default function LeadProfilePage() {
 								</div>
 							</div>
 
-							<Button className="w-full" onClick={handleSaveChanges}>
+											<Button className="w-full" onClick={handleSaveChanges}>
 								Save Changes
 							</Button>
 						</CardContent>
 					</Card>
+
+					{/* TASKS SYSTEM */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2"><CheckSquare className="w-5 h-5 text-primary"/> Tasks & Reminders</CardTitle>
+							<CardDescription>
+								To-do list for this lead
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="space-y-2">
+								<Input 
+									placeholder="New task title (e.g. Call tomorrow)" 
+									value={newTaskTitle} 
+									onChange={(e) => setNewTaskTitle(e.target.value)} 
+								/>
+								<Button className="w-full" onClick={handleAddTask} disabled={taskLoading || !newTaskTitle.trim()}>
+									{taskLoading ? "Adding..." : "Add Task"}
+								</Button>
+							</div>
+
+							<div className="space-y-2 mt-4">
+								{tasks.length > 0 ? tasks.map((task: any) => (
+									<div key={task.id} className={`flex items-start justify-between p-3 border rounded-lg ${task.status === 'completed' ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200'}`}>
+										<div className="flex items-start gap-3">
+											<input 
+												type="checkbox" 
+												className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+												checked={task.status === "completed"}
+												onChange={() => handleToggleTask(task.id, task.status)}
+											/>
+											<div>
+												<p className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-foreground'}`}>
+													{task.title}
+												</p>
+												<span className="text-[10px] text-muted-foreground">{new Date(task.createdAt).toLocaleDateString()}</span>
+											</div>
+										</div>
+										<button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+											<Trash2 className="h-4 w-4" />
+										</button>
+									</div>
+								)) : (
+									<p className="text-xs text-muted-foreground text-center py-2">No tasks yet.</p>
+								)}
+							</div>
+						</CardContent>
+					</Card>
+
 					{/* Notes */}
 					<Card>
 						<CardHeader>

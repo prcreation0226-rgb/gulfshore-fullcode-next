@@ -62,7 +62,9 @@ export async function processSavedSearches() {
 				const poolStr = prop.PoolPrivateYN ? "pool home" : "home";
 
 				// Custom Message Format requested by client
-				const message = `Dimitri Schwarz 239.992.9119 GulfShoreGroup.com - ${beds} bedroom ${baths} bath ${poolStr} under ${priceStr}. - New Listing`;
+				const defaultTitle = `${beds} bedroom ${baths} bath ${poolStr} under ${priceStr}`;
+				const searchTitle = search.name && search.name !== "Saved Search" ? search.name : defaultTitle;
+				const message = `Dimitri Schwarz 239.992.9119 GulfShoreGroup.com - ${searchTitle} - New Listing`;
 
 				console.log(`[SavedSearch] Match found for Lead ${lead.email}. Sending SMS: "${message}"`);
 				

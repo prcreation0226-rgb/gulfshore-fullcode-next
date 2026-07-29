@@ -103,9 +103,10 @@ async function runPropertyAlertSend(overrides: AlertOverrides = {}) {
   const alertPhone = process.env.PROPERTY_ALERT_PHONE;
   if (alertPhone) {
     try {
+      const searchTitle = overrides.alertTitle || overrides.subject || "Property Matches";
       await sendSMS(
         alertPhone,
-        `Gulfshore Group Alert: New luxury listings match your saved criteria. Check your email or portal dashboard for details!`
+        `Dimitri Schwarz 239.992.9119 GulfShoreGroup.com - ${searchTitle} - New Listing`
       );
     } catch (err) {
       console.error("Failed to send property alert SMS:", err);

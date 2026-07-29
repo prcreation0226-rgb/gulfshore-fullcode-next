@@ -34,6 +34,21 @@ export async function POST(req: NextRequest) {
 		const body = trackViewedPropertySchema.parse(await req.json());
 		const result = await trackViewedProperty(lead.id, body.propertyId);
 
+		// Recalculate score asynchronously
+		import("@/lib/leads/services/scoring.service").then(({ recalculateLeadScore }) => {
+			recalculateLeadScore(lead.id);
+		});
+
+		// Check for hot lead spike asynchronously
+		import("@/lib/leads/services/hot-alert.service").then(({ checkAndSendHotLeadAlert }) => {
+			checkAndSendHotLeadAlert(lead.id, lead.fullName || lead.email || "Unknown Lead", lead.phone || null);
+		});
+
+		// Check for returning visitor asynchronously
+		import("@/lib/leads/services/returning-visitor.service").then(({ checkAndSendReturningVisitorAlert }) => {
+			checkAndSendReturningVisitorAlert(lead.id, lead.fullName || lead.email || "Unknown Lead", lead.phone || null);
+		});
+
 		return successResponse(result, result.isNewView ? 201 : 200);
 	} catch (error) {
 		return handleApiError(error);

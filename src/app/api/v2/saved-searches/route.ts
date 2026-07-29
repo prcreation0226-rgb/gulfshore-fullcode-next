@@ -174,6 +174,11 @@ export async function POST(request: NextRequest) {
 			},
 		});
 
+		// Recalculate score asynchronously
+		import("@/lib/leads/services/scoring.service").then(({ recalculateLeadScore }) => {
+			recalculateLeadScore(lead.id);
+		});
+
 		return NextResponse.json({
 			...savedSearch,
 			_id: savedSearch.id,

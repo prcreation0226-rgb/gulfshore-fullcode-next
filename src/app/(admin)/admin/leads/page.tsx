@@ -234,6 +234,16 @@ export default function LeadsPage() {
 		sourceOptions.find((s) => s.value === source)?.color ||
 		"bg-gray-100 text-gray-800";
 
+	const getScoreColor = (label: string) => {
+		switch (label) {
+			case "Ready to Buy": return "bg-red-100 text-red-800 font-bold border-red-200";
+			case "Hot": return "bg-orange-100 text-orange-800";
+			case "Warm": return "bg-amber-100 text-amber-800";
+			case "Cold": return "bg-blue-100 text-blue-800";
+			default: return "bg-gray-100 text-gray-800";
+		}
+	};
+
 	// -------------------- UI STATES --------------------
 	if (loading)
 		return (
@@ -370,6 +380,7 @@ export default function LeadsPage() {
 										"Name",
 										"Contact",
 										"Status",
+										"Score",
 										"Source",
 										"Tags",
 										"Last Contact",
@@ -404,6 +415,11 @@ export default function LeadsPage() {
 										<td className="py-3 px-4">
 											<Badge className={getStatusColor(lead.status)}>
 												{lead.status || "Unknown"}
+											</Badge>
+										</td>
+										<td className="py-3 px-4">
+											<Badge className={getScoreColor(lead.scoreLabel)}>
+												{lead.scoreLabel || "Cold"} ({lead.score || 0})
 											</Badge>
 										</td>
 										<td className="py-3 px-4">

@@ -3,12 +3,27 @@ import { streamText, tool, convertToModelMessages } from "ai";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import UrlMaker from "@/hooks/url-maker";
+import { requireLead } from "@/lib/api/auth";
 
 export const maxDuration = 60; // Allow up to 60 seconds
 
 export async function POST(req: Request) {
 	try {
 		const { messages } = await req.json();
+		const lead = await requireLead();
+
+		// Save the user's incoming message to DB
+		const lastUserMessage = messages[messages.length - 1];
+		if (lastUserMessage && lastUserMessage.role === "user") {
+			await prisma.aIChatHistory.create({
+				data: {
+					leadId: lead.id,
+					channel: "website",
+					role: "user",
+					message: lastUserMessage.content || "",
+				}
+			});
+		}
 
 		const result = streamText({
 			model: openai("gpt-4o-mini"),
@@ -81,6 +96,36 @@ If the search returns no properties, apologize and say you can set up a custom a
 						}));
 					},
 				}),
+			},
+			onFinish: async ({ text, toolCalls, toolResults }) => {
+				// Save the AI's response to the DB
+				let finalMessage = text;
+				
+				// If the AI used a tool, we might want to append that context
+				if (toolResults && toolResults.length > 0) {
+					const result = toolResults[0] as any;
+					if (result && result.result && Array.isArray(result.result) && result.result.length > 0) {
+						finalMessage += `\n\n[Displayed ${result.result.length} properties]`;
+					} else {
+						finalMessage += `\n\n[Searched for properties but found none]`;
+					}
+				}
+
+				if (finalMessage) {
+					await prisma.aIChatHistory.create({
+						data: {
+							leadId: lead.id,
+							channel: "website",
+							role: "ai",
+							message: finalMessage,
+						}
+					});
+				}
+
+				// Recalculate score asynchronously after the chat interaction
+				import("@/lib/leads/services/scoring.service").then(({ recalculateLeadScore }) => {
+					recalculateLeadScore(lead.id);
+				});
 			},
 		});
 
