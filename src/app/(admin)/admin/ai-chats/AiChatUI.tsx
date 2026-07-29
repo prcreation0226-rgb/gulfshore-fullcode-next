@@ -26,13 +26,33 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 	const [searchTerm, setSearchTerm] = useState("");
 
 	const filteredLeadIds = leadIds.filter((leadId) => {
-		const lead = groupedChats[leadId].lead;
+		const thread = groupedChats[leadId];
+		const lead = thread.lead;
 		const name = `${lead.firstName || ''} ${lead.lastName || ''}`.toLowerCase();
 		const email = (lead.email || "").toLowerCase();
 		const phone = (lead.phone || "").toLowerCase();
 		const term = searchTerm.toLowerCase();
-		return name.includes(term) || email.includes(term) || phone.includes(term);
+		
+		const matchesSearch = name.includes(term) || email.includes(term) || phone.includes(term);
+		if (!matchesSearch) return false;
+
+		// Filter leads by channel
+		if (filter !== 'all') {
+			const hasChannelMessages = thread.messages.some((m: any) => m.channel === filter);
+			if (!hasChannelMessages) return false;
+		}
+
+		return true;
 	});
+
+	// Auto-select the first lead if the current selection is hidden by the filter
+	useEffect(() => {
+		if (selectedLeadId && !filteredLeadIds.includes(selectedLeadId)) {
+			setSelectedLeadId(filteredLeadIds.length > 0 ? filteredLeadIds[0] : null);
+		} else if (!selectedLeadId && filteredLeadIds.length > 0) {
+			setSelectedLeadId(filteredLeadIds[0]);
+		}
+	}, [filteredLeadIds, selectedLeadId]);
 
 	const selectedThread = selectedLeadId ? groupedChats[selectedLeadId] : null;
 	const messages = selectedThread ? [...selectedThread.messages].reverse() : [];
@@ -48,19 +68,32 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 	const channelIcon = (channel: string) => {
 		if (channel === 'sms') return <Smartphone className="w-4 h-4 text-blue-500" />;
 		if (channel === 'email') return <Mail className="w-4 h-4 text-orange-500" />;
-		return <Globe className="w-4 h-4 text-green-500" />;
+		return <Globe className="w-4 h-4 text-primary" />;
 	};
+
+	let pageTitle = "AI Conversations";
+	let pageDesc = "Manage and monitor all AI interactions.";
+	if (filter === 'website') {
+		pageTitle = "AI Chatbot";
+		pageDesc = "Manage all website AI Chatbot conversations.";
+	} else if (filter === 'sms') {
+		pageTitle = "AI SMS";
+		pageDesc = "Manage all AI SMS text conversations.";
+	} else if (filter === 'email') {
+		pageTitle = "AI Emails";
+		pageDesc = "Manage all AI Email thread conversations.";
+	}
 
 	return (
 		<div className="flex flex-col h-[calc(100vh-120px)] bg-gray-50/50 rounded-xl overflow-hidden border border-border/60 shadow-sm">
 			{/* Top Header */}
 			<div className="bg-white border-b border-border/50 px-6 py-4 flex items-center gap-3 shrink-0">
-				<div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-					<Bot className="w-6 h-6 text-primary" />
+				<div className="bg-primary/10 p-2 rounded-lg">
+					{filter === 'sms' ? <Smartphone className="w-5 h-5 text-green-600" /> : filter === 'email' ? <Mail className="w-5 h-5 text-orange-600" /> : <Bot className="w-5 h-5 text-primary" />}
 				</div>
 				<div>
-					<h1 className="text-xl font-bold text-gray-900">AI Conversations</h1>
-					<p className="text-sm text-muted-foreground">Manage and monitor all AI interactions.</p>
+					<h1 className="text-xl font-bold text-gray-900">{pageTitle}</h1>
+					<p className="text-sm text-muted-foreground">{pageDesc}</p>
 				</div>
 			</div>
 
@@ -161,33 +194,6 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 									</Link>
 								</div>
 								
-								{/* 3-Menu CRM Tabs */}
-								<div className="px-6 flex gap-6 border-t border-gray-100 overflow-x-auto no-scrollbar">
-									<button 
-										onClick={() => setFilter('all')} 
-										className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${filter === 'all' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-									>
-										All Timeline
-									</button>
-									<button 
-										onClick={() => setFilter('website')} 
-										className={`py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${filter === 'website' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-									>
-										<Globe className="w-4 h-4" /> Chatbot
-									</button>
-									<button 
-										onClick={() => setFilter('sms')} 
-										className={`py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${filter === 'sms' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-									>
-										<Smartphone className="w-4 h-4" /> SMS Chat
-									</button>
-									<button 
-										onClick={() => setFilter('email')} 
-										className={`py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${filter === 'email' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-									>
-										<Mail className="w-4 h-4" /> Email Thread
-									</button>
-								</div>
 							</div>
 
 							{/* Chat Messages */}
