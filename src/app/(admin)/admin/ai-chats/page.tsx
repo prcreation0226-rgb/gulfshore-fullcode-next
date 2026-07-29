@@ -1,6 +1,8 @@
 import prisma from "@/lib/prisma";
 import AiChatUI from "./AiChatUI";
 
+import { Suspense } from "react";
+
 export const dynamic = "force-dynamic";
 
 export default async function AIChatsPage() {
@@ -38,7 +40,9 @@ export default async function AIChatsPage() {
 
 	return (
 		<div className="p-4 md:p-6 w-full max-w-7xl mx-auto">
-			<AiChatUI groupedChats={groupedChats} leadIds={leadIds} />
+			<Suspense fallback={<div>Loading chats...</div>}>
+				<AiChatUI groupedChats={groupedChats} leadIds={leadIds} />
+			</Suspense>
 		</div>
 	);
 }

@@ -6,9 +6,14 @@ import { Bot, User, Clock, Smartphone, Mail, Globe, Search, ArrowLeft } from "lu
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 
+import { useSearchParams } from "next/navigation";
+
 export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any, leadIds: string[] }) {
+	const searchParams = useSearchParams();
+	const initialChannel = searchParams.get("channel") as any || "all";
+	
 	const [selectedLeadId, setSelectedLeadId] = useState<string | null>(leadIds[0] || null);
-	const [filter, setFilter] = useState<'all' | 'website' | 'sms' | 'email'>('all');
+	const [filter, setFilter] = useState<'all' | 'website' | 'sms' | 'email'>(initialChannel);
 	const [searchTerm, setSearchTerm] = useState("");
 
 	const filteredLeadIds = leadIds.filter((leadId) => {
