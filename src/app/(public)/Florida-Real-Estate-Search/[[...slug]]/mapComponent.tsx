@@ -116,23 +116,37 @@ export default function MapComponent({
 
 	// Auto-center map EXACTLY ONCE on city search change or initial property load
 	React.useEffect(() => {
-		if (hasCenteredRef.current) return;
+		if (hasCenteredRef.current || !mapRef.current) return;
 
-		const searchCity = filterParams?.city?.toUpperCase() || "";
-		if (searchCity && CITY_CENTERS[searchCity]) {
-			setCenter(CITY_CENTERS[searchCity]);
-			hasCenteredRef.current = true;
-		} else if (properties.length > 0) {
-			const firstWithCoords = properties.find((p: any) => p.Latitude && p.Longitude);
-			if (firstWithCoords) {
-				setCenter({
-					lat: Number(firstWithCoords.Latitude),
-					lng: Number(firstWithCoords.Longitude),
+		if (properties.length > 0) {
+			const bounds = new window.google.maps.LatLngBounds();
+			let hasValidCoords = false;
+			properties.forEach((p: any) => {
+				const lat = parseFloat(p.Latitude);
+				const lng = parseFloat(p.Longitude);
+				if (!isNaN(lat) && !isNaN(lng)) {
+					bounds.extend({ lat, lng });
+					hasValidCoords = true;
+				}
+			});
+			if (hasValidCoords) {
+				mapRef.current.fitBounds(bounds);
+				// Prevent it from zooming in too close for a single property
+				const listener = window.google.maps.event.addListenerOnce(mapRef.current, "bounds_changed", () => {
+					if (mapRef.current!.getZoom()! > 16) {
+						mapRef.current!.setZoom(16);
+					}
 				});
 				hasCenteredRef.current = true;
 			}
+		} else {
+			const searchCity = filterParams?.city?.toUpperCase() || "";
+			if (searchCity && CITY_CENTERS[searchCity]) {
+				setCenter(CITY_CENTERS[searchCity]);
+				hasCenteredRef.current = true;
+			}
 		}
-	}, [filterParams?.city, properties]);
+	}, [filterParams?.city, properties, isLoaded]);
 
 	const { isLoaded } = useJsApiLoader({
 		id: "google-map-script",
@@ -367,7 +381,7 @@ export default function MapComponent({
 	return (
 		<div className="h-full w-full grow relative rounded-xl">
 			{/* Unified Map controls dropdown card */}
-			<div className="absolute top-4 left-4 z-50 md:top-4 md:right-14 md:left-auto" ref={dropdownRef}>
+			<div className="absolute top-4 left-4 z-[60]" ref={dropdownRef}>
 				<button
 					onClick={() => setDropdownOpen(!dropdownOpen)}
 					className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-800 border border-gray-200 rounded-lg shadow-md font-medium text-sm hover:bg-gray-50 transition-colors cursor-pointer"

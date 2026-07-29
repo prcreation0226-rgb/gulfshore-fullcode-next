@@ -50,12 +50,7 @@ export default async function SearchListingPage({
 		redirect(`/Florida-Real-Estate-Search/${cityMatch}`);
 	}
 
-	// 3. Check if the query is a Zipcode (5 digits)
-	if (/^\d{5}$/.test(rawSlug)) {
-		redirect(`/Florida-Real-Estate-Search/postalCode-${rawSlug}`);
-	}
-
-	// 4. Check if it matches a Community Name in the DB
+	// 3. Check if it matches a Community Name in the DB
 	const communityMatch = await prisma.property.findFirst({
 		where: {
 			Community: {
@@ -75,7 +70,7 @@ export default async function SearchListingPage({
 		redirect(`/Florida-Real-Estate-Search/${citySlug}/${communitySlug}`);
 	}
 
-	// 5. Check if it matches a Property Address
+	// 4. Check if it matches a Property Address
 	const addressMatch = await prisma.property.findFirst({
 		where: {
 			FullAddress: {
@@ -94,6 +89,11 @@ export default async function SearchListingPage({
 				addressMatch.MLSNumber
 			)
 		);
+	}
+
+	// 5. Check if the query is a Zipcode (5 digits)
+	if (/^\d{5}$/.test(rawSlug)) {
+		redirect(`/Florida-Real-Estate-Search/postalCode-${rawSlug}`);
 	}
 
 	// 5b. Check if it matches a Subdivision Name in the DB
