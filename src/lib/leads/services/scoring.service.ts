@@ -19,7 +19,7 @@ export async function recalculateLeadScore(leadId: string): Promise<void> {
 		});
 
 		const savedPropertiesCount = await prisma.savedProperty.count({
-			where: { userId: leadId },
+			where: { leadId },
 		});
 
 		const savedSearchesCount = await prisma.savedSearch.count({

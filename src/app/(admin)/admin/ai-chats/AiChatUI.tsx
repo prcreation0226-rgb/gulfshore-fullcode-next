@@ -148,7 +148,7 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 										</span>
 									</div>
 									
-									{messages.filter((c: any) => c.message && c.message.trim().length > 0).map((chat: any) => (
+									{messages.map((chat: any) => (
 										<div key={chat.id} className={`flex flex-col ${chat.role === 'ai' ? 'items-end' : 'items-start'}`}>
 											<div className="flex items-center gap-1.5 mb-1 px-1">
 												{chat.role === 'user' ? (
@@ -170,7 +170,7 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 													: 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'
 												}`}
 											>
-												{chat.message}
+												{chat.message && chat.message.trim().length > 0 ? chat.message : <span className="text-gray-400 italic">No text provided</span>}
 											</div>
 											<span className="text-[10px] text-gray-400 mt-1.5 px-2 font-medium">
 												{new Date(chat.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
