@@ -18,10 +18,25 @@ export async function POST(req: Request) {
 
 		// If this is a standard Resend webhook, it might not contain the body. Fetch it using email_id
 		if (!textBody && data.email_id) {
-			console.log(`[Email Webhook] Text is missing. Fetching full email by ID: ${data.email_id}...`);
-			const emailResponse = await resend.emails.get(data.email_id);
-			if (emailResponse.data) {
-				textBody = emailResponse.data.text || emailResponse.data.html || "";
+			console.log(`[Email Webhook] Text is missing. Fetching full INBOUND email by ID: ${data.email_id}...`);
+			try {
+				// Inbound emails require the 'receiving' API endpoint in Resend
+				let emailResponse;
+				if ((resend.emails as any).receiving) {
+					emailResponse = await (resend.emails as any).receiving.get(data.email_id);
+				} else {
+					// Fallback if receiving is not typed but available on raw resend object
+					const res = await fetch(`https://api.resend.com/emails/${data.email_id}/receiving`, {
+						headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}` }
+					});
+					emailResponse = { data: await res.json() };
+				}
+				
+				if (emailResponse && emailResponse.data) {
+					textBody = emailResponse.data.text || emailResponse.data.html || "";
+				}
+			} catch (err) {
+				console.error("[Email Webhook] Error fetching inbound email body:", err);
 			}
 		}
 
