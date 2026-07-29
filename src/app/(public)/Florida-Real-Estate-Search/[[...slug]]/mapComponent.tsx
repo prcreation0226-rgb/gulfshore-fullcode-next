@@ -65,6 +65,15 @@ export default function MapComponent({
 	const dispatch = useAppDispatch();
 	const properties = useSelector(selectAllProperties);
 	const ui = useSelector(selectUi);
+	
+	const { isLoaded } = useJsApiLoader({
+		id: "google-map-script",
+		googleMapsApiKey:
+			process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+			"AIzaSyBQwpzlVeV9AI6FETYYUmLt730XEKRdfAY",
+	});
+
+	const mapRef = useRef<google.maps.Map | null>(null);
 
 	// Sync refs for stable debounce function
 	const filtersRef = useRef(ui.filters);
@@ -148,14 +157,7 @@ export default function MapComponent({
 		}
 	}, [filterParams?.city, properties, isLoaded]);
 
-	const { isLoaded } = useJsApiLoader({
-		id: "google-map-script",
-		googleMapsApiKey:
-			process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
-			"AIzaSyBQwpzlVeV9AI6FETYYUmLt730XEKRdfAY",
-	});
 
-	const mapRef = useRef<google.maps.Map | null>(null);
 
 	const handlemarkerClick = (property: any) => {
 		if (
