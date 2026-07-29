@@ -9,20 +9,24 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(req: Request) {
 	try {
 		const payload = await req.json();
+		console.log("[Email Webhook payload received]:", JSON.stringify(payload, null, 2));
 
 		// Resend Inbound Webhook format usually sends the email under 'text' or 'html'
 		// Example structure: { from: 'user@email.com', to: '...', subject: '...', text: '...' }
-		const fromEmail = payload.from || payload.sender;
-		const subject = payload.subject || "No Subject";
-		const textBody = payload.text || payload.html || "";
+		const fromEmail = payload.from || payload.sender || payload.From;
+		const subject = payload.subject || payload.Subject || "No Subject";
+		const textBody = payload.text || payload.html || payload.TextBody || payload.HtmlBody || "";
+		console.log(`[Email Webhook Parsed Data] From: ${fromEmail}, Subject: ${subject}, Text length: ${textBody?.length}`);
 
 		if (!fromEmail || !textBody) {
+			console.error("[Email Webhook Error] Missing fields. Parsed as:", { fromEmail, subject, text: textBody ? 'Present' : 'Missing' });
 			return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
 		}
 
 		// Clean the email address if it comes in format "Name <email@domain.com>"
 		const match = fromEmail.match(/<([^>]+)>/);
 		const cleanEmail = match ? match[1] : fromEmail.trim();
+		console.log(`[Email Webhook] Clean email: ${cleanEmail}`);
 
 		// Find the lead by email
 		let lead = await prisma.lead.findUnique({
