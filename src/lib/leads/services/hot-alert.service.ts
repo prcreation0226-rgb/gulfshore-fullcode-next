@@ -31,8 +31,8 @@ export async function checkAndSendHotLeadAlert(
 		
 		const recentViewsCount = await prisma.viewedProperty.count({
 			where: {
-				leadId,
-				createdAt: {
+				userId: leadId,
+				lastViewedAt: {
 					gte: lookbackDate
 				}
 			}
