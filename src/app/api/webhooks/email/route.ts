@@ -11,11 +11,20 @@ export async function POST(req: Request) {
 		const payload = await req.json();
 		console.log("[Email Webhook payload received]:", JSON.stringify(payload, null, 2));
 
-		// Resend Inbound Webhook format usually sends the email under 'text' or 'html'
-		// Example structure: { from: 'user@email.com', to: '...', subject: '...', text: '...' }
-		const fromEmail = payload.from || payload.sender || payload.From;
-		const subject = payload.subject || payload.Subject || "No Subject";
-		const textBody = payload.text || payload.html || payload.TextBody || payload.HtmlBody || "";
+		const data = payload.data || payload;
+		const fromEmail = data.from || data.sender || data.From;
+		const subject = data.subject || data.Subject || "No Subject";
+		let textBody = data.text || data.html || data.TextBody || data.HtmlBody || "";
+
+		// If this is a standard Resend webhook, it might not contain the body. Fetch it using email_id
+		if (!textBody && data.email_id) {
+			console.log(`[Email Webhook] Text is missing. Fetching full email by ID: ${data.email_id}...`);
+			const emailResponse = await resend.emails.get(data.email_id);
+			if (emailResponse.data) {
+				textBody = emailResponse.data.text || emailResponse.data.html || "";
+			}
+		}
+
 		console.log(`[Email Webhook Parsed Data] From: ${fromEmail}, Subject: ${subject}, Text length: ${textBody?.length}`);
 
 		if (!fromEmail || !textBody) {
