@@ -148,7 +148,7 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 										</span>
 									</div>
 									
-									{messages.map((chat: any) => (
+									{messages.filter((c: any) => c.role === 'ai' || (c.message && c.message.trim().length > 0)).map((chat: any) => (
 										<div key={chat.id} className={`flex flex-col ${chat.role === 'ai' ? 'items-end' : 'items-start'}`}>
 											<div className="flex items-center gap-1.5 mb-1 px-1">
 												{chat.role === 'user' ? (
