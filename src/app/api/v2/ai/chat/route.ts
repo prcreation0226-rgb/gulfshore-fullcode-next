@@ -15,10 +15,19 @@ export async function POST(req: Request) {
 		// Save the user's incoming message to DB
 		const lastUserMessage = messages[messages.length - 1];
 		if (lastUserMessage && lastUserMessage.role === "user") {
-			let messageText = lastUserMessage.content || "";
-			if (!messageText && lastUserMessage.parts) {
+			let messageText = "";
+			
+			if (typeof lastUserMessage.content === "string") {
+				messageText = lastUserMessage.content;
+			} else if (Array.isArray(lastUserMessage.content)) {
+				// Sometimes content is an array of parts
+				messageText = lastUserMessage.content.map((p: any) => p.text || "").join("");
+			}
+			
+			if (!messageText && lastUserMessage.parts && Array.isArray(lastUserMessage.parts)) {
 				messageText = lastUserMessage.parts.map((p: any) => p.text || "").join("");
 			}
+			
 			await prisma.aIChatHistory.create({
 				data: {
 					leadId: lead.id,

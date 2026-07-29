@@ -29,9 +29,6 @@ export default function AiChatUI({ groupedChats, leadIds }: { groupedChats: any,
 	const messages = selectedThread ? [...selectedThread.messages].reverse() : [];
 	
 	const filteredMessages = messages.filter((c: any) => {
-		// Filter out empty system messages
-		if (c.role !== 'ai' && (!c.message || c.message.trim().length === 0)) return false;
-		
 		// Apply channel filter
 		if (filter !== 'all') {
 			return c.channel === filter;

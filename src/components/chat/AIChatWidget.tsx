@@ -94,8 +94,9 @@ export default function AIChatWidget() {
 											: "bg-white text-gray-800 border border-gray-100 rounded-tl-sm"
 									}`}
 								>
+									{m.content && <span>{m.content}</span>}
 									{m.parts?.map((part, index) => {
-										if (part.type === "text") {
+										if (part.type === "text" && !m.content) {
 											return <span key={index}>{part.text}</span>;
 										}
 										if (part.type === "tool-searchProperties" && "output" in part && part.output) {
