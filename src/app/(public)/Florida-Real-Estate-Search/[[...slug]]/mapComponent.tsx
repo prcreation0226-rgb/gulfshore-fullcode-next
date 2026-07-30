@@ -245,7 +245,7 @@ export default function MapComponent({
 					const minY = originShift - (coord.y + 1) * tileWidth;
 					const maxY = originShift - coord.y * tileWidth;
 					const bbox = `${minX},${minY},${maxX},${maxY}`;
-					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=3857&layers=show%3A28&size=256,256&imageSR=3857&format=png8&transparent=true&f=image`;
+					return `/api/fema?bbox=${bbox}`;
 				},
 				tileSize: new google.maps.Size(256, 256),
 				opacity: 0.65,
