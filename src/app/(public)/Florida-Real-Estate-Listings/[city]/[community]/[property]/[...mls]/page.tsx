@@ -75,9 +75,16 @@ export default async function Listing({
 		);
 	}
 
-	const media = (property.images ?? (property as any)?.raw?.Media) as any;
+	let media = (property.images ?? (property as any)?.raw?.Media) as any;
+	if (typeof media === 'string') {
+		try {
+			media = JSON.parse(media);
+		} catch (e) {
+			media = [];
+		}
+	}
 	let images: string[] = [];
-	if (media && media.length > 0) {
+	if (media && Array.isArray(media) && media.length > 0) {
 		images = media
 			.filter((item: any) => item.MediaCategory === "Photo")
 			.map((item: any) => item.MediaURL);
