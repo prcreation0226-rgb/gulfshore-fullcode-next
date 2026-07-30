@@ -24,18 +24,42 @@ export async function GET(req: NextRequest) {
 			},
 		});
 
-		// Dynamic timestamps relative to current system time
-		const formatTime = (offsetMinutes: number) => {
-			const d = new Date();
-			d.setMinutes(d.getMinutes() - offsetMinutes);
-			return d.toISOString().replace("T", " ").substring(0, 19);
+		// Fetch real last run times by checking the most recent updates in relevant tables
+		const latestProperty = await prisma.property.findFirst({
+			orderBy: { updatedAt: "desc" },
+			select: { updatedAt: true },
+		});
+		const latestSavedSearch = await prisma.savedSearch.findFirst({
+			orderBy: { updatedAt: "desc" },
+			select: { updatedAt: true },
+		});
+		const latestViewed = await prisma.viewedProperty.findFirst({
+			orderBy: { lastViewedAt: "desc" },
+			select: { lastViewedAt: true },
+		});
+		const latestSocial = await prisma.campaignClick.findFirst({
+			orderBy: { createdAt: "desc" },
+			select: { createdAt: true },
+		});
+
+		const formatDate = (date: Date | undefined | null) => {
+			if (!date) return "Never";
+			// convert to YYYY-MM-DD HH:MM:SS format based on server time
+			return new Date(date).toISOString().replace("T", " ").substring(0, 19);
 		};
 
-		const formatNextTime = (offsetMinutes: number) => {
-			const d = new Date();
+		const formatNextTime = (offsetMinutes: number, lastDateStr: string) => {
+			if (lastDateStr === "Never") return "Pending";
+			const d = new Date(lastDateStr.replace(" ", "T") + "Z");
+			if (isNaN(d.getTime())) return "Pending";
 			d.setMinutes(d.getMinutes() + offsetMinutes);
 			return d.toISOString().replace("T", " ").substring(0, 19);
 		};
+
+		const mlsLastRun = formatDate(latestProperty?.updatedAt);
+		const priceDropLastRun = formatDate(latestSavedSearch?.updatedAt);
+		const viewsLastRun = formatDate(latestViewed?.lastViewedAt);
+		const socialLastRun = formatDate(latestSocial?.createdAt);
 
 		const automations = [
 			{
@@ -43,12 +67,12 @@ export async function GET(req: NextRequest) {
 				name: "MLS Data Sync",
 				description: "Synchronizes property data from MLS feed",
 				status: "running",
-				lastRun: formatTime(15), // 15 mins ago
-				nextRun: formatNextTime(225), // Every 4 hours
+				lastRun: mlsLastRun,
+				nextRun: formatNextTime(240, mlsLastRun), // Every 4 hours
 				frequency: "Every 4 hours",
 				successRate: "99.8%",
 				lastResult: "success",
-				recordsProcessed: propertyCount || 10200,
+				recordsProcessed: propertyCount || 0,
 				type: "mls",
 			},
 			{
@@ -56,12 +80,12 @@ export async function GET(req: NextRequest) {
 				name: "Price Drop Notifications",
 				description: "Sends notifications when property prices drop",
 				status: "running",
-				lastRun: formatTime(180),
-				nextRun: formatNextTime(1260), // Daily
+				lastRun: priceDropLastRun,
+				nextRun: formatNextTime(1440, priceDropLastRun), // Daily
 				frequency: "Daily",
 				successRate: "99.2%",
 				lastResult: "success",
-				recordsProcessed: savedPropertyCount || 12,
+				recordsProcessed: savedPropertyCount || 0,
 				type: "mls",
 			},
 			{
@@ -69,12 +93,12 @@ export async function GET(req: NextRequest) {
 				name: "New Listing Alerts",
 				description: "Notifies users about new property listings",
 				status: "running",
-				lastRun: formatTime(45),
-				nextRun: formatNextTime(75),
+				lastRun: mlsLastRun,
+				nextRun: formatNextTime(120, mlsLastRun),
 				frequency: "Every 2 hours",
 				successRate: "98.5%",
 				lastResult: "success",
-				recordsProcessed: newListingsCount || 4,
+				recordsProcessed: newListingsCount || 0,
 				type: "mls",
 			},
 			{
@@ -82,12 +106,12 @@ export async function GET(req: NextRequest) {
 				name: "User Engagement Tracking",
 				description: "Tracks user property views and interactions",
 				status: "running",
-				lastRun: formatTime(5),
-				nextRun: formatNextTime(55),
+				lastRun: viewsLastRun,
+				nextRun: formatNextTime(60, viewsLastRun),
 				frequency: "Hourly",
 				successRate: "100%",
 				lastResult: "success",
-				recordsProcessed: viewedPropertyCount || 8,
+				recordsProcessed: viewedPropertyCount || 0,
 				type: "mls",
 			},
 			{
@@ -95,12 +119,12 @@ export async function GET(req: NextRequest) {
 				name: "Social Media Auto-Post",
 				description: "Automatically shares new properties and price drops on Facebook & Instagram",
 				status: "running",
-				lastRun: formatTime(30),
+				lastRun: socialLastRun,
 				nextRun: "Upon new listing detection",
 				frequency: "Real-time",
 				successRate: "100%",
 				lastResult: "success",
-				recordsProcessed: socialClicksCount || 1,
+				recordsProcessed: socialClicksCount || 0,
 				type: "social",
 			},
 		];
