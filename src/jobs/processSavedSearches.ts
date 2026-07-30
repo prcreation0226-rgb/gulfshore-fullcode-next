@@ -32,7 +32,88 @@ export async function processSavedSearches() {
 				: new Date(Date.now() - 24 * 60 * 60 * 1000);
 
 			const filtersObj = search.filters as any;
-			const baseWhere = buildQueryFromFilters(filtersObj || {});
+			const searchParams = buildQueryFromFilters(filtersObj || {});
+			
+			// Build proper Prisma where clause from searchParams
+			const baseWhere: any = {};
+			
+			// Price Range
+			const minPrice = searchParams.get("minPrice") ? Number(searchParams.get("minPrice")) : null;
+			const maxPrice = searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : null;
+			if (minPrice !== null || maxPrice !== null) {
+				baseWhere.ListPrice = {};
+				if (minPrice !== null) baseWhere.ListPrice.gte = minPrice;
+				if (maxPrice !== null) baseWhere.ListPrice.lte = maxPrice;
+			}
+			
+			// Locations
+			if (searchParams.get("city")) baseWhere.City = { contains: searchParams.get("city")! };
+			if (searchParams.get("postalCode")) baseWhere.PostalCode = searchParams.get("postalCode")!;
+			if (searchParams.get("MLSNumber")) baseWhere.MLSNumber = searchParams.get("MLSNumber")!;
+			if (searchParams.get("development")) baseWhere.Development = { contains: searchParams.get("development")! };
+			if (searchParams.get("developmentName")) baseWhere.Community = { contains: searchParams.get("developmentName")! };
+			
+			// Beds / Baths
+			const bedsParam = searchParams.get("beds");
+			if (bedsParam) baseWhere.BedroomsTotal = { gte: parseInt(bedsParam) };
+			const bathsParam = searchParams.get("baths");
+			if (bathsParam) baseWhere.BathroomsFull = { gte: parseInt(bathsParam) };
+			
+			// Acres
+			const minAcres = searchParams.get("minAcres") ? parseFloat(searchParams.get("minAcres")!) : null;
+			const maxAcres = searchParams.get("maxAcres") ? parseFloat(searchParams.get("maxAcres")!) : null;
+			if (minAcres !== null || maxAcres !== null) {
+				baseWhere.LotSizeAcres = {};
+				if (minAcres !== null) baseWhere.LotSizeAcres.gte = minAcres;
+				if (maxAcres !== null) baseWhere.LotSizeAcres.lte = maxAcres;
+			}
+			
+			// Year Built
+			const builtYearMin = searchParams.get("builtYearMin") ? parseInt(searchParams.get("builtYearMin")!) : null;
+			const builtYearMax = searchParams.get("builtYearMax") ? parseInt(searchParams.get("builtYearMax")!) : null;
+			if (builtYearMin !== null || builtYearMax !== null) {
+				baseWhere.YearBuilt = {};
+				if (builtYearMin !== null) baseWhere.YearBuilt.gte = builtYearMin;
+				if (builtYearMax !== null) baseWhere.YearBuilt.lte = builtYearMax;
+			}
+			
+			// Bounding Box
+			if (searchParams.get("north") && searchParams.get("south") && searchParams.get("east") && searchParams.get("west")) {
+				baseWhere.AND = [
+					{ Latitude: { gte: parseFloat(searchParams.get("south")!), lte: parseFloat(searchParams.get("north")!) } },
+					{ Longitude: { gte: parseFloat(searchParams.get("west")!), lte: parseFloat(searchParams.get("east")!) } },
+				];
+			}
+
+			// Features
+			const featuresRaw = searchParams.get("features") || "";
+			const features = featuresRaw ? featuresRaw.split(",").map((f: string) => f.trim().toLowerCase()) : searchParams.getAll("features[]").map((f: string) => f.toLowerCase());
+			if (features.length > 0) {
+				if (features.some((f: string) => f.includes("spa"))) baseWhere.SpaYN = true;
+				if (features.some((f: string) => f.includes("waterfront"))) baseWhere.WaterfrontYN = true;
+				if (features.some((f: string) => f.includes("pool"))) baseWhere.PoolPrivateYN = true;
+				if (features.some((f: string) => f.includes("gulf"))) baseWhere.GulfAccessYN = true;
+				if (features.some((f: string) => f.includes("garage"))) baseWhere.GarageYN = true;
+			}
+			if (searchParams.get("hoa") === "yes") baseWhere.WaterfrontYN = { not: null };
+			
+			// Property Types
+			const types = searchParams.get("propertyTypes") ? searchParams.get("propertyTypes")!.split(",") : [];
+			if (types.length > 0) {
+				const orConditions: any[] = [];
+				if (types.includes("Homes") || types.includes("homes") || types.includes("Single Family")) {
+					orConditions.push({ PropertySubType: "Single Family Residence" });
+				}
+				if (types.includes("Condos") || types.includes("condos")) {
+					orConditions.push({ PropertySubType: { in: ["Low Rise (1-3)", "Mid Rise (4-7)", "High Rise (8+)", "Townhouse"] } });
+				}
+				if (types.includes("Lots") || types.includes("Residential-Lots") || types.includes("lots")) {
+					orConditions.push({ PropertyType: "Land" });
+				}
+				if (orConditions.length > 0) {
+					baseWhere.OR = orConditions;
+				}
+			}
 
 			const finalWhere = {
 				...baseWhere,
