@@ -1,15 +1,22 @@
 import prisma from "@/lib/prisma";
 import { sendSMS } from "@/lib/twilio";
 import { buildQueryFromFilters } from "@/lib/search-filters";
+import { sendPropertyAlert } from "@/lib/leads/services/property-alerts";
 
 /**
  * Checks for new properties matching saved searches and sends SMS/Email alerts.
+ * Also sends a generic "Top New Listing" daily blast to all other leads.
  */
 export async function processSavedSearches() {
-	console.log("[SavedSearch] Starting to process saved searches...");
+	console.log("[SavedSearch] Starting to process saved searches & generic alerts...");
 
 	try {
-		// 1. Find all saved searches that have notifications enabled
+		// Keep track of leads who received personalized alerts so we don't double-email them
+		const alertedLeadIds = new Set<string>();
+
+		// ---------------------------------------------------------
+		// 1. PERSONALIZED ALERTS (Saved Searches)
+		// ---------------------------------------------------------
 		const activeSearches = await prisma.savedSearch.findMany({
 			where: { notify: true },
 			include: { user: true },
@@ -17,69 +24,124 @@ export async function processSavedSearches() {
 
 		for (const search of activeSearches) {
 			const lead = search.user;
-			if (!lead || !lead.phone) continue; // Need phone for SMS
+			if (!lead) continue;
 
-			// 2. We only want properties synced SINCE the last time we checked this search.
-			// If it's never been checked, check last 24 hours.
+			// Look back 24 hours if never checked
 			const lookbackDate = search.lastNotifiedAt
 				? search.lastNotifiedAt
 				: new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-			// 3. Build the Prisma where clause from the saved JSON filters
 			const filtersObj = search.filters as any;
 			const baseWhere = buildQueryFromFilters(filtersObj || {});
 
-			// 4. Combine base filters with our time constraint and status Active
 			const finalWhere = {
 				...baseWhere,
 				StandardStatus: "Active",
-				createdAt: { gt: lookbackDate }, // Must be newly added to our DB
+				createdAt: { gt: lookbackDate },
 			};
 
-			// 5. Query matching new properties
 			const matchingProperties = await prisma.property.findMany({
 				where: finalWhere,
-				take: 5, // We just need to know if there's at least 1, but let's grab a few for the message
-				select: {
-					BedroomsTotal: true,
-					BathroomsTotalInteger: true,
-					PoolPrivateYN: true,
-					ListPrice: true,
-				},
+				take: 1, // Get the top match
 			});
 
 			if (matchingProperties.length > 0) {
 				const prop = matchingProperties[0];
 				
-				// Format price e.g. 1500000 -> 1.5 Million
+				// FORMAT SMS
 				let priceStr = prop.ListPrice ? `$${prop.ListPrice.toLocaleString()}` : "Price TBD";
 				if (prop.ListPrice && prop.ListPrice >= 1000000) {
 					priceStr = `${(prop.ListPrice / 1000000).toFixed(1)} Million`;
 				}
-
 				const beds = prop.BedroomsTotal || "2+";
 				const baths = prop.BathroomsTotalInteger || "2+";
 				const poolStr = prop.PoolPrivateYN ? "pool home" : "home";
 
-				// Custom Message Format requested by client
-				const defaultTitle = `${beds} bedroom ${baths} bath ${poolStr} under ${priceStr}`;
-				const searchTitle = search.name && search.name !== "Saved Search" ? search.name : defaultTitle;
-				const message = `Dimitri Schwarz 239.992.9119 GulfShoreGroup.com - ${searchTitle} - New Listing`;
+				const searchTitle = search.name && search.name !== "Saved Search" ? search.name : `${beds} bed ${baths} bath ${poolStr} under ${priceStr}`;
+				const smsMessage = `Dimitri Schwarz 239.992.9119 GulfShoreGroup.com - ${searchTitle} - New Listing`;
 
-				console.log(`[SavedSearch] Match found for Lead ${lead.email}. Sending SMS: "${message}"`);
-				
-				// Send SMS
-				await sendSMS(lead.phone, message);
+				// SEND SMS
+				if (lead.phone) {
+					console.log(`[SavedSearch] Match found for Lead ${lead.email}. Sending SMS.`);
+					await sendSMS(lead.phone, smsMessage).catch(err => console.error("SMS Error:", err));
+				}
 
-				// 6. Update lastNotifiedAt
+				// SEND EMAIL
+				if (lead.email) {
+					console.log(`[SavedSearch] Sending Email to ${lead.email}.`);
+					await sendPropertyAlert({
+						to: lead.email,
+						recipientName: lead.firstName || "Valued Client",
+						subject: `New Property Match: ${searchTitle}`,
+						alertTitle: "A New Home Matching Your Search",
+						alertSubtitle: `We found a new ${poolStr} in ${prop.City} that matches your saved preferences.`,
+						properties: prop as any,
+					}).catch(err => console.error("Email Error:", err));
+				}
+
+				alertedLeadIds.add(lead.id);
+
+				// Update lastNotifiedAt
 				await prisma.savedSearch.update({
 					where: { id: search.id },
 					data: { lastNotifiedAt: new Date() },
 				});
 			}
 		}
+
+		// ---------------------------------------------------------
+		// 2. GENERIC BLAST TO ALL OTHER LEADS (Once a day at ~10 AM EDT / 14:00 UTC)
+		// ---------------------------------------------------------
+		const currentUTCHour = new Date().getUTCHours();
+		const isDailyBlastHour = currentUTCHour === 14; 
 		
-		console.log("[SavedSearch] Finished processing saved searches.");
+		// If it's the daily blast hour, send to everyone else
+		if (isDailyBlastHour) {
+			console.log("[SavedSearch] Running Daily Generic Blast for all other leads...");
+			
+			// Find the absolute newest active property from the last 24 hours
+			const newestProperty = await prisma.property.findFirst({
+				where: { 
+					StandardStatus: "Active",
+					createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) } 
+				},
+				orderBy: { createdAt: 'desc' }
+			});
+
+			if (newestProperty) {
+				const allLeads = await prisma.lead.findMany({
+					where: {
+						id: { notIn: Array.from(alertedLeadIds) }, // Skip leads who already got a personalized alert today
+					}
+				});
+
+				for (const lead of allLeads) {
+					// SEND SMS (Generic)
+					if (lead.phone) {
+						let priceStr = newestProperty.ListPrice ? `$${newestProperty.ListPrice.toLocaleString()}` : "";
+						const smsMessage = `Dimitri Schwarz 239.992.9119 GulfShoreGroup.com - Featured New Listing in ${newestProperty.City} ${priceStr}`;
+						await sendSMS(lead.phone, smsMessage).catch(err => console.error("SMS Error:", err));
+					}
+
+					// SEND EMAIL (Generic)
+					if (lead.email) {
+						await sendPropertyAlert({
+							to: lead.email,
+							recipientName: lead.firstName || "Valued Client",
+							subject: `Featured New Listing in ${newestProperty.City}`,
+							alertTitle: "A Naples Area Home for You",
+							alertSubtitle: `Here is a brand new listing we think you'll love.`,
+							properties: newestProperty as any,
+						}).catch(err => console.error("Email Error:", err));
+					}
+				}
+				console.log(`[SavedSearch] Sent generic daily blast to ${allLeads.length} leads.`);
+			} else {
+				console.log("[SavedSearch] No new properties in the last 24h for the generic blast.");
+			}
+		}
+
+		console.log("[SavedSearch] Finished processing saved searches and alerts.");
 	} catch (error) {
 		console.error("[SavedSearch] Error processing searches:", error);
 	}
