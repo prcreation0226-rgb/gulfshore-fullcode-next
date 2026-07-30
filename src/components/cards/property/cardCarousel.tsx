@@ -94,12 +94,12 @@ export default function CardCarousel({
 							<CarouselPrevious
 								variant="outline"
 								size="icon"
-								className="left-2 cursor-pointer bg-white/80 hover:bg-white text-black border-0 shadow-sm top-1/2 md:left-2 h-8 w-8"
+								className="left-2 z-20 cursor-pointer bg-white/90 hover:bg-white text-black border-0 shadow-sm top-1/2 md:left-2 h-8 w-8"
 							/>
 							<CarouselNext
 								variant="outline"
 								size="icon"
-								className="right-2 cursor-pointer bg-white/80 hover:bg-white text-black border-0 shadow-sm top-1/2 md:right-2 h-8 w-8"
+								className="right-2 z-20 cursor-pointer bg-white/90 hover:bg-white text-black border-0 shadow-sm top-1/2 md:right-2 h-8 w-8"
 							/>
 						</div>
 					</Carousel>
@@ -136,8 +136,8 @@ export default function CardCarousel({
 						e.preventDefault();
 						e.stopPropagation();
 					}}
-					className="absolute z-1 top-3 right-3 flex gap-2">
-					<div className="flex gap-2 opacity-90 group-hover:opacity-100 transition-opacity duration-300">
+					className="absolute z-20 top-3 right-3 flex gap-2">
+					<div className="flex gap-2 opacity-100 transition-opacity duration-300">
 						<TooltipProvider>
 							<Tooltip>
 								<TooltipTrigger asChild>
