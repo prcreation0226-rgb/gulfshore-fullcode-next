@@ -46,12 +46,12 @@ export async function processSavedSearches() {
 				if (maxPrice !== null) baseWhere.ListPrice.lte = maxPrice;
 			}
 			
-			// Locations
-			if (searchParams.get("city")) baseWhere.City = { contains: searchParams.get("city")! };
-			if (searchParams.get("postalCode")) baseWhere.PostalCode = searchParams.get("postalCode")!;
-			if (searchParams.get("MLSNumber")) baseWhere.MLSNumber = searchParams.get("MLSNumber")!;
-			if (searchParams.get("development")) baseWhere.Development = { contains: searchParams.get("development")! };
-			if (searchParams.get("developmentName")) baseWhere.Community = { contains: searchParams.get("developmentName")! };
+			// Locations (Read directly from filtersObj since buildQueryFromFilters strips them)
+			if (filtersObj.city) baseWhere.City = { contains: filtersObj.city.replace(/-/g, ' ') };
+			if (filtersObj.postalCode) baseWhere.PostalCode = filtersObj.postalCode;
+			if (filtersObj.mls || filtersObj.MLSNumber) baseWhere.MLSNumber = filtersObj.mls || filtersObj.MLSNumber;
+			if (filtersObj.subdivision) baseWhere.Development = { contains: filtersObj.subdivision };
+			if (filtersObj.developmentName) baseWhere.Community = { contains: filtersObj.developmentName.replace(/-/g, ' ') };
 			
 			// Beds / Baths
 			const bedsParam = searchParams.get("beds");
@@ -78,10 +78,10 @@ export async function processSavedSearches() {
 			}
 			
 			// Bounding Box
-			if (searchParams.get("north") && searchParams.get("south") && searchParams.get("east") && searchParams.get("west")) {
+			if (filtersObj.north && filtersObj.south && filtersObj.east && filtersObj.west) {
 				baseWhere.AND = [
-					{ Latitude: { gte: parseFloat(searchParams.get("south")!), lte: parseFloat(searchParams.get("north")!) } },
-					{ Longitude: { gte: parseFloat(searchParams.get("west")!), lte: parseFloat(searchParams.get("east")!) } },
+					{ Latitude: { gte: parseFloat(String(filtersObj.south)), lte: parseFloat(String(filtersObj.north)) } },
+					{ Longitude: { gte: parseFloat(String(filtersObj.west)), lte: parseFloat(String(filtersObj.east)) } },
 				];
 			}
 
