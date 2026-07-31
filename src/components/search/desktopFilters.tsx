@@ -373,7 +373,6 @@ export const Filters = ({
 		handleSaveSearch(nextUrl);
 		dispatch(setFilters(nextFilters));
 		router.replace(nextUrl, { scroll: false });
-		dispatch(fetchProperties());
 		scrollResultsToTop();
 		setOpen(false);
 	};
