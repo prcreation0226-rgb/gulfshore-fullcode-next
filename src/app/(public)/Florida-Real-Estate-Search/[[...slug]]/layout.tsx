@@ -118,11 +118,11 @@ export default async function RootLayout({
 	return (
 		<>
 			<StickySearchBar />
-			<div className="h-[calc(100vh-180px)] md:h-[calc(100vh-180px)]">
+			<div className="w-full">
 				<SearchLayoutClient filterParams={filtersParams}>
 						<div
 							id="container"
-							className="h-full flex-col flex overflow-x-hidden w-full gap-2">
+							className="h-full flex-col flex w-full gap-2">
 							<div className="w-11/12 max-w-[1600px] pt-6 mx-auto mb-4">
 								<h1 className="lg:text-xl text-lg font-medium text-primary">
 									{seoData?.heading ||
@@ -177,7 +177,7 @@ export default async function RootLayout({
 																</h2>
 															</div>
 
-															<div className="prose prose-gray max-w-none lg:max-h-[480px] overflow-y-auto">
+															<div className="prose prose-gray max-w-none">
 																<ReadMore className="text-gray-500 leading-relaxed">
 																	{seoData?.content?.infoText && seoData.content.infoText.trim().length > 0
 																		? seoData.content.infoText
