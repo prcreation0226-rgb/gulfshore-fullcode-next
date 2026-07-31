@@ -136,7 +136,7 @@ export default function PropertySection({
 	});
 
 	return (
-		<div className="w-full max-w-11/12 lg:max-w-4/5 mx-auto">
+		<div className="w-full max-w-11/12 lg:max-w-4/5 mx-auto px-6 md:px-10">
 			{props && <div>{props}</div>}
 
 			<Suspense
@@ -196,8 +196,8 @@ export default function PropertySection({
 						</Link>
 					</CarouselContent>
 
-					<CarouselPrevious className="h-10 w-10 md:w-12 md:h-12 bg-accent" />
-					<CarouselNext className="h-10 w-10 md:w-12 md:h-12 bg-accent" />
+					<CarouselPrevious className="hidden md:flex md:w-12 md:h-12 bg-accent" />
+					<CarouselNext className="hidden md:flex md:w-12 md:h-12 bg-accent" />
 				</Carousel>
 			</Suspense>
 		</div>
