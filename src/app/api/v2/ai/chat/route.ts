@@ -48,7 +48,8 @@ Key qualifying questions you should naturally weave into the conversation:
 3. Are they looking to buy, sell, or both?
 
 Always be concise. Do not write long paragraphs. 
-If the user asks for properties matching specific criteria, ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
+If the user asks for properties matching specific criteria (like address, MLS number, city, beds, baths, price, property type, pool, waterfront), ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
+If they provide a specific address (e.g., "5100 Seagrass"), use the address parameter in the tool.
 If the search returns no properties, apologize and say you can set up a custom alert for them.`,
 			messages: await convertToModelMessages(messages),
 			tools: {
@@ -57,18 +58,40 @@ If the search returns no properties, apologize and say you can set up a custom a
 					description: "Search the real estate database for active properties matching the user's criteria. Use this whenever the user asks to see homes, properties, or listings.",
 					parameters: z.object({
 						city: z.string().optional().describe("City name, e.g., Naples, Bonita Springs"),
+						address: z.string().optional().describe("Street address or part of an address to search for (e.g., '5100 Seagrass Blvd')."),
+						propertyType: z.string().optional().describe("Type of property (e.g., 'Single Family', 'Condo', 'Townhouse')"),
+						community: z.string().optional().describe("Name of the community or subdivision"),
+						subdivision: z.string().optional().describe("Name of the subdivision"),
+						mlsNumber: z.string().optional().describe("MLS Number of the listing"),
 						minPrice: z.number().optional().describe("Minimum price in dollars"),
 						maxPrice: z.number().optional().describe("Maximum price in dollars"),
 						beds: z.number().optional().describe("Minimum number of bedrooms"),
 						baths: z.number().optional().describe("Minimum number of bathrooms"),
 						hasPool: z.boolean().optional().describe("Whether the property must have a private pool"),
+						waterfront: z.boolean().optional().describe("Whether the property must be waterfront"),
+						gulfAccess: z.boolean().optional().describe("Whether the property must have gulf access"),
+						newConstruction: z.boolean().optional().describe("Whether the property is new construction"),
+						zipCode: z.string().optional().describe("Postal/Zip code"),
+						garage: z.boolean().optional().describe("Whether the property must have a garage"),
+						spa: z.boolean().optional().describe("Whether the property must have a spa"),
+						minAcres: z.number().optional().describe("Minimum lot size in acres"),
+						maxAcres: z.number().optional().describe("Maximum lot size in acres"),
+						minYearBuilt: z.number().optional().describe("Minimum year built"),
+						maxYearBuilt: z.number().optional().describe("Maximum year built"),
+						maxHoaFee: z.number().optional().describe("Maximum HOA fee per month"),
 					}),
 					// @ts-ignore
 					execute: async (args: any) => {
-						const { city, minPrice, maxPrice, beds, baths, hasPool } = args;
+						const { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa, minAcres, maxAcres, minYearBuilt, maxYearBuilt, maxHoaFee } = args;
 						const where: any = { StandardStatus: "Active" };
 						
 						if (city) where.City = { contains: city };
+						if (address) where.FullAddress = { contains: address };
+						if (propertyType) where.PropertyType = { contains: propertyType };
+						if (community) where.Community = { contains: community };
+						if (subdivision) where.SubdivisionName = { contains: subdivision };
+						if (mlsNumber) where.MLSNumber = mlsNumber;
+						if (zipCode) where.PostalCode = zipCode;
 						if (minPrice || maxPrice) {
 							where.ListPrice = {};
 							if (minPrice) where.ListPrice.gte = minPrice;
@@ -76,7 +99,23 @@ If the search returns no properties, apologize and say you can set up a custom a
 						}
 						if (beds) where.BedroomsTotal = { gte: beds };
 						if (baths) where.BathroomsTotalInteger = { gte: baths };
+						if (minAcres || maxAcres) {
+							where.LotSizeAcres = {};
+							if (minAcres) where.LotSizeAcres.gte = minAcres;
+							if (maxAcres) where.LotSizeAcres.lte = maxAcres;
+						}
+						if (minYearBuilt || maxYearBuilt) {
+							where.YearBuilt = {};
+							if (minYearBuilt) where.YearBuilt.gte = minYearBuilt;
+							if (maxYearBuilt) where.YearBuilt.lte = maxYearBuilt;
+						}
+						if (maxHoaFee) where.HOAFee = { lte: maxHoaFee };
 						if (hasPool !== undefined) where.PoolPrivateYN = hasPool;
+						if (waterfront !== undefined) where.WaterfrontYN = waterfront;
+						if (gulfAccess !== undefined) where.GulfAccessYN = gulfAccess;
+						if (newConstruction !== undefined) where.NewConstructionYN = newConstruction;
+						if (garage !== undefined) where.GarageYN = garage;
+						if (spa !== undefined) where.SpaYN = spa;
 
 						const properties = await prisma.property.findMany({
 							where,
