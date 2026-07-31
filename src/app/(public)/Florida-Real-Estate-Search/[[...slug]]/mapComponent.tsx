@@ -238,7 +238,18 @@ export default function MapComponent({
 				getTileUrl: (coord, zoom) => {
 					// FEMA NFHL Tiles only render at zoom level 12 or higher to save bandwidth.
 					if (zoom < 11) return null;
-					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/tile/${zoom}/${coord.y}/${coord.x}`;
+					
+					const initialResolution = 2 * Math.PI * 6378137 / 256;
+					const originShift = 2 * Math.PI * 6378137 / 2;
+					const zoomResolution = initialResolution / Math.pow(2, zoom);
+					const tileWidth = 256 * zoomResolution;
+					const minX = coord.x * tileWidth - originShift;
+					const maxX = (coord.x + 1) * tileWidth - originShift;
+					const minY = originShift - (coord.y + 1) * tileWidth;
+					const maxY = originShift - coord.y * tileWidth;
+					const bbox = `${minX},${minY},${maxX},${maxY}`;
+					
+					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=3857&layers=show%3A28&size=256,256&imageSR=3857&format=png8&transparent=true&f=image`;
 				},
 				tileSize: new google.maps.Size(256, 256),
 				opacity: 0.65,
