@@ -33,6 +33,7 @@ export default async function ExtractSearchParams(
 			"-maxPrice",
 			"-minBuiltYear",
 			"-maxBuiltYear",
+			"-minSqft",
 			"sort=Newest-First",
 			"sort=Price-High-to-Low",
 			"sort=Price-Low-to-High",

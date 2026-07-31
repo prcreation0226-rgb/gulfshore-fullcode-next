@@ -176,6 +176,16 @@ export async function GET(req: NextRequest) {
 		const baths = parseNumber(query.get("baths"));
 		if (baths) where.BathroomsFull = { gte: baths };
 
+		// ---- Living Area (Sqft) ----
+		const minSqft = parseNumber(query.get("minSqft") || query.get("minSqFt") || query.get("sqft"));
+		const maxSqft = parseNumber(query.get("maxSqft") || query.get("maxSqFt"));
+		if (minSqft || maxSqft) {
+			where.LivingArea = {
+				...(minSqft && { gte: minSqft }),
+				...(maxSqft && { lte: maxSqft }),
+			};
+		}
+
 		// ---- Year Built ----
 		const builtMin = parseNumber(query.get("builtYearMin"));
 		const builtMax = parseNumber(query.get("builtYearMax"));
