@@ -136,7 +136,7 @@ export default function PropertySection({
 	});
 
 	return (
-		<div className="w-full max-w-11/12 lg:max-w-4/5 mx-auto">
+		<div className="w-full max-w-11/12 lg:max-w-4/5 mx-auto px-6 md:px-10">
 			{props && <div>{props}</div>}
 
 			<Suspense
