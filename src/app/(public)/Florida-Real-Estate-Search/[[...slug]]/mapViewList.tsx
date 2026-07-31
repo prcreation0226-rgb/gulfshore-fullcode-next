@@ -90,65 +90,9 @@ export default function MapViewList({
 		);
 	}
 
-	if ((success && total === 0) || error) {
-		return (
-			<div
-				className={
-					"w-full overflow-x-hidden flex flex-col items-center justify-center text-center py-20 px-4 bg-muted/10 rounded-lg border border-border"
-				}>
-				<div className="mb-6">
-					<SearchX className="w-12 h-12 text-muted-foreground" />
-				</div>
-				<h2 className="text-xl font-semibold text-foreground mb-2">
-					No Listing Found
-				</h2>
-				<p className="text-sm text-muted-foreground mb-6 max-w-md">
-					Try adjusting your filters or explore other locations.
-				</p>
-
-				<Button
-					onClick={() => {
-						dispatch(clearFilters());
-						history.pushState(
-							null,
-							"",
-							"/Florida-Real-Estate-Search"
-						);
-					}}
-					variant="default"
-					className="text-sm">
-					Reset Filters
-				</Button>
-
-				<hr />
-				<div className={`bg-white w-dvw rounded-t-xl mt-20`}>
-					<div className="flex flex-col text-start items-start justify-start px-5 md:px-6 lg:px-7">
-						<div className="items-start justify-start flex flex-col">
-							<h2 className="lg:text-xl text-lg text-start font-semibold lg:font-medium">
-								Search By City
-							</h2>
-							<p className="py-2 text-start text-xs md:text-sm lg:font-medium font-semibold lg:text-base text-gray-700">
-								Explore Active Listings in each{" "}
-								<span className="text-(--primary-color) font-semibold">
-									SW Florida City
-								</span>
-								.
-							</p>
-						</div>
-					</div>
-					<Suspense>
-						<CitiesSection />
-					</Suspense>
-				</div>
-			</div>
-		);
-	}
-
 	const currentStatus = filters.status || "Active";
 
 	const handleStatusChange = (newStatus: string) => {
-		// When "All Properties" → auto sort by OnMarketDate (New Launch)
-		// so newest listings appear first by their actual market date
 		const sortOverride = newStatus === "All"
 			? { sort: "OnMarketDate", order: "desc" }
 			: { sort: "CreatedDate", order: "desc" };
@@ -162,7 +106,6 @@ export default function MapViewList({
 		dispatch(setFilters(nextFilters));
 		dispatch(fetchProperties());
 
-		// Update URL parameters
 		const nextParams = new URLSearchParams(searchParams.toString());
 		if (newStatus === "Active") {
 			nextParams.delete("status");
@@ -177,41 +120,101 @@ export default function MapViewList({
 		window.history.pushState(null, "", newUrl);
 	};
 
+	const StatusTabs = (
+		<div className="w-11/12 max-w-[1600px] mx-auto mb-6 flex border-b border-[#E8E4DC] gap-6 text-sm">
+			<button
+				onClick={() => handleStatusChange("Active")}
+				className={`pb-2.5 font-medium border-b-2 transition-all ${
+					currentStatus === "Active"
+						? "border-[#B89A6A] text-[#1C1712] font-semibold"
+						: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
+				}`}
+			>
+				Active Listings
+			</button>
+			<button
+				onClick={() => handleStatusChange("Sold")}
+				className={`pb-2.5 font-medium border-b-2 transition-all ${
+					currentStatus === "Sold"
+						? "border-[#B89A6A] text-[#1C1712] font-semibold"
+						: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
+				}`}
+			>
+				Sold Properties
+			</button>
+			<button
+				onClick={() => handleStatusChange("All")}
+				className={`pb-2.5 font-medium border-b-2 transition-all ${
+					currentStatus === "All"
+						? "border-[#B89A6A] text-[#1C1712] font-semibold"
+						: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
+				}`}
+			>
+				All Properties
+			</button>
+		</div>
+	);
+
+	if ((success && total === 0) || error) {
+		return (
+			<div className="w-full">
+				{StatusTabs}
+				<div
+					className={
+						"w-full overflow-x-hidden flex flex-col items-center justify-center text-center py-20 px-4 bg-muted/10 rounded-lg border border-border"
+					}>
+					<div className="mb-6">
+						<SearchX className="w-12 h-12 text-muted-foreground" />
+					</div>
+					<h2 className="text-xl font-semibold text-foreground mb-2">
+						No Listing Found
+					</h2>
+					<p className="text-sm text-muted-foreground mb-6 max-w-md">
+						Try adjusting your filters or explore other locations.
+					</p>
+
+					<Button
+						onClick={() => {
+							dispatch(clearFilters());
+							history.pushState(
+								null,
+								"",
+								"/Florida-Real-Estate-Search"
+							);
+						}}
+						variant="default"
+						className="text-sm">
+						Reset Filters
+					</Button>
+
+					<hr />
+					<div className={`bg-white w-dvw rounded-t-xl mt-20`}>
+						<div className="flex flex-col text-start items-start justify-start px-5 md:px-6 lg:px-7">
+							<div className="items-start justify-start flex flex-col">
+								<h2 className="lg:text-xl text-lg text-start font-semibold lg:font-medium">
+									Search By City
+								</h2>
+								<p className="py-2 text-start text-xs md:text-sm lg:font-medium font-semibold lg:text-base text-gray-700">
+									Explore Active Listings in each{" "}
+									<span className="text-(--primary-color) font-semibold">
+										SW Florida City
+									</span>
+									.
+								</p>
+							</div>
+						</div>
+						<Suspense>
+							<CitiesSection />
+						</Suspense>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div>
-			{/* Status Tabs (Active / Sold / All) */}
-			<div className="w-11/12 max-w-[1600px] mx-auto mb-6 flex border-b border-[#E8E4DC] gap-6 text-sm">
-				<button
-					onClick={() => handleStatusChange("Active")}
-					className={`pb-2.5 font-medium border-b-2 transition-all ${
-						currentStatus === "Active"
-							? "border-[#B89A6A] text-[#1C1712] font-semibold"
-							: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
-					}`}
-				>
-					Active Listings
-				</button>
-				<button
-					onClick={() => handleStatusChange("Sold")}
-					className={`pb-2.5 font-medium border-b-2 transition-all ${
-						currentStatus === "Sold"
-							? "border-[#B89A6A] text-[#1C1712] font-semibold"
-							: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
-					}`}
-				>
-					Sold Properties
-				</button>
-				<button
-					onClick={() => handleStatusChange("All")}
-					className={`pb-2.5 font-medium border-b-2 transition-all ${
-						currentStatus === "All"
-							? "border-[#B89A6A] text-[#1C1712] font-semibold"
-							: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
-					}`}
-				>
-					All Properties
-				</button>
-			</div>
+			{StatusTabs}
 
 			<div ref={topRef} className="scroll-mt-4" />
 			<div className={gridClass}>
