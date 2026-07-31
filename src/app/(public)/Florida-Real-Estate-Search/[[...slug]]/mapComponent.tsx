@@ -68,9 +68,7 @@ export default function MapComponent({
 	
 	const { isLoaded } = useJsApiLoader({
 		id: "google-map-script",
-		googleMapsApiKey:
-			process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
-			"AIzaSyBQwpzlVeV9AI6FETYYUmLt730XEKRdfAY",
+		googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
 	});
 
 	const mapRef = useRef<google.maps.Map | null>(null);
