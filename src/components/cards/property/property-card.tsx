@@ -94,7 +94,11 @@ const PropertyCard = (property: Property & { isSelected?: boolean }) => {
 							text-[1.35rem] leading-tight tracking-tight
 							font-semibold text-[#1C1712]
 						">
-							{formatPrice(property.ListPrice || 0)}
+							{formatPrice(
+								((property as any).StandardStatus === "Closed" || (property as any).MlsStatus === "Sold")
+									? (property.ClosePrice || property.ListPrice || 0)
+									: (property.ListPrice || 0)
+							)}
 						</p>
 						<Image
 							className="h-5 w-auto opacity-50 mt-1 shrink-0 ml-3"
@@ -241,9 +245,12 @@ export const PropertyCard2 = ({
 				{/* Content */}
 				<div className="flex flex-col flex-1 min-w-0 px-4 py-3.5">
 
-					{/* Price */}
 					<p className="text-lg sm:text-xl font-semibold text-[#1C1712] leading-tight mb-0.5">
-						{formatPrice(property.ListPrice)}
+						{formatPrice(
+							(property.StandardStatus === "Closed" || property.MlsStatus === "Sold")
+								? (property.ClosePrice || property.ListPrice)
+								: property.ListPrice
+						)}
 					</p>
 
 					{/* Address */}
