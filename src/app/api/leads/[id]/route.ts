@@ -111,6 +111,25 @@ async function getMappedLead(id: string) {
 			}),
 	].sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
 
+	// Fetch all viewed properties for this lead (including any associated by email or clerk userId)
+	const orConditions: any[] = [{ userId: lead.id }];
+	if (lead.userId) orConditions.push({ userId: lead.userId });
+	if (lead.email) orConditions.push({ user: { email: { equals: lead.email, mode: "insensitive" } } });
+
+	const rawViews = await prisma.viewedProperty.findMany({
+		where: { OR: orConditions },
+		orderBy: { lastViewedAt: "desc" },
+		include: { property: true },
+	});
+
+	// Deduplicate by propertyId
+	const seenProperties = new Set<string>();
+	const allViewedProperties = rawViews.filter((v) => {
+		if (seenProperties.has(v.propertyId)) return false;
+		seenProperties.add(v.propertyId);
+		return true;
+	});
+
 	return {
 		...lead,
 		_id: lead.id,
@@ -133,7 +152,7 @@ async function getMappedLead(id: string) {
 		})),
 		aiChats: lead.aiChats,
 		tasks: lead.tasks,
-		viewHistory: lead.viewHistory.map((v) => {
+		viewHistory: allViewedProperties.map((v) => {
 			let image = "/map-bg.webp";
 			if (v.property?.images) {
 				try {
