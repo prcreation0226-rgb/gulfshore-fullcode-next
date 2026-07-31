@@ -34,6 +34,11 @@ export async function POST(req: NextRequest) {
 		const body = wishlistPropertySchema.parse(await req.json());
 		const result = await addToWishlist(lead.id, body.propertyId);
 
+		// Recalculate score asynchronously
+		import("@/lib/leads/services/scoring.service").then(({ recalculateLeadScore }) => {
+			recalculateLeadScore(lead.id);
+		});
+
 		return successResponse(result, result.created ? 201 : 200);
 	} catch (error) {
 		return handleApiError(error);

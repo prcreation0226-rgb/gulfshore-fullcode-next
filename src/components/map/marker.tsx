@@ -47,7 +47,9 @@ function MarkerItem({
 									: "#1a1a1a"
 							}" stroke="white" stroke-width="1.5" />
 						  <text x="50" y="25" font-family="Inter, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="white">${formatPrice(
-								item.ListPrice
+								((item as any).StandardStatus === "Closed" || (item as any).MlsStatus === "Sold")
+									? (item.ClosePrice || item.ListPrice)
+									: item.ListPrice
 							)}</text>
 					  </svg>
 					`)}`,

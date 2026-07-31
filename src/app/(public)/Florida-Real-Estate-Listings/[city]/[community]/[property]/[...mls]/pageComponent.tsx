@@ -37,6 +37,8 @@ const CitiesSection = dynamic(
 	() => import("@/components/city/cities-section"),
 	{ ssr: false, loading: () => <Skeleton /> }
 );
+import CountyTaxSection from "@/components/property/CountyTaxSection";
+import SchoolInfoSection from "@/components/property/SchoolInfoSection";
 
 
 
@@ -165,6 +167,12 @@ export default function PropertyDetail(property: Property) {
 							<WeatherWidget city={property.City} />
 						</Suspense>
 					</div>
+
+					{/* County & Tax Information Card */}
+					<CountyTaxSection property={property} />
+
+					{/* School Information Card */}
+					<SchoolInfoSection property={property} />
 				</div>
 				{!property.VirtualTourURLBranded &&
 				!property.VirtualTourURLUnbranded ? null : (() => {
@@ -179,8 +187,17 @@ export default function PropertyDetail(property: Property) {
 							thumbnailSrc = `/${rawThumbnail}`;
 						}
 					} else {
+						let propertyImages = (property as any).images;
+						if (typeof propertyImages === 'string') {
+							try {
+								propertyImages = JSON.parse(propertyImages);
+							} catch (e) {
+								propertyImages = null;
+							}
+						}
+						
 						const firstImage = (property as any).AllPixList?.[0] ||
-							(Array.isArray((property as any).images) ? (typeof (property as any).images[0] === "string" ? (property as any).images[0] : ((property as any).images[0] as any)?.MediaURL) : null) ||
+							(Array.isArray(propertyImages) ? (typeof propertyImages[0] === "string" ? propertyImages[0] : propertyImages[0]?.MediaURL) : null) ||
 							(Array.isArray((property.raw as any)?.Media) ? (property.raw as any)?.Media?.[0]?.MediaURL : null);
 						if (firstImage && typeof firstImage === "string" && firstImage.trim() !== "") {
 							if (firstImage.startsWith("http://") || firstImage.startsWith("https://")) {

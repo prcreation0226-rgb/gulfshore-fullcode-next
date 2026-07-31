@@ -75,9 +75,16 @@ export default async function Listing({
 		);
 	}
 
-	const media = (property.images ?? (property as any)?.raw?.Media) as any;
+	let media = (property.images ?? (property as any)?.raw?.Media) as any;
+	if (typeof media === 'string') {
+		try {
+			media = JSON.parse(media);
+		} catch (e) {
+			media = [];
+		}
+	}
 	let images: string[] = [];
-	if (media && media.length > 0) {
+	if (media && Array.isArray(media) && media.length > 0) {
 		images = media
 			.filter((item: any) => item.MediaCategory === "Photo")
 			.map((item: any) => item.MediaURL);
@@ -353,6 +360,7 @@ export default async function Listing({
 					sort: "ListPrice",
 					limit: "12",
 					order: "desc",
+					excludeMLS: property.MLSNumber,
 					propertyType: (() => {
 						const subType = property.PropertySubType || "";
 						const type = property.PropertyType || "";
@@ -364,30 +372,48 @@ export default async function Listing({
 				}}
 			/>
 
-			<PropertySection
-				props={
-					<h2 className="py-4 px-2 font-semibold mt-10 lg:mt-12 text-lg lg:text-xl">
-						Explore Properties in{" "}
-						<span className="text-primary">
-							{capitalizeWords(property.City)}, Florida
-						</span>
-					</h2>
-				}
-				queryParams={{
-					sort: "CurrentPrice",
-					order: "desc",
-					limit: "5",
-					city: property.City,
-					propertyType: (() => {
-						const subType = property.PropertySubType || "";
-						const type = property.PropertyType || "";
-						if (subType === "Single Family Residence") return "Homes";
-						if (subType.includes("Rise") || subType === "Townhouse" || type.includes("Condominium")) return "Condos";
-						if (type === "Land" || type.includes("Lot")) return "Residential-Lots";
-						return "Homes";
-					})(),
-				}}
-			/>
+			{/* Only show city-wide section when community ≠ city to avoid duplicate listings.
+			    e.g. "Marco Island" community in "Marco Island" city would show the same data twice.
+			    But "Fiddler's Creek" in "Naples" correctly shows two distinct carousels. */}
+			{(() => {
+				const cityNorm = (property.City || "").trim().toLowerCase();
+				const devNorm = development.trim().toLowerCase();
+				// Hide 2nd section if: no development, OR development contains city name, OR city contains development name
+				const isDuplicate =
+					!devNorm ||
+					devNorm === cityNorm ||
+					devNorm.includes(cityNorm) ||
+					cityNorm.includes(devNorm);
+				if (isDuplicate) return null;
+				return (
+					<PropertySection
+						props={
+							<h2 className="py-4 px-2 font-semibold mt-10 lg:mt-12 text-lg lg:text-xl">
+								Explore Properties in{" "}
+								<span className="text-primary">
+									{capitalizeWords(property.City)}, Florida
+								</span>
+							</h2>
+						}
+						queryParams={{
+							sort: "CurrentPrice",
+							order: "desc",
+							limit: "5",
+							city: property.City,
+							excludeMLS: property.MLSNumber,
+							propertyType: (() => {
+								const subType = property.PropertySubType || "";
+								const type = property.PropertyType || "";
+								if (subType === "Single Family Residence") return "Homes";
+								if (subType.includes("Rise") || subType === "Townhouse" || type.includes("Condominium")) return "Condos";
+								if (type === "Land" || type.includes("Lot")) return "Residential-Lots";
+								return "Homes";
+							})(),
+						}}
+					/>
+				);
+			})()}
+
 			<section className="mt-14 md:mt-16 lg:mt-20">
 				<div className="mx-auto w-11/12">
 					<div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm">

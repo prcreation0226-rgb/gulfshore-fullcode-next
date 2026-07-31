@@ -64,7 +64,6 @@ export async function GET(req: NextRequest) {
 			const cityName = decodeURIComponent(params.city).trim();
 			where.City = {
 				equals: cityName,
-				mode: "insensitive",
 			};
 
 			const cityRecord = await prisma.city.findFirst({
@@ -86,8 +85,8 @@ export async function GET(req: NextRequest) {
 		if (params.developmentName) {
 			const devName = decodeURIComponent(params.developmentName).trim();
 			where.OR = [
-				{ Development: { equals: devName, mode: "insensitive" } },
-				{ Community: { equals: devName, mode: "insensitive" } }
+				{ Development: { equals: devName } },
+				{ Community: { equals: devName } }
 			];
 
 			const communityRecord = await prisma.community.findFirst({

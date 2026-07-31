@@ -46,5 +46,6 @@ next-env.d.ts
 *.zip
 /scratch/
 /v2/
+client images/
 
 

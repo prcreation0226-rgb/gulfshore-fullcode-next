@@ -122,6 +122,13 @@ export async function GET(req: NextRequest) {
 			});
 		}
 
+		// ---- Exclude a specific MLS number (used on property detail page to hide current listing) ----
+		const excludeMLS = query.get("excludeMLS");
+		if (excludeMLS) {
+			where.NOT = where.NOT || [];
+			where.NOT.push({ MLSNumber: excludeMLS });
+		}
+
 		if (query.get("subdivision")) {
 			where.SubdivisionName = {
 				contains: query.get("subdivision")!,
@@ -168,6 +175,16 @@ export async function GET(req: NextRequest) {
 
 		const baths = parseNumber(query.get("baths"));
 		if (baths) where.BathroomsFull = { gte: baths };
+
+		// ---- Living Area (Sqft) ----
+		const minSqft = parseNumber(query.get("minSqft") || query.get("minSqFt") || query.get("sqft"));
+		const maxSqft = parseNumber(query.get("maxSqft") || query.get("maxSqFt"));
+		if (minSqft || maxSqft) {
+			where.LivingArea = {
+				...(minSqft && { gte: minSqft }),
+				...(maxSqft && { lte: maxSqft }),
+			};
+		}
 
 		// ---- Year Built ----
 		const builtMin = parseNumber(query.get("builtYearMin"));

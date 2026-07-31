@@ -22,13 +22,14 @@ import {
 import capitalizeWords from "@/hooks/capitalize-letter";
 import { SortItem, SortItems } from "@/lib/constants";
 import Cities from "@/types/cities";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Checkbox } from "../ui/checkbox";
 import { toast } from "sonner";
 import axios from "axios";
 import ExtractSearchParams from "@/hooks/extractSearchParams";
 import { AutocompleteInput } from "../ui/autocomplete";
+import { useEffect } from "react";
 
 export default function MobileFiltersModal({
 	community,
@@ -57,6 +58,7 @@ export default function MobileFiltersModal({
 	const [hoa, setHoa] = useState("Any");
 	const [minAcres, setMinAcres] = useState("");
 	const [maxAcres, setMaxAcres] = useState("");
+	const [minSqft, setMinSqft] = useState("");
 	const [statusFilter, setStatusFilter] = useState("Active");
 
 	const [mlsNumber, setMlsNumber] = useState("");
@@ -65,7 +67,14 @@ export default function MobileFiltersModal({
 	);
 
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const { isLoaded, isSignedIn } = useAuth();
+
+	useEffect(() => {
+		if (searchParams?.get("openFilters") === "true") {
+			setIsExpanded(true);
+		}
+	}, [searchParams]);
 
 
 	const handleSearch = () => {
@@ -193,6 +202,7 @@ export default function MobileFiltersModal({
 		if (minyear) segments.push(`${minyear}-minBuiltYear`);
 		if (maxyear) segments.push(`${maxyear}-maxBuiltYear`);
 		if (postal) segments.push(`${postal}-postalCode`);
+		if (minSqft) segments.push(`${minSqft}-minSqft`);
 		if (keywords.length) {
 			if (keywords.includes("Waterfront"))
 				segments.push(`keyword-waterfront`);
@@ -214,6 +224,7 @@ export default function MobileFiltersModal({
 		if (hoa && hoa !== "Any") queryParams.set("hoa", hoa);
 		if (minAcres) queryParams.set("minAcres", minAcres);
 		if (maxAcres) queryParams.set("maxAcres", maxAcres);
+		if (minSqft) queryParams.set("minSqft", minSqft);
 		if (statusFilter && statusFilter !== "Active") queryParams.set("status", statusFilter);
 		if (subdivision) queryParams.set("subdivision", subdivision);
 		if (school) queryParams.set("school", school);
@@ -807,6 +818,19 @@ export default function MobileFiltersModal({
 													placeholder="Max Year"
 												/>
 											</div>
+										</div>
+
+										<div className="flex flex-col space-y-2">
+											<Label className="text-sm font-medium text-gray-900">
+												Minimum Living Sqft
+											</Label>
+											<Input
+												type="number"
+												value={minSqft}
+												onChange={(e) => setMinSqft(e.target.value)}
+												className="text-sm"
+												placeholder="e.g. 1500"
+											/>
 										</div>
 
 										<div className="flex flex-col space-y-2">

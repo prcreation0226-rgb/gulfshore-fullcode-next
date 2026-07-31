@@ -65,6 +65,13 @@ export default function MapComponent({
 	const dispatch = useAppDispatch();
 	const properties = useSelector(selectAllProperties);
 	const ui = useSelector(selectUi);
+	
+	const { isLoaded } = useJsApiLoader({
+		id: "google-map-script",
+		googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+	});
+
+	const mapRef = useRef<google.maps.Map | null>(null);
 
 	// Sync refs for stable debounce function
 	const filtersRef = useRef(ui.filters);
@@ -116,32 +123,39 @@ export default function MapComponent({
 
 	// Auto-center map EXACTLY ONCE on city search change or initial property load
 	React.useEffect(() => {
-		if (hasCenteredRef.current) return;
+		if (hasCenteredRef.current || !mapRef.current) return;
 
-		const searchCity = filterParams?.city?.toUpperCase() || "";
-		if (searchCity && CITY_CENTERS[searchCity]) {
-			setCenter(CITY_CENTERS[searchCity]);
-			hasCenteredRef.current = true;
-		} else if (properties.length > 0) {
-			const firstWithCoords = properties.find((p: any) => p.Latitude && p.Longitude);
-			if (firstWithCoords) {
-				setCenter({
-					lat: Number(firstWithCoords.Latitude),
-					lng: Number(firstWithCoords.Longitude),
+		if (properties.length > 0) {
+			const bounds = new window.google.maps.LatLngBounds();
+			let hasValidCoords = false;
+			properties.forEach((p: any) => {
+				const lat = parseFloat(p.Latitude);
+				const lng = parseFloat(p.Longitude);
+				if (!isNaN(lat) && !isNaN(lng)) {
+					bounds.extend({ lat, lng });
+					hasValidCoords = true;
+				}
+			});
+			if (hasValidCoords) {
+				mapRef.current.fitBounds(bounds);
+				// Prevent it from zooming in too close for a single property
+				const listener = window.google.maps.event.addListenerOnce(mapRef.current, "bounds_changed", () => {
+					if (mapRef.current!.getZoom()! > 16) {
+						mapRef.current!.setZoom(16);
+					}
 				});
 				hasCenteredRef.current = true;
 			}
+		} else {
+			const searchCity = filterParams?.city?.toUpperCase() || "";
+			if (searchCity && CITY_CENTERS[searchCity]) {
+				setCenter(CITY_CENTERS[searchCity]);
+				hasCenteredRef.current = true;
+			}
 		}
-	}, [filterParams?.city, properties]);
+	}, [filterParams?.city, properties, isLoaded]);
 
-	const { isLoaded } = useJsApiLoader({
-		id: "google-map-script",
-		googleMapsApiKey:
-			process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
-			"AIzaSyBQwpzlVeV9AI6FETYYUmLt730XEKRdfAY",
-	});
 
-	const mapRef = useRef<google.maps.Map | null>(null);
 
 	const handlemarkerClick = (property: any) => {
 		if (
@@ -156,13 +170,6 @@ export default function MapComponent({
 				const lng = parseFloat(property.Longitude);
 				if (!isNaN(lat) && !isNaN(lng)) {
 					mapRef.current.panTo({ lat, lng });
-					
-					// Slight offset to make sure the top part of the marker card isn't cut off by the header
-					setTimeout(() => {
-						if (mapRef.current) {
-							mapRef.current.panBy(0, -80);
-						}
-					}, 200);
 				}
 			}
 		} else {
@@ -220,16 +227,20 @@ export default function MapComponent({
 			setFemaLoading(true);
 			const femaType = new google.maps.ImageMapType({
 				getTileUrl: (coord, zoom) => {
+					// FEMA NFHL Tiles only render at zoom level 12 or higher to save bandwidth.
+					if (zoom < 11) return null;
+					
 					const initialResolution = 2 * Math.PI * 6378137 / 256;
 					const originShift = 2 * Math.PI * 6378137 / 2;
-					const zoomResolution = initialResolution / (1 << zoom);
+					const zoomResolution = initialResolution / Math.pow(2, zoom);
 					const tileWidth = 256 * zoomResolution;
 					const minX = coord.x * tileWidth - originShift;
 					const maxX = (coord.x + 1) * tileWidth - originShift;
 					const minY = originShift - (coord.y + 1) * tileWidth;
 					const maxY = originShift - coord.y * tileWidth;
 					const bbox = `${minX},${minY},${maxX},${maxY}`;
-					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=3857&layers=show%3A28&size=256,256&imageSR=3857&format=png8&transparent=true&f=image`;
+					
+					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=3857&size=256,256&imageSR=3857&format=png32&transparent=true&f=image`;
 				},
 				tileSize: new google.maps.Size(256, 256),
 				opacity: 0.65,
@@ -367,7 +378,7 @@ export default function MapComponent({
 	return (
 		<div className="h-full w-full grow relative rounded-xl">
 			{/* Unified Map controls dropdown card */}
-			<div className="absolute top-4 left-4 z-50 md:top-4 md:right-14 md:left-auto" ref={dropdownRef}>
+			<div className="absolute top-4 left-4 z-[60]" ref={dropdownRef}>
 				<button
 					onClick={() => setDropdownOpen(!dropdownOpen)}
 					className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-800 border border-gray-200 rounded-lg shadow-md font-medium text-sm hover:bg-gray-50 transition-colors cursor-pointer"

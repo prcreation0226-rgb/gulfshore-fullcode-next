@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
 	try {
 		const query = req.nextUrl.searchParams;
@@ -15,7 +18,11 @@ export async function GET(req: NextRequest) {
 		const statusParam = query.get("status") || query.get("Status") || "Active";
 		const where: any = {};
 		if (statusParam !== "All") {
-			where.StandardStatus = statusParam;
+			if (statusParam === "Sold") {
+				where.StandardStatus = "Closed";
+			} else {
+				where.StandardStatus = statusParam;
+			}
 		}
 
 
@@ -80,6 +87,15 @@ export async function GET(req: NextRequest) {
 		if (bedsParam) where.BedroomsTotal = { gte: parseInt(bedsParam) };
 		const bathsParam = query.get("baths");
 		if (bathsParam) where.BathroomsFull = { gte: parseInt(bathsParam) };
+
+		// Living Area (Sqft)
+		const minSqftParam = query.get("minSqft") || query.get("minSqFt") || query.get("sqft");
+		const maxSqftParam = query.get("maxSqft") || query.get("maxSqFt");
+		if (minSqftParam || maxSqftParam) {
+			where.LivingArea = {};
+			if (minSqftParam) where.LivingArea.gte = parseFloat(minSqftParam);
+			if (maxSqftParam) where.LivingArea.lte = parseFloat(maxSqftParam);
+		}
 
 		// Year Built
 		const builtYearMin = query.get("builtYearMin") ? parseInt(query.get("builtYearMin")!) : null;

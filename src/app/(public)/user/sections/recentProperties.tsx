@@ -39,8 +39,8 @@ function RecentProperties({ data }: { data: any[] }) {
 						})}
 					</CarouselContent>
 
-					<CarouselPrevious className="h-10 w-10 md:w-12 md:h-12 bg-accent" />
-					<CarouselNext className="h-10 w-10 md:w-12 md:h-12 bg-accent" />
+					<CarouselPrevious className="hidden md:flex md:w-12 md:h-12 bg-accent" />
+					<CarouselNext className="hidden md:flex md:w-12 md:h-12 bg-accent" />
 				</Carousel>
 			</div>
 		</div>

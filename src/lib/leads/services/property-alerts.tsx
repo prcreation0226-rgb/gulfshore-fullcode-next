@@ -396,19 +396,18 @@ import {
           )}
         </Section>
   
-        {/* Card Footer */}
         <Section
           style={{
             backgroundColor: CREAM,
             borderTop: `1px solid ${BORDER}`,
-            padding: "12px 24px",
+            padding: "16px 24px",
           }}
         >
-          <Row>
+          <Row style={{ marginBottom: "16px" }}>
             <Column>
               <Text
                 style={{
-                  fontSize: "10px",
+                  fontSize: "11px",
                   color: "#999",
                   margin: 0,
                   fontFamily: "'Poppins', Arial, sans-serif",
@@ -421,20 +420,29 @@ import {
                   : ""}
               </Text>
             </Column>
-            <Column style={{ textAlign: "right" as const }}>
-              <Link
+          </Row>
+          <Row>
+            <Column align="center">
+              <Button
                 href={'https://gulfshoregroup.com'+UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber||"")}
                 style={{
-                  fontSize: "11px",
-                  color: PRIMARY,
+                  backgroundColor: MID,
+                  color: "#FFFFFF",
+                  padding: "12px 24px",
+                  borderRadius: "6px",
+                  fontSize: "12px",
                   fontWeight: "700",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
                   textDecoration: "none",
+                  display: "block",
+                  textAlign: "center",
+                  width: "100%",
                   fontFamily: "'Poppins', Arial, sans-serif",
-                  letterSpacing: "0.05em",
                 }}
               >
                 VIEW DETAILS
-              </Link>
+              </Button>
             </Column>
           </Row>
         </Section>
@@ -448,7 +456,7 @@ import {
     recipientName?: string;
     alertTitle?: string;
     alertSubtitle?: string;
-    properties: Property | null;
+    properties: Property[] | Property | null;
     unsubscribeUrl?: string;
   }
   
@@ -585,7 +593,7 @@ import {
                 >
                   We've curated{" "}
                   <strong style={{ color: DARK }}>
-                  1 exceptional property
+                  {Array.isArray(properties) ? `${properties.length} exceptional properties` : `1 exceptional property`}
                   </strong>{" "}
                   that align with your refined preferences. Each listing has been
                   personally reviewed for quality and value.
@@ -594,7 +602,7 @@ import {
   
               {/* ── Property Cards ── */}
               <Section style={{ padding: "28px 24px" }}>
-                {!properties ? (
+                {!properties || (Array.isArray(properties) && properties.length === 0) ? (
                   <Section
                     style={{
                       backgroundColor: "#FFF",
@@ -626,12 +634,19 @@ import {
                     </Text>
                   </Section>
                 ) : (
-                
+                  Array.isArray(properties) ? (
+                    properties.map((prop) => (
+                      <PropertyCard
+                        key={prop.id || prop.MLSNumber || prop.FullAddress}
+                        property={prop}
+                      />
+                    ))
+                  ) : (
                     <PropertyCard
                       key={properties.id || properties.MLSNumber || properties.FullAddress}
                       property={properties}
                     />
-                  
+                  )
                 )}
               </Section>
   
@@ -796,7 +811,7 @@ import {
     /** Alert subtitle */
     alertSubtitle?: string;
     /** Pass properties directly — otherwise fetched from /api/v2/properties */
-    properties?: Property | null;
+    properties?: Property[] | Property | null;
     /** Unsubscribe / preferences URL */
     unsubscribeUrl?: string;
   }
@@ -808,8 +823,8 @@ import {
     if (!apiKey) return { success: false, error: "No Resend API key provided" };
   
     // Resolve properties
-    let properties: Property | null = options.properties ?? null;
-    if (!properties) {
+    let properties: Property[] | Property | null = options.properties ?? null;
+    if (!properties || (Array.isArray(properties) && properties.length === 0)) {
       console.log("Fetching properties from API…");
       properties = await fetchProperties();
       console.log(`Fetched ${properties ? "1" : "0"} properties`);

@@ -95,7 +95,7 @@ export default function SavedSearchesSection() {
 						Get alerts when new homes match your criteria
 					</p>
 				</div>
-				<Link href={"/Florida-Real-Estate-Search"}>
+				<Link href={"/Florida-Real-Estate-Search?openFilters=true"}>
 					<Button className="gap-2">
 						<Plus className="w-4 h-4" />
 						New Search

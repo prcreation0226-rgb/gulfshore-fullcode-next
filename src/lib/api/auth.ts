@@ -19,33 +19,41 @@ export async function requireLead(): Promise<Lead> {
 	try {
 		const clerkUserId = await requireClerkUserId();
 
-		const existing = await prisma.lead.findUnique({
+		// 1. Check if a lead with this clerkUserId already exists
+		const existingByClerkId = await prisma.lead.findFirst({
 			where: { userId: clerkUserId },
 		});
 
-		if (existing) {
-			return existing;
+		if (existingByClerkId) {
+			return existingByClerkId;
 		}
 
+		// 2. Get user info from Clerk
 		const user = await currentUser();
 		const email =
 			user?.emailAddresses?.[0]?.emailAddress ??
 			user?.primaryEmailAddress?.emailAddress;
 
-		if (!email) {
-			throw new ApiError(
-				400,
-				"Authenticated user has no email address",
-				"MISSING_EMAIL"
-			);
+		if (email) {
+			// Find existing lead by email (e.g. created via Contact Form)
+			const existingByEmail = await prisma.lead.findFirst({
+				where: { email: { equals: email, mode: "insensitive" } },
+			});
+
+			if (existingByEmail) {
+				// Link this existing lead with the clerkUserId
+				return await prisma.lead.update({
+					where: { id: existingByEmail.id },
+					data: { userId: clerkUserId },
+				});
+			}
 		}
 
-		return await prisma.lead.upsert({
-			where: { email },
-			update: { userId: clerkUserId },
-			create: {
+		// 3. Create a new lead if no existing lead was found
+		return await prisma.lead.create({
+			data: {
 				userId: clerkUserId,
-				email,
+				email: email || `${clerkUserId}@placeholder.com`,
 				firstName: user?.firstName ?? undefined,
 				lastName: user?.lastName ?? undefined,
 				fullName:

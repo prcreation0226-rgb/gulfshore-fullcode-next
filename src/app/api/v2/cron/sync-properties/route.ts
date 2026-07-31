@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { syncTodaysActiveProperties } from "@/jobs/syncProperties";
-import { processSavedSearches } from "@/jobs/processSavedSearches";
 import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -47,9 +46,6 @@ export async function GET(req: NextRequest) {
 		console.log(`[Cron] Auto-sync triggered — modification lookback: ${queryDate}`);
 
 		await syncTodaysActiveProperties({ count: 0, date: queryDate });
-
-		// Process Custom Search Alerts for Leads
-		await processSavedSearches();
 
 		return Response.json({
 			success: true,

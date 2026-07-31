@@ -28,14 +28,26 @@ export default function ListingLabels({
 			time: string | number | Date
 		): string | null => {
 			const now = new Date();
-			const diff =
-				(now.getTime() - new Date(time).getTime()) / 1000 / 60; // difference in minutes
-			if (diff <= 60) return `${Math.floor(diff)} minutes ago`;
-			if (diff <= 1440) return `${Math.floor(diff / 60)} hours ago`;
-			if (diff > 1440 && diff < 2880) return `1 day ago`;
-			return diff <= 4320
-				? `${Math.floor(diff / 1440)} days ago`
-				: null;
+			const diffMins = (now.getTime() - new Date(time).getTime()) / 1000 / 60; 
+			
+			if (diffMins <= 60) return `${Math.max(1, Math.floor(diffMins))} minutes ago`;
+			if (diffMins <= 1440) {
+				const hrs = Math.floor(diffMins / 60);
+				return hrs === 1 ? `1 hour ago` : `${hrs} hours ago`;
+			}
+			
+			const days = Math.floor(diffMins / 1440);
+			if (days < 30) {
+				return days === 1 ? `1 day ago` : `${days} days ago`;
+			}
+			
+			const months = Math.floor(days / 30);
+			if (months < 12) {
+				return months === 1 ? `1 month ago` : `${months} months ago`;
+			}
+			
+			const years = Math.floor(days / 365);
+			return years === 1 ? `1 year ago` : `${years} years ago`;
 		};
 		setTimeAgo(calculateTimeDifference(CreatedDate));
 	}, [CreatedDate]);

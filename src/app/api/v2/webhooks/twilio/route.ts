@@ -62,7 +62,6 @@ Ask qualifying questions about budget, location, and timeline to buy/sell.`,
 			messages,
 		});
 
-		// 5. Save AI response to AIChatHistory
 		await prisma.aIChatHistory.create({
 			data: {
 				leadId: lead.id,
@@ -70,6 +69,11 @@ Ask qualifying questions about budget, location, and timeline to buy/sell.`,
 				role: "ai",
 				message: text,
 			}
+		});
+
+		// Recalculate score asynchronously after the chat interaction
+		import("@/lib/leads/services/scoring.service").then(({ recalculateLeadScore }) => {
+			recalculateLeadScore(lead.id);
 		});
 
 		// 6. Return TwiML so Twilio sends the SMS back to the user

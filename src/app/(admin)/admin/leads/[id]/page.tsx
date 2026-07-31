@@ -38,6 +38,12 @@ import {
 	Trash2,
 	Edit2,
 	CheckSquare,
+<<<<<<< HEAD
+=======
+	Eye,
+	Send,
+	ExternalLink,
+>>>>>>> 9f14b31d5da5f0caa033fee5eb82ba347046dffc
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -85,6 +91,12 @@ export default function LeadProfilePage() {
 	const [newTaskTitle, setNewTaskTitle] = useState("");
 	const [newTaskDueDate, setNewTaskDueDate] = useState("");
 
+	// Tasks State
+	const [tasks, setTasks] = useState<any[]>([]);
+	const [newTaskTitle, setNewTaskTitle] = useState("");
+	const [newTaskDate, setNewTaskDate] = useState<Date | undefined>();
+	const [taskLoading, setTaskLoading] = useState(false);
+
 	// -------------------- FETCH LEAD --------------------
 	useEffect(() => {
 		if (!id) return;
@@ -110,7 +122,65 @@ export default function LeadProfilePage() {
 			}
 		};
 		fetchLead();
+		fetchTasks();
 	}, [id]);
+
+	const fetchTasks = async () => {
+		try {
+			const res = await fetch(`/api/leads/${id}/tasks`);
+			if (res.ok) {
+				const data = await res.json();
+				setTasks(data);
+			}
+		} catch (error) {
+			console.error("Failed to fetch tasks:", error);
+		}
+	};
+
+	const handleAddTask = async () => {
+		if (!newTaskTitle.trim()) return toast.error("Task title cannot be empty");
+		try {
+			setTaskLoading(true);
+			const res = await fetch(`/api/leads/${id}/tasks`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ title: newTaskTitle, dueDate: newTaskDate }),
+			});
+			if (!res.ok) throw new Error("Failed to add task");
+			setNewTaskTitle("");
+			setNewTaskDate(undefined);
+			fetchTasks();
+			toast.success("Task Added!");
+		} catch (err: any) {
+			toast.error(err.message);
+		} finally {
+			setTaskLoading(false);
+		}
+	};
+
+	const handleToggleTask = async (taskId: string, currentStatus: string) => {
+		try {
+			const newStatus = currentStatus === "completed" ? "pending" : "completed";
+			await fetch(`/api/leads/${id}/tasks/${taskId}`, {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ status: newStatus }),
+			});
+			fetchTasks();
+		} catch (err: any) {
+			toast.error("Failed to update task");
+		}
+	};
+
+	const handleDeleteTask = async (taskId: string) => {
+		try {
+			await fetch(`/api/leads/${id}/tasks/${taskId}`, { method: "DELETE" });
+			fetchTasks();
+			toast.success("Task Removed");
+		} catch (err: any) {
+			toast.error("Failed to delete task");
+		}
+	};
 
 	// -------------------- HANDLE ADD NOTE --------------------
 	const handleAddNote = async () => {
@@ -254,6 +324,16 @@ export default function LeadProfilePage() {
 		}
 	};
 
+	const getScoreColor = (label: string) => {
+		switch (label) {
+			case "Ready to Buy": return "bg-red-100 text-red-800 font-bold border-red-200";
+			case "Hot": return "bg-orange-100 text-orange-800";
+			case "Warm": return "bg-amber-100 text-amber-800";
+			case "Cold": return "bg-blue-100 text-blue-800";
+			default: return "bg-gray-100 text-gray-800";
+		}
+	};
+
 	if (loading)
 		return (
 			<div className="p-6 text-center text-muted-foreground">
@@ -369,6 +449,14 @@ export default function LeadProfilePage() {
 									{ label: "Email", value: <span>{lead.email}</span>, icon: Mail },
 									{ label: "Phone", value: <span>{lead.phone}</span>, icon: Phone },
 									{ label: "Source", value: <span>{lead.source}</span> },
+									{ 
+										label: "Score", 
+										value: (
+											<Badge className={getScoreColor(lead.scoreLabel)}>
+												{lead.scoreLabel || "Cold"} ({lead.score || 0} pts)
+											</Badge>
+										)
+									},
 									{
 										label: "Created",
 										value: <span>{new Date(lead.createdAt).toLocaleString()}</span>,
@@ -469,56 +557,155 @@ export default function LeadProfilePage() {
 						</CardContent>
 					</Card>
 
-					{/* LEAD TIMELINE */}
+					{/* 📬 LISTINGS SENT / RECEIVED */}
 					<Card>
 						<CardHeader>
-							<CardTitle className="flex items-center gap-2"><Calendar className="w-5 h-5 text-primary"/> Contact Timeline & AI History</CardTitle>
+							<CardTitle className="flex items-center gap-2">
+								<Send className="w-5 h-5 text-primary" /> 📬 Listings Sent to Lead
+							</CardTitle>
 							<CardDescription>
-								Live feed of properties viewed, searches, and AI chats.
+								Automated property match digests & drip email alerts sent to this lead
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div className="space-y-3">
+								{lead.sentAlerts?.length > 0 ? (
+									lead.sentAlerts.map((alert: any) => (
+										<div
+											key={alert.id}
+											className="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 dark:bg-zinc-900/50 flex flex-col gap-2">
+											<div className="flex items-center justify-between">
+												<Badge className="bg-emerald-600 text-white font-bold text-xs">
+													{alert.type || "Property Alert"}
+												</Badge>
+												<span className="text-xs text-muted-foreground font-medium">
+													{new Date(alert.sentAt).toLocaleString()}
+												</span>
+											</div>
+											<div className="flex justify-between items-center">
+												<div>
+													<p className="text-sm font-semibold text-foreground">
+														{alert.subject}
+													</p>
+													<p className="text-xs text-muted-foreground mt-0.5">
+														Campaign: {alert.campaignName}
+													</p>
+												</div>
+												<Badge variant="outline" className="bg-white text-xs border-emerald-300 text-emerald-700 font-semibold">
+													✓ {alert.status || "Delivered"}
+												</Badge>
+											</div>
+										</div>
+									))
+								) : (
+									<p className="text-sm text-muted-foreground text-center py-4">
+										No listing emails sent yet.
+									</p>
+								)}
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* 👁️ PROPERTIES OPENED & VIEWED */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2">
+								<Eye className="w-5 h-5 text-primary" /> 👁️ Properties Opened & Viewed
+							</CardTitle>
+							<CardDescription>
+								Properties clicked and viewed on the site by this lead
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div className="space-y-3">
+								{lead.viewHistory?.length > 0 ? (
+									lead.viewHistory.map((view: any) => (
+										<div
+											key={view._id}
+											className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3.5 rounded-xl border border-blue-100 bg-blue-50/50 dark:bg-blue-950/20 hover:border-blue-300 transition-colors">
+											<div className="flex items-center gap-3.5">
+												<img
+													src={view.image || "/map-bg.webp"}
+													alt={view.address}
+													className="w-16 h-16 object-cover rounded-lg flex-shrink-0 border border-gray-200"
+													onError={(e) => {
+														(e.target as HTMLElement).setAttribute("src", "/map-bg.webp");
+													}}
+												/>
+												<div>
+													<a
+														href={view.url || `/properties/${view.propertyId}`}
+														target="_blank"
+														rel="noreferrer"
+														className="text-sm font-bold text-blue-700 dark:text-blue-400 hover:underline inline-flex items-center gap-1">
+														{view.address} <ExternalLink className="w-3.5 h-3.5" />
+													</a>
+													<p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-0.5">
+														{view.price ? `$${view.price.toLocaleString()}` : "Price N/A"} • <span className="text-muted-foreground font-normal">{view.propertyType}</span>
+													</p>
+													{view.mlsNumber && (
+														<span className="text-[11px] text-muted-foreground">MLS#: {view.mlsNumber}</span>
+													)}
+												</div>
+											</div>
+											<div className="text-right flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto">
+												<Badge variant="outline" className="bg-white text-xs font-bold text-blue-800 border-blue-200">
+													Viewed {view.viewCount} {view.viewCount === 1 ? "time" : "times"}
+												</Badge>
+												<p className="text-[11px] text-muted-foreground mt-1">
+													Last: {new Date(view.lastViewedAt).toLocaleString()}
+												</p>
+											</div>
+										</div>
+									))
+								) : (
+									<p className="text-sm text-muted-foreground text-center py-4">
+										No property views recorded yet.
+									</p>
+								)}
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* AI CHAT HISTORY */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2">
+								<Calendar className="w-5 h-5 text-primary" /> AI Chat History
+							</CardTitle>
+							<CardDescription>
+								Live feed of AI Conversations with this lead
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<div className="space-y-4">
-								
-								{/* AI Chats */}
-								{lead.aiChats?.length > 0 && (
+								{lead.aiChats?.length > 0 ? (
 									<div className="space-y-2">
-										<h4 className="text-sm font-semibold text-gray-500 uppercase">AI Conversations</h4>
 										{lead.aiChats.map((chat: any) => (
-											<div key={chat.id} className={`p-3 text-sm rounded-lg border ${chat.role === 'ai' ? 'bg-primary/10 border-primary/20 ml-6' : 'bg-gray-50 border-gray-200 mr-6'}`}>
+											<div
+												key={chat.id}
+												className={`p-3 text-sm rounded-lg border ${
+													chat.role === "ai"
+														? "bg-primary/10 border-primary/20 ml-6"
+														: "bg-gray-50 border-gray-200 mr-6"
+												}`}>
 												<div className="flex justify-between items-center mb-1">
-													<span className="font-bold text-xs capitalize">{chat.role === 'ai' ? '🤖 AI Assistant' : '👤 Lead'} ({chat.channel})</span>
-													<span className="text-xs text-gray-400">{new Date(chat.createdAt).toLocaleString()}</span>
+													<span className="font-bold text-xs capitalize">
+														{chat.role === "ai" ? "🤖 AI Assistant" : "👤 Lead"} ({chat.channel})
+													</span>
+													<span className="text-xs text-gray-400">
+														{new Date(chat.createdAt).toLocaleString()}
+													</span>
 												</div>
 												<p className="text-gray-700 whitespace-pre-wrap">{chat.message}</p>
 											</div>
 										))}
 									</div>
+								) : (
+									<p className="text-sm text-muted-foreground text-center py-4">
+										No AI conversations recorded yet.
+									</p>
 								)}
-
-								{/* Viewed Properties */}
-								{lead.viewHistory?.length > 0 && (
-									<div className="space-y-2 mt-6">
-										<h4 className="text-sm font-semibold text-gray-500 uppercase">Properties Viewed</h4>
-										{lead.viewHistory.map((view: any) => (
-											<div key={view._id} className="flex justify-between items-center p-3 text-sm bg-blue-50 border border-blue-100 rounded-lg">
-												<div>
-													<Link href={`/properties/${view.propertyId}`} target="_blank" className="font-semibold text-blue-700 hover:underline">{view.address}</Link>
-													<p className="text-xs text-blue-600 mt-0.5">Price: {view.price ? `$${view.price.toLocaleString()}` : "N/A"}</p>
-												</div>
-												<div className="text-right">
-													<Badge variant="outline" className="bg-white text-xs">Viewed {view.viewCount} times</Badge>
-													<p className="text-[10px] text-gray-500 mt-1">Last: {new Date(view.lastViewedAt).toLocaleDateString()}</p>
-												</div>
-											</div>
-										))}
-									</div>
-								)}
-
-								{(!lead.aiChats?.length && !lead.viewHistory?.length) && (
-									<p className="text-sm text-muted-foreground text-center py-4">No timeline activity yet.</p>
-								)}
-
 							</div>
 						</CardContent>
 					</Card>
@@ -572,11 +759,12 @@ export default function LeadProfilePage() {
 								</div>
 							</div>
 
-							<Button className="w-full" onClick={handleSaveChanges}>
+											<Button className="w-full" onClick={handleSaveChanges}>
 								Save Changes
 							</Button>
 						</CardContent>
 					</Card>
+<<<<<<< HEAD
 					
 					{/* Tasks */}
 					<Card>
@@ -643,6 +831,52 @@ export default function LeadProfilePage() {
 									})
 								) : (
 									<p className="text-sm text-muted-foreground text-center">No tasks yet.</p>
+=======
+
+					{/* TASKS SYSTEM */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2"><CheckSquare className="w-5 h-5 text-primary"/> Tasks & Reminders</CardTitle>
+							<CardDescription>
+								To-do list for this lead
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="space-y-2">
+								<Input 
+									placeholder="New task title (e.g. Call tomorrow)" 
+									value={newTaskTitle} 
+									onChange={(e) => setNewTaskTitle(e.target.value)} 
+								/>
+								<Button className="w-full" onClick={handleAddTask} disabled={taskLoading || !newTaskTitle.trim()}>
+									{taskLoading ? "Adding..." : "Add Task"}
+								</Button>
+							</div>
+
+							<div className="space-y-2 mt-4">
+								{tasks.length > 0 ? tasks.map((task: any) => (
+									<div key={task.id} className={`flex items-start justify-between p-3 border rounded-lg ${task.status === 'completed' ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200'}`}>
+										<div className="flex items-start gap-3">
+											<input 
+												type="checkbox" 
+												className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+												checked={task.status === "completed"}
+												onChange={() => handleToggleTask(task.id, task.status)}
+											/>
+											<div>
+												<p className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-foreground'}`}>
+													{task.title}
+												</p>
+												<span className="text-[10px] text-muted-foreground">{new Date(task.createdAt).toLocaleDateString()}</span>
+											</div>
+										</div>
+										<button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+											<Trash2 className="h-4 w-4" />
+										</button>
+									</div>
+								)) : (
+									<p className="text-xs text-muted-foreground text-center py-2">No tasks yet.</p>
+>>>>>>> 9f14b31d5da5f0caa033fee5eb82ba347046dffc
 								)}
 							</div>
 						</CardContent>

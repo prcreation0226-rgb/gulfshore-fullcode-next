@@ -118,9 +118,16 @@ export const Filters = ({
 	const [hoa, setHoa] = useState("Any");
 	const [minAcres, setMinAcres] = useState("");
 	const [maxAcres, setMaxAcres] = useState("");
+	const [minSqft, setMinSqft] = useState("");
 	const [statusFilter, setStatusFilter] = useState("Active");
 
 	// Parse filters from URL query on mount
+	useEffect(() => {
+		if (searchParams.get("openFilters") === "true") {
+			setOpen(true);
+		}
+	}, [searchParams]);
+
 	useEffect(() => {
 		const parsed = parseFiltersFromSearchParams(searchParams);
 		const location = parseLocationFromPathname(pathname);
@@ -136,6 +143,7 @@ export const Filters = ({
 		setMaxPrice(parsed.maxPrice || reduxFilters.maxPrice || "Maximum");
 		setMinYearBuilt(parsed.builtYearMin || reduxFilters.builtYearMin || "");
 		setMaxYearBuilt(parsed.builtYearMax || reduxFilters.builtYearMax || "");
+		setMinSqft(parsed.minSqft || reduxFilters.minSqft || "");
 		setPostalCode(parsed.postalCode || reduxFilters.postalCode || "");
 		setPropertyType(parsed.propertyTypes || reduxFilters.propertyTypes || []);
 		setKeywords(parsed.features || reduxFilters.features || []);
@@ -213,6 +221,10 @@ export const Filters = ({
 
 		const nextFilters = {
 			...reduxFilters,
+			north: null,
+			south: null,
+			east: null,
+			west: null,
 			city,
 			developmentName: communityInput || community || "",
 			subdivision,
@@ -225,6 +237,7 @@ export const Filters = ({
 			maxPrice: max,
 			builtYearMin: minYearBuilt,
 			builtYearMax: maxYearBuilt,
+			minSqft,
 			postalCode,
 			propertyTypes: propertyType,
 			features: keywords,
@@ -249,7 +262,6 @@ export const Filters = ({
 		router.replace(nextUrl, {
 			scroll: false,
 		});
-		dispatch(fetchProperties());
 		scrollResultsToTop();
 		setOpen(false);
 		setLoading(false);
@@ -367,7 +379,6 @@ export const Filters = ({
 		handleSaveSearch(nextUrl);
 		dispatch(setFilters(nextFilters));
 		router.replace(nextUrl, { scroll: false });
-		dispatch(fetchProperties());
 		scrollResultsToTop();
 		setOpen(false);
 	};
@@ -653,6 +664,18 @@ export const Filters = ({
 							onChange={(e) => setMaxYearBuilt(e.target.value)}
 							className="text-sm"
 							placeholder="Max Year"
+						/>
+					</div>
+					<div className="flex flex-col space-y-2">
+						<Label className="text-sm font-medium text-gray-900">
+							Minimum Living Sqft
+						</Label>
+						<Input
+							type="number"
+							value={minSqft}
+							onChange={(e) => setMinSqft(e.target.value)}
+							className="text-sm"
+							placeholder="e.g. 1500"
 						/>
 					</div>
 					<div className="flex flex-col space-y-2">

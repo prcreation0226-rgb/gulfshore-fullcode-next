@@ -34,6 +34,8 @@ export interface Filters {
 	school?: string;
 	mls?: string;
 	address?: string;
+	minSqft?: string;
+	maxSqft?: string;
 }
 
 

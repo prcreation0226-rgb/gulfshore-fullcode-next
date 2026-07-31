@@ -36,7 +36,7 @@ export default function AIChatWidget() {
 		}
 	};
 	return (
-		<div className="fixed bottom-6 right-6 z-50">
+		<div className="fixed bottom-20 right-4 z-50 md:bottom-24 md:right-6">
 			{/* Chat Button */}
 			{!isOpen && (
 				<button
@@ -94,13 +94,21 @@ export default function AIChatWidget() {
 											: "bg-white text-gray-800 border border-gray-100 rounded-tl-sm"
 									}`}
 								>
+									{m.content && <span>{m.content}</span>}
 									{m.parts?.map((part, index) => {
-										if (part.type === "text") {
+										if (part.type === "text" && !m.content) {
 											return <span key={index}>{part.text}</span>;
 										}
 										if (part.type === "tool-searchProperties" && "output" in part && part.output) {
 											const result: any = part.output;
 											if (Array.isArray(result)) {
+												if (result.length === 0) {
+													return (
+														<div key={part.toolCallId} className="mt-3 text-xs italic text-gray-600 bg-gray-50 border border-gray-100 p-2 rounded">
+															I searched the database but couldn't find any active listings matching your criteria. Let me know if you want to try a different area or set up an alert.
+														</div>
+													);
+												}
 												return (
 													<div key={part.toolCallId} className="mt-3 space-y-2">
 														<p className="text-xs font-semibold text-primary border-b pb-1">Found Properties:</p>

@@ -64,13 +64,79 @@ async function getMappedLead(id: string) {
 		};
 	});
 
+	// Fetch sent alerts from drip logs & sequence steps
+	const [dripLogs, sequenceSteps] = await Promise.all([
+		prisma.dripCampaignLog.findMany({
+			where: { userId: id },
+			orderBy: { sentAt: "desc" },
+		}),
+		prisma.sequenceStep.findMany({
+			where: { leadId: id, sentAt: { not: null } },
+			orderBy: { sentAt: "desc" },
+		}),
+	]);
+
+	const sentAlerts = [
+		...dripLogs.map((log) => ({
+			id: log.id,
+			sentAt: log.sentAt,
+			subject: "Automated Property Match Digest",
+			campaignName: "Property Drip Campaign",
+			type: "Property Alert",
+			status: log.status === "sent" ? "Delivered" : log.status,
+			propertiesCount: 3,
+		})),
+		...sequenceSteps.map((step) => ({
+			id: step.id,
+			sentAt: step.sentAt || step.scheduledAt,
+			subject: step.message ? step.message.slice(0, 50) + "..." : "Property Email Alert",
+			campaignName: "Drip Sequence",
+			type: step.type || "Email Alert",
+			status: step.status === "sent" ? "Delivered" : "Sent",
+			propertiesCount: 1,
+		})),
+		...(lead.savedSearch || [])
+			.filter((s) => s.lastNotifiedAt)
+			.map((s) => {
+				const f = typeof s.filters === "string" ? JSON.parse(s.filters) : s.filters || {};
+				return {
+					id: s.id,
+					sentAt: s.lastNotifiedAt!,
+					subject: `Instant Alert: New Listings in ${f.city || f.City || "SW Florida"}`,
+					campaignName: s.name || "Saved Search Alert",
+					type: "Saved Search Alert",
+					status: "Delivered",
+					propertiesCount: 5,
+				};
+			}),
+	].sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
+
+	// Fetch all viewed properties for this lead (including any associated by email or clerk userId)
+	const orConditions: any[] = [{ userId: lead.id }];
+	if (lead.userId) orConditions.push({ userId: lead.userId });
+	if (lead.email) orConditions.push({ user: { email: { equals: lead.email, mode: "insensitive" } } });
+
+	const rawViews = await prisma.viewedProperty.findMany({
+		where: { OR: orConditions },
+		orderBy: { lastViewedAt: "desc" },
+		include: { property: true },
+	});
+
+	// Deduplicate by propertyId
+	const seenProperties = new Set<string>();
+	const allViewedProperties = rawViews.filter((v) => {
+		if (seenProperties.has(v.propertyId)) return false;
+		seenProperties.add(v.propertyId);
+		return true;
+	});
+
 	return {
 		...lead,
 		_id: lead.id,
 		fullName: lead.fullName || `${lead.firstName || ""} ${lead.lastName || ""}`.trim() || "Unknown User",
 		tags: parsedTags,
 		propertyCriteria: mappedCriteria,
-
+		sentAlerts,
 
 		notes: lead.notes.map((n) => ({
 			_id: n.id,
@@ -86,14 +152,40 @@ async function getMappedLead(id: string) {
 		})),
 		aiChats: lead.aiChats,
 		tasks: lead.tasks,
-		viewHistory: lead.viewHistory.map(v => ({
-			_id: v.id,
-			propertyId: v.propertyId,
-			address: v.property?.FullAddress || "Unknown",
-			price: v.property?.ListPrice,
-			viewCount: v.viewCount,
-			lastViewedAt: v.lastViewedAt,
-		})),
+		viewHistory: allViewedProperties.map((v) => {
+			let image = "/map-bg.webp";
+			if (v.property?.images) {
+				try {
+					const imgs = typeof v.property.images === "string" ? JSON.parse(v.property.images) : v.property.images;
+					if (Array.isArray(imgs) && imgs.length > 0) {
+						const first = imgs[0];
+						image = typeof first === "string" ? first : first?.MediaURL || image;
+					}
+				} catch (e) {}
+			}
+
+			const city = v.property?.City || "";
+			const community = v.property?.Community || "";
+			const address = v.property?.FullAddress || "Unknown Address";
+			const mls = v.property?.MLSNumber || "";
+			const formattedCity = city ? city.replaceAll(/\s+/g, "-") : "Florida";
+			const formattedCommunity = community ? community.replaceAll(/\s+/g, "-") : "others";
+			const formattedAddress = address.replaceAll(", ", "-").replaceAll(" ", "-").replaceAll("/", "-");
+			const url = `/Florida-Real-Estate-Listings/${formattedCity}/${formattedCommunity}/${formattedAddress}${mls ? `/${mls}` : ""}`;
+
+			return {
+				_id: v.id,
+				propertyId: v.propertyId,
+				address: v.property?.FullAddress || "Unknown Address",
+				price: v.property?.ListPrice,
+				propertyType: v.property?.PropertySubType || v.property?.PropertyType || "Single Family Residence",
+				image,
+				url,
+				mlsNumber: mls,
+				viewCount: v.viewCount,
+				lastViewedAt: v.lastViewedAt,
+			};
+		}),
 	};
 }
 

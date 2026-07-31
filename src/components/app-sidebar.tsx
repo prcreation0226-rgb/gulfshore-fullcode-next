@@ -9,6 +9,8 @@ import {
 	IconUserCheck,
 	IconArticle,
 	IconRobot,
+	IconMessage,
+	IconMail,
 } from "@tabler/icons-react";
 import {
 	ChevronDown,
@@ -147,9 +149,19 @@ const data = {
 			icon: IconUserCheck,
 		},
 		{
-			title: "AI Conversations",
-			url: "/admin/ai-chats",
+			title: "AI Chatbot",
+			url: "/admin/ai-chats?channel=website",
 			icon: IconRobot,
+		},
+		{
+			title: "AI SMS",
+			url: "/admin/ai-chats?channel=sms",
+			icon: IconMessage,
+		},
+		{
+			title: "AI Emails",
+			url: "/admin/ai-chats?channel=email",
+			icon: IconMail,
 		},
 		{
 			title: "Contact Requests",

@@ -68,7 +68,6 @@ export default function StickySearchBar() {
 		const nextParams = buildQueryFromFilters(nextFilters, params);
 		dispatch(setFilters(nextFilters));
 		router.replace(`${path}?${nextParams.toString()}`, { scroll: false });
-		dispatch(fetchProperties());
 		window.scrollTo({ top: 0, behavior: "smooth" });
 		document.getElementById("container")?.scrollTo({
 			top: 0,
@@ -88,7 +87,6 @@ export default function StickySearchBar() {
 		const nextParams = buildQueryFromFilters(nextFilters, params);
 		dispatch(setFilters(nextFilters));
 		router.replace(`${path}?${nextParams.toString()}`, { scroll: false });
-		dispatch(fetchProperties());
 		window.scrollTo({ top: 0, behavior: "smooth" });
 		document.getElementById("container")?.scrollTo({
 			top: 0,
@@ -107,7 +105,6 @@ export default function StickySearchBar() {
 		const nextParams = buildQueryFromFilters(nextFilters, params);
 		dispatch(setFilters(nextFilters));
 		router.replace(`${path}?${nextParams.toString()}`, { scroll: false });
-		dispatch(fetchProperties());
 		window.scrollTo({ top: 0, behavior: "smooth" });
 		document.getElementById("container")?.scrollTo({
 			top: 0,
@@ -129,7 +126,6 @@ export default function StickySearchBar() {
 		const nextParams = buildQueryFromFilters(nextFilters, params);
 		dispatch(setFilters(nextFilters));
 		router.replace(`${path}?${nextParams.toString()}`, { scroll: false });
-		dispatch(fetchProperties());
 		document.getElementById("container")?.scrollTo({ top: 0, behavior: "smooth" });
 	};
 

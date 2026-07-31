@@ -31,8 +31,8 @@ export default function SearchLayoutClient({
 			<div
 				className={`${
 					isMapView
-						? "flex w-full lg:w-[48%] xl:w-[46%] flex-col overflow-y-auto bg-white z-20 pt-4"
-						: "w-full relative bg-white mx-auto overflow-y-auto flex flex-col"
+						? "flex w-full lg:w-[48%] xl:w-[46%] flex-col bg-white z-20 pt-4"
+						: "w-full relative bg-white mx-auto flex flex-col"
 				}`}
 			>
 				{children}

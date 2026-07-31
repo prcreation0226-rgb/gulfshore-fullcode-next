@@ -1,15 +1,22 @@
 import prisma from "@/lib/prisma";
 import { sendSMS } from "@/lib/twilio";
 import { buildQueryFromFilters } from "@/lib/search-filters";
+import { sendPropertyAlert } from "@/lib/leads/services/property-alerts";
 
 /**
  * Checks for new properties matching saved searches and sends SMS/Email alerts.
+ * Also sends a generic "Top New Listing" daily blast to all other leads.
  */
 export async function processSavedSearches() {
-	console.log("[SavedSearch] Starting to process saved searches...");
+	console.log("[SavedSearch] Starting to process saved searches & generic alerts...");
 
 	try {
-		// 1. Find all saved searches that have notifications enabled
+		// Keep track of leads who received personalized alerts so we don't double-email them
+		const alertedLeadIds = new Set<string>();
+
+		// ---------------------------------------------------------
+		// 1. PERSONALIZED ALERTS (Saved Searches)
+		// ---------------------------------------------------------
 		const activeSearches = await prisma.savedSearch.findMany({
 			where: { notify: true },
 			include: { user: true },
@@ -17,67 +24,205 @@ export async function processSavedSearches() {
 
 		for (const search of activeSearches) {
 			const lead = search.user;
-			if (!lead || !lead.phone) continue; // Need phone for SMS
+			if (!lead) continue;
 
-			// 2. We only want properties synced SINCE the last time we checked this search.
-			// If it's never been checked, check last 24 hours.
+			// Look back 24 hours if never checked
 			const lookbackDate = search.lastNotifiedAt
 				? search.lastNotifiedAt
 				: new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-			// 3. Build the Prisma where clause from the saved JSON filters
 			const filtersObj = search.filters as any;
-			const baseWhere = buildQueryFromFilters(filtersObj || {});
+			const searchParams = buildQueryFromFilters(filtersObj || {});
+			
+			// Build proper Prisma where clause from searchParams
+			const baseWhere: any = {};
+			
+			// Price Range
+			const minPrice = searchParams.get("minPrice") ? Number(searchParams.get("minPrice")) : null;
+			const maxPrice = searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : null;
+			if (minPrice !== null || maxPrice !== null) {
+				baseWhere.ListPrice = {};
+				if (minPrice !== null) baseWhere.ListPrice.gte = minPrice;
+				if (maxPrice !== null) baseWhere.ListPrice.lte = maxPrice;
+			}
+			
+			// Locations (Read directly from filtersObj since buildQueryFromFilters strips them)
+			if (filtersObj.city) baseWhere.City = { contains: filtersObj.city.replace(/-/g, ' '), mode: 'insensitive' };
+			if (filtersObj.postalCode) baseWhere.PostalCode = filtersObj.postalCode;
+			if (filtersObj.mls || filtersObj.MLSNumber) baseWhere.MLSNumber = filtersObj.mls || filtersObj.MLSNumber;
+			if (filtersObj.subdivision) baseWhere.Development = { contains: filtersObj.subdivision, mode: 'insensitive' };
+			if (filtersObj.developmentName) baseWhere.Community = { contains: filtersObj.developmentName.replace(/-/g, ' '), mode: 'insensitive' };
+			
+			// Beds / Baths
+			const bedsParam = searchParams.get("beds");
+			if (bedsParam) baseWhere.BedroomsTotal = { gte: parseInt(bedsParam) };
+			const bathsParam = searchParams.get("baths");
+			if (bathsParam) baseWhere.BathroomsFull = { gte: parseInt(bathsParam) };
+			
+			// Acres
+			const minAcres = searchParams.get("minAcres") ? parseFloat(searchParams.get("minAcres")!) : null;
+			const maxAcres = searchParams.get("maxAcres") ? parseFloat(searchParams.get("maxAcres")!) : null;
+			if (minAcres !== null || maxAcres !== null) {
+				baseWhere.LotSizeAcres = {};
+				if (minAcres !== null) baseWhere.LotSizeAcres.gte = minAcres;
+				if (maxAcres !== null) baseWhere.LotSizeAcres.lte = maxAcres;
+			}
+			
+			// Year Built
+			const builtYearMin = searchParams.get("builtYearMin") ? parseInt(searchParams.get("builtYearMin")!) : null;
+			const builtYearMax = searchParams.get("builtYearMax") ? parseInt(searchParams.get("builtYearMax")!) : null;
+			if (builtYearMin !== null || builtYearMax !== null) {
+				baseWhere.YearBuilt = {};
+				if (builtYearMin !== null) baseWhere.YearBuilt.gte = builtYearMin;
+				if (builtYearMax !== null) baseWhere.YearBuilt.lte = builtYearMax;
+			}
+			
+			// Bounding Box
+			if (filtersObj.north && filtersObj.south && filtersObj.east && filtersObj.west) {
+				baseWhere.AND = [
+					{ Latitude: { gte: parseFloat(String(filtersObj.south)), lte: parseFloat(String(filtersObj.north)) } },
+					{ Longitude: { gte: parseFloat(String(filtersObj.west)), lte: parseFloat(String(filtersObj.east)) } },
+				];
+			}
 
-			// 4. Combine base filters with our time constraint and status Active
+			// Features
+			const featuresRaw = searchParams.get("features") || "";
+			const features = featuresRaw ? featuresRaw.split(",").map((f: string) => f.trim().toLowerCase()) : searchParams.getAll("features[]").map((f: string) => f.toLowerCase());
+			if (features.length > 0) {
+				if (features.some((f: string) => f.includes("spa"))) baseWhere.SpaYN = true;
+				if (features.some((f: string) => f.includes("waterfront"))) baseWhere.WaterfrontYN = true;
+				if (features.some((f: string) => f.includes("pool"))) baseWhere.PoolPrivateYN = true;
+				if (features.some((f: string) => f.includes("gulf"))) baseWhere.GulfAccessYN = true;
+				if (features.some((f: string) => f.includes("garage"))) baseWhere.GarageYN = true;
+			}
+			if (searchParams.get("hoa") === "yes") baseWhere.WaterfrontYN = { not: null };
+			
+			// Property Types
+			const types = searchParams.get("propertyTypes") ? searchParams.get("propertyTypes")!.split(",") : [];
+			if (types.length > 0) {
+				const orConditions: any[] = [];
+				if (types.includes("Homes") || types.includes("homes") || types.includes("Single Family")) {
+					orConditions.push({ PropertySubType: "Single Family Residence" });
+				}
+				if (types.includes("Condos") || types.includes("condos")) {
+					orConditions.push({ PropertySubType: { in: ["Low Rise (1-3)", "Mid Rise (4-7)", "High Rise (8+)", "Townhouse"] } });
+				}
+				if (types.includes("Lots") || types.includes("Residential-Lots") || types.includes("lots")) {
+					orConditions.push({ PropertyType: "Land" });
+				}
+				if (orConditions.length > 0) {
+					baseWhere.OR = orConditions;
+				}
+			}
+
 			const finalWhere = {
 				...baseWhere,
 				StandardStatus: "Active",
-				createdAt: { gt: lookbackDate }, // Must be newly added to our DB
+				createdAt: { gt: lookbackDate },
 			};
 
-			// 5. Query matching new properties
 			const matchingProperties = await prisma.property.findMany({
 				where: finalWhere,
-				take: 5, // We just need to know if there's at least 1, but let's grab a few for the message
-				select: {
-					BedroomsTotal: true,
-					BathroomsTotalInteger: true,
-					PoolPrivateYN: true,
-					ListPrice: true,
-				},
 			});
 
 			if (matchingProperties.length > 0) {
+				const count = matchingProperties.length;
 				const prop = matchingProperties[0];
 				
-				// Format price e.g. 1500000 -> 1.5 Million
+				// FORMAT SMS
 				let priceStr = prop.ListPrice ? `$${prop.ListPrice.toLocaleString()}` : "Price TBD";
 				if (prop.ListPrice && prop.ListPrice >= 1000000) {
 					priceStr = `${(prop.ListPrice / 1000000).toFixed(1)} Million`;
 				}
-
 				const beds = prop.BedroomsTotal || "2+";
 				const baths = prop.BathroomsTotalInteger || "2+";
 				const poolStr = prop.PoolPrivateYN ? "pool home" : "home";
 
-				// Custom Message Format requested by client
-				const message = `Dimitri Schwarz 239.992.9119 GulfShoreGroup.com - ${beds} bedroom ${baths} bath ${poolStr} under ${priceStr}. - New Listing`;
+				const searchTitle = search.name && search.name !== "Saved Search" ? search.name : `${beds} bed ${baths} bath ${poolStr} under ${priceStr}`;
+				const smsMessage = `Dimitri Schwarz 239.992.9119 GulfShoreGroup.com - ${searchTitle} - ${count} New Listing${count > 1 ? 's' : ''}`;
 
-				console.log(`[SavedSearch] Match found for Lead ${lead.email}. Sending SMS: "${message}"`);
-				
-				// Send SMS
-				await sendSMS(lead.phone, message);
+				// SEND SMS
+				if (lead.phone) {
+					console.log(`[SavedSearch] Match found for Lead ${lead.email}. Sending SMS.`);
+					await sendSMS(lead.phone, smsMessage).catch(err => console.error("SMS Error:", err));
+				}
 
-				// 6. Update lastNotifiedAt
+				// SEND EMAIL
+				if (lead.email) {
+					console.log(`[SavedSearch] Sending Email to ${lead.email}.`);
+					await sendPropertyAlert({
+						to: lead.email,
+						recipientName: lead.firstName || "Valued Client",
+						subject: `${count} New Property Match${count > 1 ? 'es' : ''}: ${searchTitle}`,
+						alertTitle: count > 1 ? "New Homes Matching Your Search" : "A New Home Matching Your Search",
+						alertSubtitle: count > 1 ? `We found ${count} new properties that match your saved preferences.` : `We found a new ${poolStr} in ${prop.City} that matches your saved preferences.`,
+						properties: matchingProperties as any,
+					}).catch(err => console.error("Email Error:", err));
+				}
+
+				alertedLeadIds.add(lead.id);
+
+				// Update lastNotifiedAt
 				await prisma.savedSearch.update({
 					where: { id: search.id },
 					data: { lastNotifiedAt: new Date() },
 				});
 			}
 		}
+
+		// ---------------------------------------------------------
+		// 2. GENERIC BLAST TO ALL OTHER LEADS (Once a day at ~10 AM EDT / 14:00 UTC)
+		// ---------------------------------------------------------
+		const currentUTCHour = new Date().getUTCHours();
+		const isDailyBlastHour = currentUTCHour === 14; 
 		
-		console.log("[SavedSearch] Finished processing saved searches.");
+		// If it's the daily blast hour, send to everyone else
+		if (isDailyBlastHour) {
+			console.log("[SavedSearch] Running Daily Generic Blast for all other leads...");
+			
+			// Find the absolute newest active property from the last 24 hours
+			const newestProperty = await prisma.property.findFirst({
+				where: { 
+					StandardStatus: "Active",
+					createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) } 
+				},
+				orderBy: { createdAt: 'desc' }
+			});
+
+			if (newestProperty) {
+				const allLeads = await prisma.lead.findMany({
+					where: {
+						id: { notIn: Array.from(alertedLeadIds) }, // Skip leads who already got a personalized alert today
+					}
+				});
+
+				for (const lead of allLeads) {
+					// SEND SMS (Generic)
+					if (lead.phone) {
+						let priceStr = newestProperty.ListPrice ? `$${newestProperty.ListPrice.toLocaleString()}` : "";
+						const smsMessage = `Dimitri Schwarz 239.992.9119 GulfShoreGroup.com - Featured New Listing in ${newestProperty.City} ${priceStr}`;
+						await sendSMS(lead.phone, smsMessage).catch(err => console.error("SMS Error:", err));
+					}
+
+					// SEND EMAIL (Generic)
+					if (lead.email) {
+						await sendPropertyAlert({
+							to: lead.email,
+							recipientName: lead.firstName || "Valued Client",
+							subject: `Featured New Listing in ${newestProperty.City}`,
+							alertTitle: "A Naples Area Home for You",
+							alertSubtitle: `Here is a brand new listing we think you'll love.`,
+							properties: newestProperty as any,
+						}).catch(err => console.error("Email Error:", err));
+					}
+				}
+				console.log(`[SavedSearch] Sent generic daily blast to ${allLeads.length} leads.`);
+			} else {
+				console.log("[SavedSearch] No new properties in the last 24h for the generic blast.");
+			}
+		}
+
+		console.log("[SavedSearch] Finished processing saved searches and alerts.");
 	} catch (error) {
 		console.error("[SavedSearch] Error processing searches:", error);
 	}

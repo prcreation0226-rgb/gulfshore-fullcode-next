@@ -49,7 +49,6 @@ export const SortComponent = () => {
 			router.replace(`${pathname}?${nextParams.toString()}`, {
 				scroll: false,
 			});
-			dispatch(fetchProperties());
 			window.scrollTo({ top: 0, behavior: "smooth" });
 			document.getElementById("container")?.scrollTo({
 				top: 0,
