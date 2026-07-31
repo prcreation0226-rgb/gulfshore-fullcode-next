@@ -15,6 +15,7 @@ import UrlMaker from "@/hooks/url-maker";
 import Script from "next/script";
 import CityLinksSection from "@/components/search/links-section/cityLinksSection";
 import capitalizeWords from "@/hooks/capitalize-letter";
+import MarketReportSection from "@/components/search/marketReportSection";
 
 type Props = {
 	params: Promise<{ slug?: string[] }>;
@@ -130,6 +131,13 @@ export default async function RootLayout({
 								</h1>
 							</div>
 							<div>{children}</div>
+
+							<div className="w-11/12 max-w-[1600px] mx-auto">
+								<MarketReportSection
+									city={seoData?.city || filtersParams?.city}
+									community={seoData?.community || filtersParams?.community}
+								/>
+							</div>
 
 							{seoData.city && (
 								<Suspense>
