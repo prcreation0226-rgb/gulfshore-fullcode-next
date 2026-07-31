@@ -22,13 +22,14 @@ import {
 import capitalizeWords from "@/hooks/capitalize-letter";
 import { SortItem, SortItems } from "@/lib/constants";
 import Cities from "@/types/cities";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Checkbox } from "../ui/checkbox";
 import { toast } from "sonner";
 import axios from "axios";
 import ExtractSearchParams from "@/hooks/extractSearchParams";
 import { AutocompleteInput } from "../ui/autocomplete";
+import { useEffect } from "react";
 
 export default function MobileFiltersModal({
 	community,
@@ -66,7 +67,14 @@ export default function MobileFiltersModal({
 	);
 
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const { isLoaded, isSignedIn } = useAuth();
+
+	useEffect(() => {
+		if (searchParams?.get("openFilters") === "true") {
+			setIsExpanded(true);
+		}
+	}, [searchParams]);
 
 
 	const handleSearch = () => {

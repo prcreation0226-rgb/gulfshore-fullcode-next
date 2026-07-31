@@ -123,6 +123,12 @@ export const Filters = ({
 
 	// Parse filters from URL query on mount
 	useEffect(() => {
+		if (searchParams.get("openFilters") === "true") {
+			setOpen(true);
+		}
+	}, [searchParams]);
+
+	useEffect(() => {
 		const parsed = parseFiltersFromSearchParams(searchParams);
 		const location = parseLocationFromPathname(pathname);
 		setCity(location.city || reduxFilters.city || "");
