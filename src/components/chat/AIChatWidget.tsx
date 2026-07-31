@@ -102,6 +102,13 @@ export default function AIChatWidget() {
 										if (part.type === "tool-searchProperties" && "output" in part && part.output) {
 											const result: any = part.output;
 											if (Array.isArray(result)) {
+												if (result.length === 0) {
+													return (
+														<div key={part.toolCallId} className="mt-3 text-xs italic text-gray-600 bg-gray-50 border border-gray-100 p-2 rounded">
+															I searched the database but couldn't find any active listings matching your criteria. Let me know if you want to try a different area or set up an alert.
+														</div>
+													);
+												}
 												return (
 													<div key={part.toolCallId} className="mt-3 space-y-2">
 														<p className="text-xs font-semibold text-primary border-b pb-1">Found Properties:</p>

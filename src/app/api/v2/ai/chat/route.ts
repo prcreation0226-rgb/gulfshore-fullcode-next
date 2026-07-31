@@ -40,6 +40,7 @@ export async function POST(req: Request) {
 
 		const result = streamText({
 			model: openai("gpt-4o-mini"),
+			maxSteps: 5,
 			system: `You are an expert AI Real Estate Concierge for Gulfshore Group, working on behalf of Dimitri Schwarz. 
 Your goal is to politely and professionally assist website visitors, answer their real estate questions, and qualify them as leads.
 Key qualifying questions you should naturally weave into the conversation:
