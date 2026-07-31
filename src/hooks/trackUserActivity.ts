@@ -25,23 +25,20 @@ import { trackPropertyView } from "@/lib/leads/client";
  * Calls POST /api/leads/viewed-property once per page visit.
  */
 export function useTrackViewedProperty(propertyId: string) {
-	const { isLoaded, isSignedIn } = useAuth();
 	const trackedRef = useRef(false);
 
 	useEffect(() => {
-		if (!isLoaded || !isSignedIn || !propertyId || trackedRef.current) {
+		if (!propertyId || trackedRef.current) {
 			return;
 		}
 
 		trackedRef.current = true;
 
 		trackPropertyView(propertyId).catch((error) => {
-			if (error?.name !== "LeadAuthRequiredError") {
-				console.error("[trackViewedProperty]", error);
-			}
+			console.error("[trackViewedProperty]", error);
 			trackedRef.current = false;
 		});
-	}, [isLoaded, isSignedIn, propertyId]);
+	}, [propertyId]);
 }
 
 export function TrackSearches() {

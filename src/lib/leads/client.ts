@@ -63,9 +63,6 @@ export function mapFiltersToLeadSearch(
 }
 
 export async function trackPropertyView(propertyId: string) {
-	if (typeof document !== "undefined" && !document.cookie.includes("__session") && !document.cookie.includes("mock_signed_in=true")) {
-		throw new LeadAuthRequiredError();
-	}
 	return leadRequest<unknown>("/api/leads/viewed-property", {
 		method: "POST",
 		body: JSON.stringify({ propertyId }),
