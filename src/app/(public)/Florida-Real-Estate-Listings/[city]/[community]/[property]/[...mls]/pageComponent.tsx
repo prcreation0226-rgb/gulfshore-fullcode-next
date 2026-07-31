@@ -37,6 +37,8 @@ const CitiesSection = dynamic(
 	() => import("@/components/city/cities-section"),
 	{ ssr: false, loading: () => <Skeleton /> }
 );
+import CountyTaxSection from "@/components/property/CountyTaxSection";
+import SchoolInfoSection from "@/components/property/SchoolInfoSection";
 
 
 
@@ -165,6 +167,12 @@ export default function PropertyDetail(property: Property) {
 							<WeatherWidget city={property.City} />
 						</Suspense>
 					</div>
+
+					{/* County & Tax Information Card */}
+					<CountyTaxSection property={property} />
+
+					{/* School Information Card */}
+					<SchoolInfoSection property={property} />
 				</div>
 				{!property.VirtualTourURLBranded &&
 				!property.VirtualTourURLUnbranded ? null : (() => {

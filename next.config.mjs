@@ -46,12 +46,15 @@ const nextConfig = {
 	poweredByHeader: false,
 	compress: true,
 
-	turbopack: process.env.NEXT_PUBLIC_USE_REAL_CLERK !== "true" ? {
-		resolveAlias: {
-			"@clerk/nextjs/server": "./src/lib/mock-clerk-server.ts",
-			"@clerk/nextjs": "./src/lib/mock-clerk.tsx",
-		},
-	} : {},
+	turbopack: {
+		root: __dirname,
+		...(process.env.NEXT_PUBLIC_USE_REAL_CLERK !== "true" ? {
+			resolveAlias: {
+				"@clerk/nextjs/server": "./src/lib/mock-clerk-server.ts",
+				"@clerk/nextjs": "./src/lib/mock-clerk.tsx",
+			},
+		} : {}),
+	},
 
 	webpack: (config) => {
 		if (process.env.NEXT_PUBLIC_USE_REAL_CLERK !== "true") {
