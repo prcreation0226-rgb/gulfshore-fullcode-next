@@ -219,9 +219,17 @@ export async function syncTodaysActiveProperties({
 		"Active"
 	);
 
-	const totalFetched = pass1.totalFetched + pass2.totalFetched;
-	const totalSuccess = pass1.totalSuccess + pass2.totalSuccess;
-	const totalFailed = pass1.totalFailed + pass2.totalFailed;
+	// --- Pass 3: Closed properties (recently sold) ---
+	const pass3 = await runSyncPass(
+		"BridgeModificationTimestamp_Closed",
+		fetchBridgeBatch,
+		modificationDate,
+		"Closed"
+	);
+
+	const totalFetched = pass1.totalFetched + pass2.totalFetched + pass3.totalFetched;
+	const totalSuccess = pass1.totalSuccess + pass2.totalSuccess + pass3.totalSuccess;
+	const totalFailed = pass1.totalFailed + pass2.totalFailed + pass3.totalFailed;
 
 	console.log(`[Sync] === Bridge Sync Completed ===`);
 	console.log(`[Sync] Total fetched: ${totalFetched}, success: ${totalSuccess}, failed: ${totalFailed}`);

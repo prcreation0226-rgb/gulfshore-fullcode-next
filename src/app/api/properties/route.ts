@@ -18,7 +18,11 @@ export async function GET(req: NextRequest) {
 		const statusParam = query.get("status") || query.get("Status") || "Active";
 		const where: any = {};
 		if (statusParam !== "All") {
-			where.StandardStatus = statusParam;
+			if (statusParam === "Sold") {
+				where.StandardStatus = "Closed";
+			} else {
+				where.StandardStatus = statusParam;
+			}
 		}
 
 

@@ -50,7 +50,7 @@ Key qualifying questions you should naturally weave into the conversation:
 Always be concise. Do not write long paragraphs. 
 If the user asks for properties matching specific criteria (like address, MLS number, city, beds, baths, price, property type, pool, waterfront, year built), ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
 When you use the 'searchProperties' tool, it will return detailed property information including Description, YearBuilt, Lot Size, Waterfront, and more. Use this information to answer any specific questions the user has about a property (e.g., "when was this built?", "tell me about the description").
-If they provide a specific address (e.g., "5100 Seagrass"), use the address parameter in the tool.
+If they provide a specific address (e.g., "5100 Seagrass"), use the address parameter in the tool. ONLY include the street address in the address parameter, DO NOT include city, state, or zip code in the address parameter.
 If the search returns no properties, apologize and say you can set up a custom alert for them.`,
 			messages: await convertToModelMessages(messages),
 			tools: {
@@ -58,8 +58,8 @@ If the search returns no properties, apologize and say you can set up a custom a
 				searchProperties: tool({
 					description: "Search the real estate database for active properties matching the user's criteria. Use this whenever the user asks to see homes, properties, or listings.",
 					parameters: z.object({
-						city: z.string().optional().describe("City name, e.g., Naples, Bonita Springs"),
-						address: z.string().optional().describe("Street address or part of an address to search for (e.g., '5100 Seagrass Blvd')."),
+						city: z.string().optional().describe("City name, e.g., Naples, Bonita Springs, Cape Coral"),
+						address: z.string().optional().describe("ONLY the street address (e.g. '622 Sw 52nd St'). DO NOT include city, state, or zip code."),
 						propertyType: z.string().optional().describe("Type of property (e.g., 'Single Family', 'Condo', 'Townhouse')"),
 						community: z.string().optional().describe("Name of the community or subdivision"),
 						subdivision: z.string().optional().describe("Name of the subdivision"),
@@ -85,9 +85,20 @@ If the search returns no properties, apologize and say you can set up a custom a
 					// @ts-ignore
 					execute: async (args: any) => {
 						const { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa, minAcres, maxAcres, minYearBuilt, maxYearBuilt, yearBuilt, maxHoaFee } = args;
+						
+						// Prevent returning top 10 most expensive properties by default if no filters are provided
+						const hasFilters = city || address || propertyType || community || subdivision || mlsNumber || zipCode || beds || baths || minPrice || maxPrice;
+						if (!hasFilters && !hasPool && !waterfront && !gulfAccess && !newConstruction && !garage && !spa) {
+							return [];
+						}
+
 						const where: any = { StandardStatus: "Active" };
 						
-						if (city) where.City = { contains: city };
+						// Handle potential typos in city like "Cape Cora"
+						if (city) {
+							if (city.toLowerCase().includes("cape cora")) where.City = { contains: "Cape Coral" };
+							else where.City = { contains: city };
+						}
 						if (address) where.FullAddress = { contains: address };
 						if (propertyType) where.PropertyType = { contains: propertyType };
 						if (community) where.Community = { contains: community };
