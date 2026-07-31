@@ -396,19 +396,18 @@ import {
           )}
         </Section>
   
-        {/* Card Footer */}
         <Section
           style={{
             backgroundColor: CREAM,
             borderTop: `1px solid ${BORDER}`,
-            padding: "12px 24px",
+            padding: "16px 24px",
           }}
         >
-          <Row>
+          <Row style={{ marginBottom: "16px" }}>
             <Column>
               <Text
                 style={{
-                  fontSize: "10px",
+                  fontSize: "11px",
                   color: "#999",
                   margin: 0,
                   fontFamily: "'Poppins', Arial, sans-serif",
@@ -421,20 +420,29 @@ import {
                   : ""}
               </Text>
             </Column>
-            <Column style={{ textAlign: "right" as const }}>
-              <Link
+          </Row>
+          <Row>
+            <Column align="center">
+              <Button
                 href={'https://gulfshoregroup.com'+UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber||"")}
                 style={{
-                  fontSize: "11px",
-                  color: PRIMARY,
+                  backgroundColor: MID,
+                  color: "#FFFFFF",
+                  padding: "12px 24px",
+                  borderRadius: "6px",
+                  fontSize: "12px",
                   fontWeight: "700",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
                   textDecoration: "none",
+                  display: "block",
+                  textAlign: "center",
+                  width: "100%",
                   fontFamily: "'Poppins', Arial, sans-serif",
-                  letterSpacing: "0.05em",
                 }}
               >
                 VIEW DETAILS
-              </Link>
+              </Button>
             </Column>
           </Row>
         </Section>
