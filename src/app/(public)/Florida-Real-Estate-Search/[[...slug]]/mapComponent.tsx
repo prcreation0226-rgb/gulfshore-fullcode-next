@@ -170,13 +170,6 @@ export default function MapComponent({
 				const lng = parseFloat(property.Longitude);
 				if (!isNaN(lat) && !isNaN(lng)) {
 					mapRef.current.panTo({ lat, lng });
-					
-					// Slight offset to make sure the top part of the marker card isn't cut off by the header
-					setTimeout(() => {
-						if (mapRef.current) {
-							mapRef.current.panBy(0, -80);
-						}
-					}, 200);
 				}
 			}
 		} else {
