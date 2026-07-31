@@ -19,8 +19,14 @@ export async function trackViewedProperty(
 	leadId: string,
 	propertyId: string
 ): Promise<TrackViewedPropertyResult> {
-	const property = await prisma.property.findUnique({
-		where: { id: propertyId },
+	const property = await prisma.property.findFirst({
+		where: {
+			OR: [
+				{ id: propertyId },
+				{ ListingId: propertyId },
+				{ MLSNumber: propertyId },
+			],
+		},
 		select: { id: true },
 	});
 
@@ -28,6 +34,7 @@ export async function trackViewedProperty(
 		throw new ApiError(404, "Property not found", "PROPERTY_NOT_FOUND");
 	}
 
+	const realPropertyId = property.id;
 	const now = new Date();
 
 	return prisma.$transaction(async (tx) => {
@@ -35,7 +42,7 @@ export async function trackViewedProperty(
 			where: {
 				userId_propertyId: {
 					userId: leadId,
-					propertyId,
+					propertyId: realPropertyId,
 				},
 			},
 		});
@@ -62,7 +69,7 @@ export async function trackViewedProperty(
 		const created = await tx.viewedProperty.create({
 			data: {
 				userId: leadId,
-				propertyId,
+				propertyId: realPropertyId,
 				viewedAt: now,
 				lastViewedAt: now,
 				viewCount: 1,
