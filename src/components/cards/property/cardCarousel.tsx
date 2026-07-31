@@ -119,7 +119,6 @@ export default function CardCarousel({
 					<ListingLabels
 						CreatedDate={
 							property.OnMarketTimestamp ||
-							property.ModificationTimestamp ||
 							property.OnMarketDate ||
 							""
 						}

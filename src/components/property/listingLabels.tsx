@@ -33,9 +33,7 @@ export default function ListingLabels({
 			if (diff <= 60) return `${Math.floor(diff)} minutes ago`;
 			if (diff <= 1440) return `${Math.floor(diff / 60)} hours ago`;
 			if (diff > 1440 && diff < 2880) return `1 day ago`;
-			return diff <= 4320
-				? `${Math.floor(diff / 1440)} days ago`
-				: null;
+			return `${Math.floor(diff / 1440)} days ago`;
 		};
 		setTimeAgo(calculateTimeDifference(CreatedDate));
 	}, [CreatedDate]);

@@ -48,7 +48,8 @@ Key qualifying questions you should naturally weave into the conversation:
 3. Are they looking to buy, sell, or both?
 
 Always be concise. Do not write long paragraphs. 
-If the user asks for properties matching specific criteria (like address, MLS number, city, beds, baths, price, property type, pool, waterfront), ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
+If the user asks for properties matching specific criteria (like address, MLS number, city, beds, baths, price, property type, pool, waterfront, year built), ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
+When you use the 'searchProperties' tool, it will return detailed property information including Description, YearBuilt, Lot Size, Waterfront, and more. Use this information to answer any specific questions the user has about a property (e.g., "when was this built?", "tell me about the description").
 If they provide a specific address (e.g., "5100 Seagrass"), use the address parameter in the tool.
 If the search returns no properties, apologize and say you can set up a custom alert for them.`,
 			messages: await convertToModelMessages(messages),
@@ -78,11 +79,12 @@ If the search returns no properties, apologize and say you can set up a custom a
 						maxAcres: z.number().optional().describe("Maximum lot size in acres"),
 						minYearBuilt: z.number().optional().describe("Minimum year built"),
 						maxYearBuilt: z.number().optional().describe("Maximum year built"),
+						yearBuilt: z.number().optional().describe("Exact year built (e.g. 2025)"),
 						maxHoaFee: z.number().optional().describe("Maximum HOA fee per month"),
 					}),
 					// @ts-ignore
 					execute: async (args: any) => {
-						const { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa, minAcres, maxAcres, minYearBuilt, maxYearBuilt, maxHoaFee } = args;
+						const { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa, minAcres, maxAcres, minYearBuilt, maxYearBuilt, yearBuilt, maxHoaFee } = args;
 						const where: any = { StandardStatus: "Active" };
 						
 						if (city) where.City = { contains: city };
@@ -104,10 +106,11 @@ If the search returns no properties, apologize and say you can set up a custom a
 							if (minAcres) where.LotSizeAcres.gte = minAcres;
 							if (maxAcres) where.LotSizeAcres.lte = maxAcres;
 						}
-						if (minYearBuilt || maxYearBuilt) {
+						if (minYearBuilt || maxYearBuilt || yearBuilt) {
 							where.YearBuilt = {};
 							if (minYearBuilt) where.YearBuilt.gte = minYearBuilt;
 							if (maxYearBuilt) where.YearBuilt.lte = maxYearBuilt;
+							if (yearBuilt) where.YearBuilt.equals = yearBuilt;
 						}
 						if (maxHoaFee) where.HOAFee = { lte: maxHoaFee };
 						if (hasPool !== undefined) where.PoolPrivateYN = hasPool;
@@ -119,7 +122,7 @@ If the search returns no properties, apologize and say you can set up a custom a
 
 						const properties = await prisma.property.findMany({
 							where,
-							take: 5, // limit to 5 so we don't overwhelm the chat
+							take: 10, // limit to 10 so we don't overwhelm the chat but still give good options
 							orderBy: { ListPrice: 'desc' },
 							select: {
 								id: true,
@@ -133,6 +136,13 @@ If the search returns no properties, apologize and say you can set up a custom a
 								City: true,
 								Community: true,
 								MLSNumber: true,
+								YearBuilt: true,
+								Description: true,
+								WaterfrontYN: true,
+								GulfAccessYN: true,
+								GarageYN: true,
+								LotSizeAcres: true,
+								HOAFee: true,
 							}
 						});
 
@@ -144,6 +154,13 @@ If the search returns no properties, apologize and say you can set up a custom a
 							pool: p.PoolPrivateYN ? "Yes" : "No",
 							sqft: p.LivingArea,
 							type: p.PropertyType,
+							yearBuilt: p.YearBuilt,
+							description: p.Description,
+							waterfront: p.WaterfrontYN ? "Yes" : "No",
+							gulfAccess: p.GulfAccessYN ? "Yes" : "No",
+							garage: p.GarageYN ? "Yes" : "No",
+							lotSizeAcres: p.LotSizeAcres,
+							hoaFee: p.HOAFee,
 							link: UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined)
 						}));
 					},
