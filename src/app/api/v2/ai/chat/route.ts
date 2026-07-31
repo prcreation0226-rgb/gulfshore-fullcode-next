@@ -99,7 +99,15 @@ If the search returns no properties, apologize and say you can set up a custom a
 							if (city.toLowerCase().includes("cape cora")) where.City = { contains: "Cape Coral" };
 							else where.City = { contains: city };
 						}
-						if (address) where.FullAddress = { contains: address };
+						if (address) {
+							const words = address.replace(/[.,]/g, '').split(' ').filter(Boolean);
+							if (words.length > 0) {
+								where.AND = where.AND || [];
+								words.forEach((w: string) => {
+									where.AND.push({ FullAddress: { contains: w } });
+								});
+							}
+						}
 						if (propertyType) where.PropertyType = { contains: propertyType };
 						if (community) where.Community = { contains: community };
 						if (subdivision) where.SubdivisionName = { contains: subdivision };

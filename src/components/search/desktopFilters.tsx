@@ -215,6 +215,10 @@ export const Filters = ({
 
 		const nextFilters = {
 			...reduxFilters,
+			north: null,
+			south: null,
+			east: null,
+			west: null,
 			city,
 			developmentName: communityInput || community || "",
 			subdivision,
@@ -252,7 +256,6 @@ export const Filters = ({
 		router.replace(nextUrl, {
 			scroll: false,
 		});
-		dispatch(fetchProperties());
 		scrollResultsToTop();
 		setOpen(false);
 		setLoading(false);
