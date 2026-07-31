@@ -122,6 +122,13 @@ export async function GET(req: NextRequest) {
 			});
 		}
 
+		// ---- Exclude a specific MLS number (used on property detail page to hide current listing) ----
+		const excludeMLS = query.get("excludeMLS");
+		if (excludeMLS) {
+			where.NOT = where.NOT || [];
+			where.NOT.push({ MLSNumber: excludeMLS });
+		}
+
 		if (query.get("subdivision")) {
 			where.SubdivisionName = {
 				contains: query.get("subdivision")!,
