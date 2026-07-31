@@ -465,6 +465,7 @@ model Community {
   defaultImage  String?
   images        Json?
   description   String?
+  videoUrl      String?
   propertyCount Int        @default(0)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt

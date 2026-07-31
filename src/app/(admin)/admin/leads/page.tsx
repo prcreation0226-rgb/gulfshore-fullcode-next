@@ -271,7 +271,7 @@ export default function LeadsPage() {
 			</div>
 
 			{/* SUMMARY CARDS */}
-			<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+			<div className="grid grid-cols-1 md:grid-cols-5 gap-4">
 				{[
 					{
 						label: "Total Leads",
@@ -293,6 +293,11 @@ export default function LeadsPage() {
 						label: "Closed",
 						value: leads.filter((l) => l.status === "Closed").length,
 						color: "text-green-600",
+					},
+					{
+						label: "Hot Leads 🔥",
+						value: leads.filter((l) => l.scoreLabel === "Hot" || l.scoreLabel === "Ready to Buy").length,
+						color: "text-orange-600",
 					},
 				].map((card, i) => (
 					<Card key={i}>
@@ -372,6 +377,7 @@ export default function LeadsPage() {
 										"Status",
 										"Source",
 										"Tags",
+										"Score",
 										"Last Contact",
 										"Action",
 									].map((head) => (
@@ -447,6 +453,25 @@ export default function LeadsPage() {
 													)}
 												</div>
 											</div>
+										</td>
+										<td className="py-3 px-4">
+											{(() => {
+												const label = lead.scoreLabel || "Cold";
+												const score = lead.score ?? 0;
+												const cfg =
+													label === "Ready to Buy" || score > 75
+														? { emoji: "💰", cls: "bg-green-100 text-green-800" }
+													: label === "Hot" || score > 50
+														? { emoji: "🔥", cls: "bg-red-100 text-red-800" }
+													: label === "Warm" || score > 25
+														? { emoji: "🌡️", cls: "bg-orange-100 text-orange-800" }
+														: { emoji: "❄️", cls: "bg-slate-100 text-slate-700" };
+												return (
+													<span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>
+														{cfg.emoji} {label} · {score}
+													</span>
+												);
+											})()}
 										</td>
 										<td className="py-3 px-4 text-xs text-muted-foreground">
 											<div className="flex items-center gap-1">

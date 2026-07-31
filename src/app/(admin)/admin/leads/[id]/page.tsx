@@ -37,6 +37,7 @@ import {
 	Plus,
 	Trash2,
 	Edit2,
+	CheckSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -79,6 +80,10 @@ export default function LeadProfilePage() {
 		phone: "",
 		tags: [] as string[],
 	});
+	const [tasks, setTasks] = useState<any[]>([]);
+	const [taskLoading, setTaskLoading] = useState(false);
+	const [newTaskTitle, setNewTaskTitle] = useState("");
+	const [newTaskDueDate, setNewTaskDueDate] = useState("");
 
 	// -------------------- FETCH LEAD --------------------
 	useEffect(() => {
@@ -267,6 +272,59 @@ export default function LeadProfilePage() {
 				No details available.
 			</div>
 		);
+
+	// -------------------- TASKS LOGIC --------------------
+	useEffect(() => {
+		if (!id) return;
+		const fetchTasks = async () => {
+			try {
+				const res = await axios.get(`/api/leads/${id}/tasks`);
+				setTasks(res.data);
+			} catch (err) {
+				console.error("Failed to fetch tasks", err);
+			}
+		};
+		fetchTasks();
+	}, [id]);
+
+	const handleAddTask = async () => {
+		if (!newTaskTitle.trim()) return toast.error("Task title required");
+		try {
+			setTaskLoading(true);
+			const res = await axios.post(`/api/leads/${id}/tasks`, {
+				title: newTaskTitle,
+				dueDate: newTaskDueDate || undefined,
+			});
+			setTasks([res.data, ...tasks]);
+			setNewTaskTitle("");
+			setNewTaskDueDate("");
+			toast.success("Task added");
+		} catch (err: any) {
+			toast.error(err.message || "Failed to add task");
+		} finally {
+			setTaskLoading(false);
+		}
+	};
+
+	const handleToggleTask = async (taskId: string, currentStatus: string) => {
+		try {
+			const newStatus = currentStatus === "completed" ? "pending" : "completed";
+			await axios.patch(`/api/leads/${id}/tasks/${taskId}`, { status: newStatus });
+			setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+		} catch (err) {
+			toast.error("Failed to update task");
+		}
+	};
+
+	const handleDeleteTask = async (taskId: string) => {
+		try {
+			await axios.delete(`/api/leads/${id}/tasks/${taskId}`);
+			setTasks(tasks.filter(t => t.id !== taskId));
+			toast.success("Task deleted");
+		} catch (err) {
+			toast.error("Failed to delete task");
+		}
+	};
 
 	// -------------------- UI --------------------
 	return (
@@ -519,6 +577,77 @@ export default function LeadProfilePage() {
 							</Button>
 						</CardContent>
 					</Card>
+					
+					{/* Tasks */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2">
+								<CheckSquare className="w-5 h-5 text-primary" /> Tasks
+							</CardTitle>
+							<CardDescription>Manage follow-ups and actions</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="space-y-2">
+								<Input
+									placeholder="Task title..."
+									value={newTaskTitle}
+									onChange={(e) => setNewTaskTitle(e.target.value)}
+								/>
+								<Input
+									type="date"
+									value={newTaskDueDate}
+									onChange={(e) => setNewTaskDueDate(e.target.value)}
+								/>
+								<Button
+									onClick={handleAddTask}
+									disabled={taskLoading}
+									className="w-full flex items-center gap-2">
+									<Plus className="h-4 w-4" /> Add Task
+								</Button>
+							</div>
+
+							<div className="space-y-3 pt-4 border-t border-border max-h-[300px] overflow-y-auto">
+								{tasks.length > 0 ? (
+									tasks.map((task: any) => {
+										const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "completed";
+										return (
+											<div key={task.id} className="flex items-start justify-between p-3 bg-muted/50 rounded-lg gap-2">
+												<div className="flex items-start gap-3 flex-1">
+													<input
+														type="checkbox"
+														checked={task.status === "completed"}
+														onChange={() => handleToggleTask(task.id, task.status)}
+														className="mt-1 cursor-pointer"
+													/>
+													<div className="flex flex-col gap-1">
+														<span className={`text-sm ${task.status === "completed" ? "line-through text-muted-foreground" : ""}`}>
+															{task.title}
+														</span>
+														{task.dueDate && (
+															<Badge variant="outline" className={`w-fit text-[10px] px-1 py-0 ${isOverdue ? "text-red-500 border-red-200 bg-red-50" : "text-muted-foreground"}`}>
+																{isOverdue ? "Overdue: " : "Due: "}
+																{new Date(task.dueDate).toLocaleDateString()}
+															</Badge>
+														)}
+													</div>
+												</div>
+												<Button
+													variant="ghost"
+													size="sm"
+													onClick={() => handleDeleteTask(task.id)}
+													className="text-destructive hover:text-destructive h-8 w-8 p-0">
+													<Trash2 className="h-4 w-4" />
+												</Button>
+											</div>
+										);
+									})
+								) : (
+									<p className="text-sm text-muted-foreground text-center">No tasks yet.</p>
+								)}
+							</div>
+						</CardContent>
+					</Card>
+
 					{/* Notes */}
 					<Card>
 						<CardHeader>

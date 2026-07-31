@@ -6,6 +6,7 @@ import {
 } from "@/lib/api/pagination";
 import { PROPERTY_SUMMARY_SELECT } from "@/lib/leads/constants";
 import type { TrackViewedPropertyResult } from "@/lib/leads/types";
+import { recalculateLeadScore } from "@/lib/leads/services/hot-lead-alert";
 
 type ListViewedOptions = {
 	leadId: string;
@@ -30,7 +31,7 @@ export async function trackViewedProperty(
 
 	const now = new Date();
 
-	return prisma.$transaction(async (tx) => {
+	const result = await prisma.$transaction(async (tx) => {
 		const existing = await tx.viewedProperty.findUnique({
 			where: {
 				userId_propertyId: {
@@ -78,6 +79,13 @@ export async function trackViewedProperty(
 			isNewView: true,
 		};
 	});
+
+	// Recalculate lead score after tracking view (fire-and-forget)
+	recalculateLeadScore(leadId).catch((err) =>
+		console.error("[ViewedProperty] Score recalc failed:", err)
+	);
+
+	return result;
 }
 
 export async function listViewedProperties(

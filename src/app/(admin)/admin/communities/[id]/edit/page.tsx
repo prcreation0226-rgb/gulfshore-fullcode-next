@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Video } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -41,6 +41,29 @@ export default function EditCommunityPage() {
 		};
 		fetchData();
 	}, [params.id]);
+
+	const getEmbedUrl = (url: string) => {
+		if (!url) return null;
+		let videoId = "";
+		if (url.includes("youtube.com/watch?v=")) {
+			videoId = url.split("watch?v=")[1].split("&")[0];
+		} else if (url.includes("youtu.be/")) {
+			videoId = url.split("youtu.be/")[1].split("?")[0];
+		}
+		
+		if (videoId) {
+			return `https://www.youtube.com/embed/${videoId}`;
+		}
+		
+		if (url.includes("vimeo.com/")) {
+			const vimeoId = url.split("vimeo.com/")[1].split("?")[0];
+			if (vimeoId && !isNaN(Number(vimeoId))) {
+				return `https://player.vimeo.com/video/${vimeoId}`;
+			}
+		}
+		
+		return url;
+	};
 
 	const handleSave = async () => {
 		try {
@@ -250,6 +273,49 @@ export default function EditCommunityPage() {
 							<p className="text-xs text-muted-foreground">
 								Recommended: 1200x600px, JPG or PNG format
 							</p>
+						</CardContent>
+					</Card>
+
+					{/* Video */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2">
+								<Video className="w-5 h-5" />
+								Community Video
+							</CardTitle>
+							<CardDescription>
+								Embed a promotional video for the community
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div>
+								<Label htmlFor="videoUrl">Video URL</Label>
+								<Input
+									id="videoUrl"
+									placeholder="Paste YouTube or Vimeo URL..."
+									value={formData.videoUrl || ""}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											videoUrl: e.target.value,
+										})
+									}
+								/>
+								<p className="text-xs text-muted-foreground mt-2">
+									Paste a YouTube or Vimeo URL to embed a video on the community page
+								</p>
+							</div>
+
+							{formData.videoUrl && (
+								<div className="aspect-video bg-muted rounded-lg overflow-hidden relative">
+									<iframe
+										src={getEmbedUrl(formData.videoUrl) || formData.videoUrl}
+										className="absolute top-0 left-0 w-full h-full"
+										allowFullScreen
+										title="Community Video Preview"
+									></iframe>
+								</div>
+							)}
 						</CardContent>
 					</Card>
 

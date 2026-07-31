@@ -78,6 +78,7 @@ export async function PUT(
 		if (body.images) prismaBody.images = body.images;
 		if (body.description) prismaBody.description = body.description;
 		if (body.propertyCount !== undefined) prismaBody.propertyCount = body.propertyCount;
+		if (body.videoUrl !== undefined) prismaBody.videoUrl = body.videoUrl;
 
 		// Find community first
 		const existingComm = await prisma.community.findFirst({
