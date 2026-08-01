@@ -113,12 +113,21 @@ export default function AIChatWidget() {
 													<div key={part.toolCallId} className="mt-3 space-y-2">
 														<p className="text-xs font-semibold text-primary border-b pb-1">Found Properties:</p>
 														{result.map((prop: any, i: number) => (
-															<a href={prop.link} target="_blank" rel="noreferrer" key={i} className="block bg-gray-50 p-2 rounded border hover:border-primary transition-colors text-xs text-gray-700">
-																<span className="font-semibold block truncate">{prop.address}</span>
-																<span className="text-primary font-medium">{prop.price}</span> 
-																{(prop.beds != null || prop.baths != null) && (
-																	<span> &bull; {prop.beds ?? 0} Beds, {prop.baths ?? 0} Baths</span>
-																)}
+															<a href={prop.link} target="_blank" rel="noreferrer" key={i} className="block bg-gray-50 p-2.5 rounded border border-gray-200 hover:border-primary transition-colors text-xs text-gray-700 shadow-sm hover:shadow-md">
+																<span className="font-bold text-gray-900 block truncate">{prop.address}</span>
+																<span className="text-primary font-bold text-sm block mt-0.5">{prop.price}</span> 
+																<div className="flex flex-wrap gap-1 mt-1 text-gray-600">
+																	{(prop.beds != null || prop.baths != null) && (
+																		<span className="bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">{prop.beds ?? 0} Beds, {prop.baths ?? 0} Baths</span>
+																	)}
+																	{prop.sqft && <span className="bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">{prop.sqft} Sqft</span>}
+																	{prop.yearBuilt && <span className="bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">Built {prop.yearBuilt}</span>}
+																</div>
+																<div className="flex flex-wrap gap-1 mt-1">
+																	{prop.pool === "Yes" && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full border border-blue-100">Pool</span>}
+																	{prop.waterfront === "Yes" && <span className="text-[10px] bg-cyan-50 text-cyan-600 px-1.5 py-0.5 rounded-full border border-cyan-100">Waterfront</span>}
+																	{prop.gulfAccess === "Yes" && <span className="text-[10px] bg-teal-50 text-teal-600 px-1.5 py-0.5 rounded-full border border-teal-100">Gulf Access</span>}
+																</div>
 															</a>
 														))}
 													</div>
