@@ -45,16 +45,19 @@ export async function GET(req: NextRequest) {
 
 		console.log(`[Cron] Auto-sync triggered — modification lookback: ${queryDate}`);
 
-		await syncTodaysActiveProperties({ count: 0, date: queryDate });
+		// Run in background so cron-job.org doesn't timeout (30s limit)
+		syncTodaysActiveProperties({ count: 0, date: queryDate }).catch(err => {
+			console.error("[Cron Background] Sync failed:", err);
+		});
 
 		return Response.json({
 			success: true,
-			message: "Sync completed",
+			message: "Sync started in background",
 			syncedFrom: queryDate,
 			triggeredAt: new Date().toISOString(),
 		});
 	} catch (err: any) {
-		console.error("[Cron] Sync failed:", err?.message);
+		console.error("[Cron] Route error:", err?.message);
 		return Response.json(
 			{ success: false, error: err?.message || "Sync failed" },
 			{ status: 500 }

@@ -22,16 +22,18 @@ export async function GET(req: NextRequest) {
 	try {
 		console.log("[Cron] Daily alerts triggered.");
 
-		// Process Custom Search Alerts for Leads
-		await processSavedSearches();
+		// Process Custom Search Alerts for Leads in background
+		processSavedSearches().catch(err => {
+			console.error("[Cron Background] Daily alerts failed:", err);
+		});
 
 		return Response.json({
 			success: true,
-			message: "Daily alerts processed successfully",
+			message: "Daily alerts processing started in background",
 			triggeredAt: new Date().toISOString(),
 		});
 	} catch (err: any) {
-		console.error("[Cron] Daily alerts failed:", err?.message);
+		console.error("[Cron] Route error:", err?.message);
 		return Response.json(
 			{ success: false, error: err?.message || "Alerts processing failed" },
 			{ status: 500 }
