@@ -58,22 +58,16 @@ export default function PropertyMap({ property, Latitude, Longitude }: PropertyM
 			setFemaLoading(true);
 			const femaType = new google.maps.ImageMapType({
 				getTileUrl: (coord, zoom) => {
-					const proj = mapRef.current?.getProjection();
-					if (!proj) return null;
-
-					const zfactor = Math.pow(2, zoom);
-					
-					const top = proj.fromPointToLatLng(
-						new google.maps.Point((coord.x * 256) / zfactor, (coord.y * 256) / zfactor)
-					);
-					const bot = proj.fromPointToLatLng(
-						new google.maps.Point(((coord.x + 1) * 256) / zfactor, ((coord.y + 1) * 256) / zfactor)
-					);
-
-					if (!top || !bot) return null;
-
-					const bbox = `${top.lng()},${bot.lat()},${bot.lng()},${top.lat()}`;
-					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=4326&layers=show:28&size=256,256&imageSR=3857&format=png32&transparent=true&f=image`;
+					const initialResolution = 2 * Math.PI * 6378137 / 256;
+					const originShift = 2 * Math.PI * 6378137 / 2;
+					const zoomResolution = initialResolution / Math.pow(2, zoom);
+					const tileWidth = 256 * zoomResolution;
+					const minX = coord.x * tileWidth - originShift;
+					const maxX = (coord.x + 1) * tileWidth - originShift;
+					const minY = originShift - (coord.y + 1) * tileWidth;
+					const maxY = originShift - coord.y * tileWidth;
+					const bbox = `${minX},${minY},${maxX},${maxY}`;
+					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=3857&layers=show:28&size=256,256&imageSR=3857&format=png32&transparent=true&f=image`;
 				},
 				tileSize: new google.maps.Size(256, 256),
 				opacity: 0.35, // Made highly transparent so Satellite is visible
