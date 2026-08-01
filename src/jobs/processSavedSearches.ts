@@ -47,11 +47,11 @@ export async function processSavedSearches() {
 			}
 			
 			// Locations (Read directly from filtersObj since buildQueryFromFilters strips them)
-			if (filtersObj.city) baseWhere.City = { contains: filtersObj.city.replace(/-/g, ' '), mode: 'insensitive' };
+			if (filtersObj.city) baseWhere.City = { contains: filtersObj.city.replace(/-/g, ' ') };
 			if (filtersObj.postalCode) baseWhere.PostalCode = filtersObj.postalCode;
 			if (filtersObj.mls || filtersObj.MLSNumber) baseWhere.MLSNumber = filtersObj.mls || filtersObj.MLSNumber;
-			if (filtersObj.subdivision) baseWhere.Development = { contains: filtersObj.subdivision, mode: 'insensitive' };
-			if (filtersObj.developmentName) baseWhere.Community = { contains: filtersObj.developmentName.replace(/-/g, ' '), mode: 'insensitive' };
+			if (filtersObj.subdivision) baseWhere.Development = { contains: filtersObj.subdivision };
+			if (filtersObj.developmentName) baseWhere.Community = { contains: filtersObj.developmentName.replace(/-/g, ' ') };
 			
 			// Beds / Baths
 			const bedsParam = searchParams.get("beds");
