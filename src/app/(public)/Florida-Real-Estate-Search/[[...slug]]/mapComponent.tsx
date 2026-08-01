@@ -224,6 +224,14 @@ export default function MapComponent({
 		const nextState = !showFema;
 		setShowFema(nextState);
 		if (nextState) {
+			const currentZoom = mapRef.current.getZoom() || 10;
+			if (currentZoom < 14) {
+				mapRef.current.setZoom(14);
+				toast.info("Zoomed in to show FEMA details", {
+					description: "FEMA flood zones are only visible when zoomed in closer to neighborhoods.",
+					duration: 4000,
+				});
+			}
 			setFemaLoading(true);
 			const femaType = new google.maps.ImageMapType({
 				getTileUrl: (coord, zoom) => {
