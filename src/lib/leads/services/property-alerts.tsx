@@ -115,7 +115,7 @@ import {
     return (
       process.env.NEXT_PUBLIC_SERVER_URL ||
       process.env.SITE_URL ||
-      "https://gulfshoregroup.com"
+      "https://gulfshore-fullcode-next-production.up.railway.app"
     );
   }
   
@@ -186,7 +186,7 @@ import {
       >
         {/* Hero Image */}
         <Section style={{ position: "relative", margin: 0, padding: 0 }}>
-          <Link href={'https://gulfshoregroup.com'+UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber ||"")}>
+          <Link href={getPropertiesApiBaseUrl()+UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber ||"")}>
             <Img
               src={imgSrc}
               alt={property.FullAddress}
@@ -424,7 +424,7 @@ import {
           <Row>
             <Column align="center">
               <Button
-                href={'https://gulfshoregroup.com'+UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber||"")}
+                href={getPropertiesApiBaseUrl()+UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber||"")}
                 style={{
                   backgroundColor: MID,
                   color: "#FFFFFF",
@@ -681,7 +681,7 @@ import {
                   Our concierge team is available 7 days a week for exclusive tours.
                 </Text>
                 <Button
-                  href={process.env.SITE_URL || "https://gulfshoregroup.com/contact"}
+                  href={`${getPropertiesApiBaseUrl()}/contact`}
                   style={{
                     backgroundColor: MID,
                     color: "#FFFFFF",
@@ -781,7 +781,7 @@ import {
                     fontFamily: "'Poppins', Arial, sans-serif",
                   }}
                 >
-                  © {new Date().getFullYear()} Gulfshoregroup.com · ALL RIGHTS RESERVED
+                  © {new Date().getFullYear()} {getPropertiesApiBaseUrl().replace('https://', '')} · ALL RIGHTS RESERVED
                 </Text>
               </Section>
             </Container>

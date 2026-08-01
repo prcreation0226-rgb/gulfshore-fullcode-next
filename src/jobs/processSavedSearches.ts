@@ -139,7 +139,9 @@ export async function processSavedSearches() {
 				const poolStr = prop.PoolPrivateYN ? "pool home" : "home";
 
 				const searchTitle = search.name && search.name !== "Saved Search" ? search.name : `${beds} bed ${baths} bath ${poolStr} under ${priceStr}`;
-				const smsMessage = `Dimitri Schwarz 239.992.9119 GulfShoreGroup.com - ${searchTitle} - ${count} New Listing${count > 1 ? 's' : ''}`;
+				const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.SITE_URL || "https://gulfshore-fullcode-next-production.up.railway.app";
+				const domain = baseUrl.replace(/^https?:\/\//, '');
+				const smsMessage = `Dimitri Schwarz 239.992.9119 ${domain} - ${searchTitle} - ${count} New Listing${count > 1 ? 's' : ''}`;
 
 				// SEND SMS
 				if (lead.phone) {
@@ -200,7 +202,9 @@ export async function processSavedSearches() {
 					// SEND SMS (Generic)
 					if (lead.phone) {
 						let priceStr = newestProperty.ListPrice ? `$${newestProperty.ListPrice.toLocaleString()}` : "";
-						const smsMessage = `Dimitri Schwarz 239.992.9119 GulfShoreGroup.com - Featured New Listing in ${newestProperty.City} ${priceStr}`;
+						const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.SITE_URL || "https://gulfshore-fullcode-next-production.up.railway.app";
+						const domain = baseUrl.replace(/^https?:\/\//, '');
+						const smsMessage = `Dimitri Schwarz 239.992.9119 ${domain} - Featured New Listing in ${newestProperty.City} ${priceStr}`;
 						await sendSMS(lead.phone, smsMessage).catch(err => console.error("SMS Error:", err));
 					}
 
