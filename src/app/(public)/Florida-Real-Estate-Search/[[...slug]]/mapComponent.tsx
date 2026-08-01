@@ -241,7 +241,7 @@ export default function MapComponent({
 					);
 					if (!top || !bot) return null;
 					const bbox = `${top.lng()},${bot.lat()},${bot.lng()},${top.lat()}`;
-					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=4326&size=256,256&imageSR=3857&format=png32&transparent=true&f=image`;
+					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=4326&layers=show:28&size=256,256&imageSR=3857&format=png32&transparent=true&f=image`;
 				},
 				tileSize: new google.maps.Size(256, 256),
 				opacity: 0.65,
