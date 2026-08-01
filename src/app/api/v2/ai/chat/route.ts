@@ -85,13 +85,14 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						maxYearBuilt: z.number().optional().describe("Maximum year built"),
 						yearBuilt: z.number().optional().describe("Exact year built (e.g. 2025)"),
 						maxHoaFee: z.number().optional().describe("Maximum HOA fee per month"),
+						keyword: z.string().optional().describe("A general keyword to search for (e.g. 'nap', 'lehigh'). Use this if the user's request is vague, misspelled, or just a partial word."),
 					}),
 					// @ts-ignore
 					execute: async (args: any) => {
-						const { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa, minAcres, maxAcres, minYearBuilt, maxYearBuilt, yearBuilt, maxHoaFee } = args;
+						const { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa, minAcres, maxAcres, minYearBuilt, maxYearBuilt, yearBuilt, maxHoaFee, keyword } = args;
 						
 						// Prevent returning top 10 most expensive properties by default if no filters are provided
-						const hasFilters = city || address || propertyType || community || subdivision || mlsNumber || zipCode || beds || baths || minPrice || maxPrice;
+						const hasFilters = city || address || propertyType || community || subdivision || mlsNumber || zipCode || beds || baths || minPrice || maxPrice || keyword;
 						if (!hasFilters && !hasPool && !waterfront && !gulfAccess && !newConstruction && !garage && !spa) {
 							return [];
 						}
@@ -132,6 +133,20 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						if (subdivision) where.SubdivisionName = { contains: subdivision };
 						if (mlsNumber) where.MLSNumber = mlsNumber;
 						if (zipCode) where.PostalCode = zipCode;
+						
+						// Implement broad keyword search for misspelled or partial words (e.g. 'nap')
+						if (keyword) {
+							const kw = keyword.trim();
+							where.AND = where.AND || [];
+							where.AND.push({
+								OR: [
+									{ City: { contains: kw } },
+									{ FullAddress: { contains: kw } },
+									{ Community: { contains: kw } },
+									{ SubdivisionName: { contains: kw } },
+								]
+							});
+						}
 						if (minPrice || maxPrice) {
 							where.ListPrice = {};
 							if (minPrice) where.ListPrice.gte = minPrice;
