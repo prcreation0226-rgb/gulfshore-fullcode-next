@@ -98,16 +98,31 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 
 						const where: any = { StandardStatus: "Active" };
 						
-						// Handle potential typos in city like "Cape Cora"
-						if (city) {
-							if (city.toLowerCase().includes("cape cora")) where.City = { contains: "Cape Coral" };
-							else where.City = { contains: city };
+						let finalCity = city;
+						let finalAddress = address;
+
+						// AI sometimes wrongly maps city names to the `address` field
+						if (finalAddress) {
+							const addrLower = finalAddress.toLowerCase();
+							const knownCities = ["naples", "bonita", "cape coral", "lehigh", "fort myers", "miami", "marco island", "estero", "sanibel"];
+							if (knownCities.some(c => addrLower.includes(c)) && addrLower.split(" ").length <= 3) {
+								finalCity = finalAddress;
+								finalAddress = undefined;
+							}
 						}
-						if (address) {
-							const words = address.replace(/[.,]/g, '').split(' ').filter(Boolean);
-							if (words.length > 0) {
+
+						// Handle potential typos in city like "Cape Cora"
+						if (finalCity) {
+							if (finalCity.toLowerCase().includes("cape cora")) where.City = { contains: "Cape Coral" };
+							else where.City = { contains: finalCity };
+						}
+						if (finalAddress) {
+							const words = finalAddress.replace(/[.,]/g, '').split(' ').filter(Boolean);
+							// To make address matching robust against "Ave" vs "Avenue" or "St", only require the first two words (e.g. '311' and 'Rand')
+							const importantWords = words.slice(0, 2);
+							if (importantWords.length > 0) {
 								where.AND = where.AND || [];
-								words.forEach((w: string) => {
+								importantWords.forEach((w: string) => {
 									where.AND.push({ FullAddress: { contains: w } });
 								});
 							}
