@@ -230,18 +230,18 @@ export default function MapComponent({
 					// FEMA NFHL Tiles only render at zoom level 12 or higher to save bandwidth.
 					if (zoom < 11) return null;
 					
-					const initialResolution = 2 * Math.PI * 6378137 / 256;
-					const originShift = 2 * Math.PI * 6378137 / 2;
-					const zoomResolution = initialResolution / Math.pow(2, zoom);
-					const tileWidth = 256 * zoomResolution;
-					const minX = coord.x * tileWidth - originShift;
-					const maxX = (coord.x + 1) * tileWidth - originShift;
-					const minY = originShift - (coord.y + 1) * tileWidth;
-					const maxY = originShift - coord.y * tileWidth;
-					const bbox = `${minX},${minY},${maxX},${maxY}`;
-					
-					// Use our internal proxy to avoid CORS and automatically inject the correct layer ID
-					return `/api/fema?bbox=${bbox}`;
+					const proj = mapRef.current?.getProjection();
+					if (!proj) return null;
+					const zfactor = Math.pow(2, zoom);
+					const top = proj.fromPointToLatLng(
+						new google.maps.Point((coord.x * 256) / zfactor, (coord.y * 256) / zfactor)
+					);
+					const bot = proj.fromPointToLatLng(
+						new google.maps.Point(((coord.x + 1) * 256) / zfactor, ((coord.y + 1) * 256) / zfactor)
+					);
+					if (!top || !bot) return null;
+					const bbox = `${top.lng()},${bot.lat()},${bot.lng()},${top.lat()}`;
+					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=4326&size=256,256&imageSR=3857&format=png32&transparent=true&f=image`;
 				},
 				tileSize: new google.maps.Size(256, 256),
 				opacity: 0.65,
