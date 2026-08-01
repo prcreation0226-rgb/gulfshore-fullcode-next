@@ -37,7 +37,7 @@ export async function requireLead(): Promise<Lead> {
 		if (email) {
 			// Find existing lead by email (e.g. created via Contact Form)
 			const existingByEmail = await prisma.lead.findFirst({
-				where: { email: { equals: email, mode: "insensitive" } },
+				where: { email: { equals: email } },
 			});
 
 			if (existingByEmail) {

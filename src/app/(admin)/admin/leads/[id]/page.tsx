@@ -115,65 +115,7 @@ export default function LeadProfilePage() {
 			}
 		};
 		fetchLead();
-		fetchTasks();
 	}, [id]);
-
-	const fetchTasks = async () => {
-		try {
-			const res = await fetch(`/api/leads/${id}/tasks`);
-			if (res.ok) {
-				const data = await res.json();
-				setTasks(data);
-			}
-		} catch (error) {
-			console.error("Failed to fetch tasks:", error);
-		}
-	};
-
-	const handleAddTask = async () => {
-		if (!newTaskTitle.trim()) return toast.error("Task title cannot be empty");
-		try {
-			setTaskLoading(true);
-			const res = await fetch(`/api/leads/${id}/tasks`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ title: newTaskTitle, dueDate: newTaskDate }),
-			});
-			if (!res.ok) throw new Error("Failed to add task");
-			setNewTaskTitle("");
-			setNewTaskDate(undefined);
-			fetchTasks();
-			toast.success("Task Added!");
-		} catch (err: any) {
-			toast.error(err.message);
-		} finally {
-			setTaskLoading(false);
-		}
-	};
-
-	const handleToggleTask = async (taskId: string, currentStatus: string) => {
-		try {
-			const newStatus = currentStatus === "completed" ? "pending" : "completed";
-			await fetch(`/api/leads/${id}/tasks/${taskId}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ status: newStatus }),
-			});
-			fetchTasks();
-		} catch (err: any) {
-			toast.error("Failed to update task");
-		}
-	};
-
-	const handleDeleteTask = async (taskId: string) => {
-		try {
-			await fetch(`/api/leads/${id}/tasks/${taskId}`, { method: "DELETE" });
-			fetchTasks();
-			toast.success("Task Removed");
-		} catch (err: any) {
-			toast.error("Failed to delete task");
-		}
-	};
 
 	// -------------------- HANDLE ADD NOTE --------------------
 	const handleAddNote = async () => {

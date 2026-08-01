@@ -40,10 +40,10 @@ export function mapProperty(raw: any) {
 			: null,
 
 		// ---- Pricing ----
-		ListPrice: raw.ListPrice ? Number(raw.ListPrice) : null,
-		ClosePrice: raw.ClosePrice ? Number(raw.ClosePrice) : null,
+		ListPrice: raw.ListPrice ? Math.min(Number(raw.ListPrice), 2147483647) : null,
+		ClosePrice: raw.ClosePrice ? Math.min(Number(raw.ClosePrice), 2147483647) : null,
 		OriginalListPrice: raw.OriginalListPrice
-			? Number(raw.OriginalListPrice)
+			? Math.min(Number(raw.OriginalListPrice), 2147483647)
 			: null,
 
 		PriceChangeTimestamp: raw.PriceChangeTimestamp

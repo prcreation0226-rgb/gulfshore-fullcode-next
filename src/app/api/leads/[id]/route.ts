@@ -114,7 +114,7 @@ async function getMappedLead(id: string) {
 	// Fetch all viewed properties for this lead (including any associated by email or clerk userId)
 	const orConditions: any[] = [{ userId: lead.id }];
 	if (lead.userId) orConditions.push({ userId: lead.userId });
-	if (lead.email) orConditions.push({ user: { email: { equals: lead.email, mode: "insensitive" } } });
+	if (lead.email) orConditions.push({ user: { email: { equals: lead.email } } });
 
 	const rawViews = await prisma.viewedProperty.findMany({
 		where: { OR: orConditions },
