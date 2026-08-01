@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-<<<<<<< HEAD
 import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
@@ -43,46 +42,4 @@ export async function DELETE(
     console.error("Error deleting task:", error);
     return NextResponse.json({ error: "Failed to delete task" }, { status: 500 });
   }
-=======
-import prisma from "@/lib/prisma";
-
-export async function PUT(
-	req: Request,
-	{ params }: { params: { id: string; taskId: string } }
-) {
-	try {
-		const { status } = await req.json();
-
-		const updatedTask = await prisma.task.update({
-			where: { id: params.taskId },
-			data: { status },
-		});
-
-		return NextResponse.json(updatedTask);
-	} catch (error: any) {
-		console.error("PUT Task Error:", error);
-		return NextResponse.json(
-			{ error: "Failed to update task" },
-			{ status: 500 }
-		);
-	}
-}
-
-export async function DELETE(
-	req: Request,
-	{ params }: { params: { id: string; taskId: string } }
-) {
-	try {
-		await prisma.task.delete({
-			where: { id: params.taskId },
-		});
-		return NextResponse.json({ success: true });
-	} catch (error: any) {
-		console.error("DELETE Task Error:", error);
-		return NextResponse.json(
-			{ error: "Failed to delete task" },
-			{ status: 500 }
-		);
-	}
->>>>>>> 9f14b31d5da5f0caa033fee5eb82ba347046dffc
 }

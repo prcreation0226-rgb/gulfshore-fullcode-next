@@ -3,11 +3,8 @@ import { streamText, tool, convertToModelMessages } from "ai";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import UrlMaker from "@/hooks/url-maker";
-<<<<<<< HEAD
 import { sendAdminLeadAlertEmail } from "@/lib/email/admin-lead-alert";
-=======
 import { requireLead } from "@/lib/api/auth";
->>>>>>> 9f14b31d5da5f0caa033fee5eb82ba347046dffc
 
 export const maxDuration = 60; // Allow up to 60 seconds
 
@@ -53,17 +50,12 @@ Key qualifying questions you should naturally weave into the conversation:
 3. Are they looking to buy, sell, or both?
 
 Always be concise. Do not write long paragraphs. 
-<<<<<<< HEAD
-If the user asks for properties matching specific criteria, ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
-If the search returns no properties, apologize and say you can set up a custom alert for them.
-
-If the user wants to schedule a property tour, viewing, or appointment, use the 'scheduleTour' tool. Ask for their name, phone or email, and preferred date before calling the tool. After booking, confirm the appointment and tell them Dimitri will reach out to confirm.`,
-=======
 If the user asks for properties matching specific criteria (like address, MLS number, city, beds, baths, price, property type, pool, waterfront, year built), ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
 When you use the 'searchProperties' tool, it will return detailed property information including Description, YearBuilt, Lot Size, Waterfront, and more. Use this information to answer any specific questions the user has about a property (e.g., "when was this built?", "tell me about the description").
 If they provide a specific address (e.g., "5100 Seagrass"), use the address parameter in the tool. ONLY include the street address in the address parameter, DO NOT include city, state, or zip code in the address parameter.
-If the search returns no properties, apologize and say you can set up a custom alert for them.`,
->>>>>>> 9f14b31d5da5f0caa033fee5eb82ba347046dffc
+If the search returns no properties, apologize and say you can set up a custom alert for them.
+
+If the user wants to schedule a property tour, viewing, or appointment, use the 'scheduleTour' tool. Ask for their name, phone or email, and preferred date before calling the tool. After booking, confirm the appointment and tell them Dimitri will reach out to confirm.`,
 			messages: await convertToModelMessages(messages),
 			tools: {
 				// @ts-ignore

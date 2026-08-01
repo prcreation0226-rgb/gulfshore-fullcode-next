@@ -38,12 +38,9 @@ import {
 	Trash2,
 	Edit2,
 	CheckSquare,
-<<<<<<< HEAD
-=======
 	Eye,
 	Send,
 	ExternalLink,
->>>>>>> 9f14b31d5da5f0caa033fee5eb82ba347046dffc
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -91,11 +88,7 @@ export default function LeadProfilePage() {
 	const [newTaskTitle, setNewTaskTitle] = useState("");
 	const [newTaskDueDate, setNewTaskDueDate] = useState("");
 
-	// Tasks State
-	const [tasks, setTasks] = useState<any[]>([]);
-	const [newTaskTitle, setNewTaskTitle] = useState("");
-	const [newTaskDate, setNewTaskDate] = useState<Date | undefined>();
-	const [taskLoading, setTaskLoading] = useState(false);
+
 
 	// -------------------- FETCH LEAD --------------------
 	useEffect(() => {
@@ -759,12 +752,11 @@ export default function LeadProfilePage() {
 								</div>
 							</div>
 
-											<Button className="w-full" onClick={handleSaveChanges}>
+							<Button className="w-full" onClick={handleSaveChanges}>
 								Save Changes
 							</Button>
 						</CardContent>
 					</Card>
-<<<<<<< HEAD
 					
 					{/* Tasks */}
 					<Card>
@@ -831,52 +823,6 @@ export default function LeadProfilePage() {
 									})
 								) : (
 									<p className="text-sm text-muted-foreground text-center">No tasks yet.</p>
-=======
-
-					{/* TASKS SYSTEM */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2"><CheckSquare className="w-5 h-5 text-primary"/> Tasks & Reminders</CardTitle>
-							<CardDescription>
-								To-do list for this lead
-							</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<div className="space-y-2">
-								<Input 
-									placeholder="New task title (e.g. Call tomorrow)" 
-									value={newTaskTitle} 
-									onChange={(e) => setNewTaskTitle(e.target.value)} 
-								/>
-								<Button className="w-full" onClick={handleAddTask} disabled={taskLoading || !newTaskTitle.trim()}>
-									{taskLoading ? "Adding..." : "Add Task"}
-								</Button>
-							</div>
-
-							<div className="space-y-2 mt-4">
-								{tasks.length > 0 ? tasks.map((task: any) => (
-									<div key={task.id} className={`flex items-start justify-between p-3 border rounded-lg ${task.status === 'completed' ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200'}`}>
-										<div className="flex items-start gap-3">
-											<input 
-												type="checkbox" 
-												className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-												checked={task.status === "completed"}
-												onChange={() => handleToggleTask(task.id, task.status)}
-											/>
-											<div>
-												<p className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-foreground'}`}>
-													{task.title}
-												</p>
-												<span className="text-[10px] text-muted-foreground">{new Date(task.createdAt).toLocaleDateString()}</span>
-											</div>
-										</div>
-										<button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-500 transition-colors">
-											<Trash2 className="h-4 w-4" />
-										</button>
-									</div>
-								)) : (
-									<p className="text-xs text-muted-foreground text-center py-2">No tasks yet.</p>
->>>>>>> 9f14b31d5da5f0caa033fee5eb82ba347046dffc
 								)}
 							</div>
 						</CardContent>
