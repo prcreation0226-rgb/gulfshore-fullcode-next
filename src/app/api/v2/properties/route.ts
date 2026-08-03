@@ -64,7 +64,6 @@ export async function GET(req: NextRequest) {
 				});
 			} else if (statusVal === "Pending") {
 				where.StandardStatus = { contains: "Pending" };
-				where.StatusChangeTimestamp = { gte: twelveMonthsAgo };
 			} else if (statusVal === "Active") {
 				where.StandardStatus = "Active";
 			} else {
