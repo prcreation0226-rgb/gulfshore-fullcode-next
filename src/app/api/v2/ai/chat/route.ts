@@ -105,12 +105,16 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						let finalCity = city;
 						let finalAddress = address;
 
-						// AI sometimes wrongly maps city names to the `address` field
+						// AI sometimes wrongly maps city names or keywords to the `address` field
 						if (finalAddress) {
 							const addrLower = finalAddress.toLowerCase();
-							const knownCities = ["naples", "bonita", "cape coral", "lehigh", "fort myers", "miami", "marco island", "estero", "sanibel"];
-							if (knownCities.some(c => addrLower.includes(c)) && addrLower.split(" ").length <= 3) {
-								finalCity = finalAddress;
+							const hasNumbers = /\d/.test(addrLower);
+							
+							// If it's a known city OR it has no numbers (people rarely search addresses without house numbers)
+							// we move it to 'keyword' so it searches City, Community, and Address broadly!
+							const knownCities = ["naples", "bonita", "cape coral", "lehigh", "fort myers", "miami", "marco island", "estero", "sanibel", "punta gorda", "labelle", "babcock", "ave maria"];
+							if (!hasNumbers || (knownCities.some(c => addrLower.includes(c)) && addrLower.split(" ").length <= 3)) {
+								keyword = keyword ? `${keyword} ${finalAddress}` : finalAddress;
 								finalAddress = undefined;
 							}
 						}
@@ -120,6 +124,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							if (finalCity.toLowerCase().includes("cape cora")) where.City = { contains: "Cape Coral" };
 							else where.City = { contains: finalCity };
 						}
+						
 						if (finalAddress) {
 							const words = finalAddress.replace(/[.,]/g, '').split(' ').filter(Boolean);
 							// To make address matching robust against "Ave" vs "Avenue" or "St", only require the first two words (e.g. '311' and 'Rand')
