@@ -348,7 +348,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 					},
 				}),
 			},
-			onFinish: async ({ text, toolCalls, toolResults }) => {
+			onFinish: async ({ text, toolCalls, toolResults }: any) => {
 				// Save the AI's response to the DB
 				let finalMessage = text;
 				
