@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import AreaInfoComponent from "../../areaInfoComponent";
 import capitalizeWords from "@/hooks/capitalize-letter";
 import CommunityListingsTabs from "./communityListingsTabs";
-import MarketReport from "@/components/market-report/MarketReport";
+import MarketReportSection from "@/components/search/marketReportSection";
 import type { Metadata } from "next";
 
 export async function generateMetadata({
@@ -103,7 +103,9 @@ async function ExploreCommunity({
 				community={formattedCommunity}
 				communityData={communityData}
 			/>
-			<MarketReport city={formattedCity} community={formattedCommunity} />
+			<div className="w-11/12 max-w-[1600px] mx-auto py-2">
+				<MarketReportSection city={formattedCity} community={formattedCommunity} />
+			</div>
 			
 			<div className="w-11/12 max-w-[1600px] mx-auto py-12">
 			{/* Custom Marketing Content Area (Loopnet/Zillow style) */}

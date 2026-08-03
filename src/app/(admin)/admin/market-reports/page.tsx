@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import MarketReport from "@/components/market-report/MarketReport";
+import MarketReportSection from "@/components/search/marketReportSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
@@ -44,7 +44,7 @@ export default function AdminMarketReportsPage() {
 			</div>
 
 			<div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden pt-4">
-				<MarketReport city={activeCity} />
+				<MarketReportSection city={activeCity} />
 			</div>
 		</div>
 	);
