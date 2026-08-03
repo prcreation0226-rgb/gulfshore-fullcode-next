@@ -118,7 +118,7 @@ async function processChunk(
  * Run a paginated sync pass against the Bridge API.
  * `fetchFn` is either the BridgeModificationTimestamp or OnMarketDate fetcher.
  */
-async function runSyncPass(
+export async function runSyncPass(
 	passName: string,
 	fetchFn: (offset: number, limit: number, date: string, status: string) => Promise<any>,
 	date: string,
@@ -227,9 +227,25 @@ export async function syncTodaysActiveProperties({
 		"Closed"
 	);
 
-	const totalFetched = pass1.totalFetched + pass2.totalFetched + pass3.totalFetched;
-	const totalSuccess = pass1.totalSuccess + pass2.totalSuccess + pass3.totalSuccess;
-	const totalFailed = pass1.totalFailed + pass2.totalFailed + pass3.totalFailed;
+	// --- Pass 4: Pending properties (recently pending) ---
+	const pass4 = await runSyncPass(
+		"BridgeModificationTimestamp_Pending",
+		fetchBridgeBatch,
+		modificationDate,
+		"Pending"
+	);
+
+	// --- Pass 5: OnMarketDate Pending (brand new pending listings) ---
+	const pass5 = await runSyncPass(
+		"OnMarketDate_Pending",
+		fetchBridgeBatchByOnMarketDate,
+		newListingsDate,
+		"Pending"
+	);
+
+	const totalFetched = pass1.totalFetched + pass2.totalFetched + pass3.totalFetched + pass4.totalFetched + pass5.totalFetched;
+	const totalSuccess = pass1.totalSuccess + pass2.totalSuccess + pass3.totalSuccess + pass4.totalSuccess + pass5.totalSuccess;
+	const totalFailed = pass1.totalFailed + pass2.totalFailed + pass3.totalFailed + pass4.totalFailed + pass5.totalFailed;
 
 	console.log(`[Sync] === Bridge Sync Completed ===`);
 	console.log(`[Sync] Total fetched: ${totalFetched}, success: ${totalSuccess}, failed: ${totalFailed}`);
