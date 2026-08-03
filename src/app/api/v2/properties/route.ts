@@ -48,6 +48,9 @@ export async function GET(req: NextRequest) {
 		let isMockingClosed = false;
 		const statusVal = query.get("status") || query.get("Status") || "Active";
 		if (statusVal && statusVal !== "All") {
+			const twelveMonthsAgo = new Date();
+			twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+			
 			if (statusVal === "Sold" || statusVal === "Closed") {
 				where.StandardStatus = { in: ["Closed", "Sold"] };
 				isMockingClosed = false;
