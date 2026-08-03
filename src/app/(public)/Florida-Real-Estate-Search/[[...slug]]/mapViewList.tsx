@@ -132,7 +132,7 @@ export default function MapViewList({
 			>
 				Active Listings
 			</button>
-			{(filter.community || filter.subdivision) && (
+			{(filter.developmentName || filter.subdivision) && (
 				<button
 					onClick={() => handleStatusChange("Sold")}
 					className={`pb-2.5 font-medium border-b-2 transition-all ${
