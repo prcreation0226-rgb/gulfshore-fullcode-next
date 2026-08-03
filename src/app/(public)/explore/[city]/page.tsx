@@ -9,6 +9,7 @@ import Script from "next/script";
 import { formatPrice } from "@/hooks/formatPrice";
 import UrlMaker from "@/hooks/url-maker";
 import CityLinksSection from "@/components/search/links-section/cityLinksSection";
+import MarketReport from "@/components/market-report/MarketReport";
 
 import type { Metadata } from "next";
 
@@ -97,6 +98,7 @@ async function ExploreCity({
 	return (
 		<>
 			<AreaInfoComponent city={city} />
+			<MarketReport city={decodeURIComponent(city)} />
 			<div className="flex flex-col gap-10">
 				<PropertySection
 					props={
