@@ -86,6 +86,11 @@ const navigationItems = [
 				icon: Building,
 				href: "/admin/properties/communities",
 			},
+			{
+				label: "Market Reports",
+				icon: BarChart3,
+				href: "/admin/market-reports",
+			}
 		],
 	},
 	{
