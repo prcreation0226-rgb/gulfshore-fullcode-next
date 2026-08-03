@@ -134,8 +134,8 @@ export default async function RootLayout({
 
 							<div className="w-11/12 max-w-[1600px] mx-auto">
 								<MarketReportSection
-									city={seoData?.city || filtersParams?.city}
-									community={seoData?.community || filtersParams?.community}
+									city={seoData?.city || filtersParams?.city || undefined}
+									community={seoData?.community || filtersParams?.community || undefined}
 								/>
 							</div>
 

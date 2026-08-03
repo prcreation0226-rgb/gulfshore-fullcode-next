@@ -101,10 +101,12 @@ async function ExploreCommunity({
 			<AreaInfoComponent
 				city={formattedCity}
 				community={formattedCommunity}
-				communityData={communityData}
 			/>
 			<div className="w-11/12 max-w-[1600px] mx-auto py-2">
-				<MarketReportSection city={formattedCity} community={formattedCommunity} />
+				<MarketReportSection 
+					city={formattedCity} 
+					community={formattedCommunity} 
+				/>
 			</div>
 			
 			<div className="w-11/12 max-w-[1600px] mx-auto py-12">
@@ -131,6 +133,7 @@ async function ExploreCommunity({
 					/>
 				</div>
 			</Suspense>
+			</div>
 		</div>
 	);
 }
