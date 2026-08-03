@@ -48,12 +48,8 @@ export async function GET(req: NextRequest) {
 		let isMockingClosed = false;
 		const statusVal = query.get("status") || query.get("Status") || "Active";
 		if (statusVal && statusVal !== "All") {
-			const twelveMonthsAgo = new Date();
-			twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
-			
 			if (statusVal === "Sold" || statusVal === "Closed") {
 				where.StandardStatus = { in: ["Closed", "Sold"] };
-				where.StatusChangeTimestamp = { gte: twelveMonthsAgo };
 				isMockingClosed = false;
 			} else if (statusVal === "Short Sale" || statusVal === "Foreclosure") {
 				// Short sale / foreclosure fall back to Active or check description/raw if they exist in active listings
