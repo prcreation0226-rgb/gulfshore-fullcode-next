@@ -92,7 +92,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 					}),
 					// @ts-ignore
 					execute: async (args: any) => {
-						const { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa, minAcres, maxAcres, minYearBuilt, maxYearBuilt, yearBuilt, maxHoaFee, keyword } = args;
+						let { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa, minAcres, maxAcres, minYearBuilt, maxYearBuilt, yearBuilt, maxHoaFee, keyword } = args;
 						
 						// Prevent returning top 10 most expensive properties by default if no filters are provided
 						const hasFilters = city || address || propertyType || community || subdivision || mlsNumber || zipCode || beds || baths || minPrice || maxPrice || keyword;
