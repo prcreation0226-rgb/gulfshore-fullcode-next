@@ -133,9 +133,9 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						}
 						if (propertyType) {
 							const pt = propertyType.toLowerCase();
-							where.AND = where.AND || [];
 							
 							if (pt.includes('condo') || pt.includes('apartment')) {
+								where.AND = where.AND || [];
 								where.AND.push({
 									OR: [
 										{ PropertySubType: { contains: 'Rise' } },
@@ -143,11 +143,20 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 										{ PropertyType: { contains: 'Condo' } }
 									]
 								});
-							} else {
-								let dbType = propertyType;
-								if (pt.includes('single family') || pt.includes('home') || pt.includes('house')) {
-									dbType = 'Single Family';
-								}
+							} else if (pt.includes('single family') || pt.includes('home') || pt.includes('house')) {
+								where.AND = where.AND || [];
+								where.AND.push({
+									OR: [
+										{ PropertyType: { contains: 'Single Family' } },
+										{ PropertySubType: { contains: 'Single Family' } }
+									]
+								});
+							} else if (pt.includes('townhouse') || pt.includes('villa') || pt.includes('land') || pt.includes('commercial')) {
+								where.AND = where.AND || [];
+								// for exact matches that are common
+								const dbType = pt.includes('townhouse') ? 'Townhouse' : 
+											   pt.includes('villa') ? 'Villa' : 
+											   pt.includes('land') || pt.includes('lot') ? 'Land' : 'Commercial';
 								where.AND.push({
 									OR: [
 										{ PropertyType: { contains: dbType } },
@@ -155,6 +164,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 									]
 								});
 							}
+							// If propertyType is some vague term like "Properties", "Any", "Real Estate", we just ignore it so it doesn't break the search!
 						}
 						if (community) where.Community = { contains: community };
 						if (subdivision) where.SubdivisionName = { contains: subdivision };
