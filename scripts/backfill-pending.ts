@@ -12,6 +12,14 @@ async function main() {
         "Pending"
     );
     
+    console.log("Starting backfill for closed since:", lastYear);
+    await runSyncPass(
+        "BridgeModificationTimestamp_Closed",
+        fetchBridgeBatch,
+        lastYear,
+        "Closed"
+    );
+    
     console.log("Backfill complete");
     process.exit(0);
 }
