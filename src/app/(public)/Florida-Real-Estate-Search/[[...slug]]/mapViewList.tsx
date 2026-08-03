@@ -93,7 +93,7 @@ export default function MapViewList({
 	const currentStatus = filters.status || "Active";
 
 	const handleStatusChange = (newStatus: string) => {
-		const sortOverride = newStatus === "All"
+		const sortOverride = newStatus === "Pending"
 			? { sort: "OnMarketDate", order: "desc" }
 			: { sort: "CreatedDate", order: "desc" };
 
@@ -132,25 +132,27 @@ export default function MapViewList({
 			>
 				Active Listings
 			</button>
+			{(filter.community || filter.subdivision) && (
+				<button
+					onClick={() => handleStatusChange("Sold")}
+					className={`pb-2.5 font-medium border-b-2 transition-all ${
+						currentStatus === "Sold"
+							? "border-[#B89A6A] text-[#1C1712] font-semibold"
+							: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
+					}`}
+				>
+					Sold Listings
+				</button>
+			)}
 			<button
-				onClick={() => handleStatusChange("Sold")}
+				onClick={() => handleStatusChange("Pending")}
 				className={`pb-2.5 font-medium border-b-2 transition-all ${
-					currentStatus === "Sold"
+					currentStatus === "Pending"
 						? "border-[#B89A6A] text-[#1C1712] font-semibold"
 						: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
 				}`}
 			>
-				Sold Properties
-			</button>
-			<button
-				onClick={() => handleStatusChange("All")}
-				className={`pb-2.5 font-medium border-b-2 transition-all ${
-					currentStatus === "All"
-						? "border-[#B89A6A] text-[#1C1712] font-semibold"
-						: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
-				}`}
-			>
-				All Properties
+				Pending Listings
 			</button>
 		</div>
 	);

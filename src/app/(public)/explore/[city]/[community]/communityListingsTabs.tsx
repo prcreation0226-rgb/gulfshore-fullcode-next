@@ -13,8 +13,8 @@ interface Props {
 
 const TABS = [
 	{ label: "Active Listings", status: "Active" },
-	{ label: "Sold Properties", status: "Sold" },
-	{ label: "Pending", status: "Pending" },
+	{ label: "Sold Listings", status: "Sold" },
+	{ label: "Pending Listings", status: "Pending" },
 ] as const;
 
 export default function CommunityListingsTabs({
