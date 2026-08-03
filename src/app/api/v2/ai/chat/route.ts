@@ -131,7 +131,31 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 								});
 							}
 						}
-						if (propertyType) where.PropertyType = { contains: propertyType };
+						if (propertyType) {
+							const pt = propertyType.toLowerCase();
+							where.AND = where.AND || [];
+							
+							if (pt.includes('condo') || pt.includes('apartment')) {
+								where.AND.push({
+									OR: [
+										{ PropertySubType: { contains: 'Rise' } },
+										{ PropertySubType: { contains: 'Condo' } },
+										{ PropertyType: { contains: 'Condo' } }
+									]
+								});
+							} else {
+								let dbType = propertyType;
+								if (pt.includes('single family') || pt.includes('home') || pt.includes('house')) {
+									dbType = 'Single Family';
+								}
+								where.AND.push({
+									OR: [
+										{ PropertyType: { contains: dbType } },
+										{ PropertySubType: { contains: dbType } }
+									]
+								});
+							}
+						}
 						if (community) where.Community = { contains: community };
 						if (subdivision) where.SubdivisionName = { contains: subdivision };
 						if (mlsNumber) where.MLSNumber = mlsNumber;
