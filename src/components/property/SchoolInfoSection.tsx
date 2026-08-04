@@ -29,23 +29,23 @@ export default function SchoolInfoSection({ property }: SchoolInfoSectionProps) 
 	};
 
 	return (
-		<div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 p-6 shadow-sm my-6">
-			<div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-gray-100 dark:border-zinc-800">
+		<div className="bg-white  rounded-2xl border border-gray-100  p-6 shadow-sm my-6">
+			<div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-gray-100 ">
 				<GraduationCap className="w-5 h-5 text-primary" />
-				<h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+				<h3 className="text-lg font-bold text-gray-900 ">
 					School & Education Information
 				</h3>
 			</div>
 
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 				{/* Elementary School */}
-				<div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800/80 flex flex-col justify-between">
+				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100  flex flex-col justify-between">
 					<div>
 						<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
 							<School className="w-3.5 h-3.5" />
 							<span>Elementary School</span>
 						</div>
-						<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+						<p className="text-sm font-semibold text-gray-900 ">
 							{elementarySchool ? (
 								elementarySchool
 							) : (
@@ -65,13 +65,13 @@ export default function SchoolInfoSection({ property }: SchoolInfoSectionProps) 
 				</div>
 
 				{/* Middle School */}
-				<div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800/80 flex flex-col justify-between">
+				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100  flex flex-col justify-between">
 					<div>
 						<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
 							<School className="w-3.5 h-3.5" />
 							<span>Middle / Junior High</span>
 						</div>
-						<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+						<p className="text-sm font-semibold text-gray-900 ">
 							{middleSchool ? (
 								middleSchool
 							) : (
@@ -91,13 +91,13 @@ export default function SchoolInfoSection({ property }: SchoolInfoSectionProps) 
 				</div>
 
 				{/* High School */}
-				<div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800/80 flex flex-col justify-between">
+				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100  flex flex-col justify-between">
 					<div>
 						<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
 							<School className="w-3.5 h-3.5" />
 							<span>High School</span>
 						</div>
-						<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+						<p className="text-sm font-semibold text-gray-900 ">
 							{highSchool ? (
 								highSchool
 							) : (
@@ -117,13 +117,13 @@ export default function SchoolInfoSection({ property }: SchoolInfoSectionProps) 
 				</div>
 
 				{/* School District */}
-				<div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800/80 flex flex-col justify-between">
+				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100  flex flex-col justify-between">
 					<div>
 						<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
 							<GraduationCap className="w-3.5 h-3.5" />
 							<span>School District</span>
 						</div>
-						<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+						<p className="text-sm font-semibold text-gray-900 ">
 							{schoolDistrict ? (
 								schoolDistrict
 							) : (

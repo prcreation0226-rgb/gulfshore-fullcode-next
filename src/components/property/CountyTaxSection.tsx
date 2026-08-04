@@ -43,44 +43,44 @@ export default function CountyTaxSection({ property }: CountyTaxSectionProps) {
 	}
 
 	return (
-		<div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 p-6 shadow-sm my-6">
-			<div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-gray-100 dark:border-zinc-800">
+		<div className="bg-white  rounded-2xl border border-gray-100  p-6 shadow-sm my-6">
+			<div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-gray-100 ">
 				<Landmark className="w-5 h-5 text-primary" />
-				<h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+				<h3 className="text-lg font-bold text-gray-900 ">
 					County & Tax Information
 				</h3>
 			</div>
 
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 				{/* County */}
-				<div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800/80">
+				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100 ">
 					<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
 						<MapPin className="w-3.5 h-3.5" />
 						<span>County / Parish</span>
 					</div>
-					<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+					<p className="text-sm font-semibold text-gray-900 ">
 						{county ? `${county} County` : <span className="text-gray-400 font-normal italic">Not Provided by MLS</span>}
 					</p>
 				</div>
 
 				{/* Parcel Number */}
-				<div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800/80">
+				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100 ">
 					<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
 						<FileText className="w-3.5 h-3.5" />
 						<span>Parcel / Folio ID</span>
 					</div>
-					<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+					<p className="text-sm font-semibold text-gray-900 ">
 						{parcelNumber ? parcelNumber : <span className="text-gray-400 font-normal italic">Not Provided by MLS</span>}
 					</p>
 				</div>
 
 				{/* Annual Tax */}
-				<div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800/80">
+				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100 ">
 					<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
 						<Landmark className="w-3.5 h-3.5" />
 						<span>Annual Tax Amount</span>
 					</div>
-					<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+					<p className="text-sm font-semibold text-gray-900 ">
 						{taxAmount !== null && taxAmount !== undefined ? (
 							`$${Number(taxAmount).toLocaleString()}`
 						) : (
@@ -90,23 +90,23 @@ export default function CountyTaxSection({ property }: CountyTaxSectionProps) {
 				</div>
 
 				{/* Tax Year */}
-				<div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800/80">
+				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100 ">
 					<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
 						<Calendar className="w-3.5 h-3.5" />
 						<span>Tax Year</span>
 					</div>
-					<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+					<p className="text-sm font-semibold text-gray-900 ">
 						{taxYear ? taxYear : <span className="text-gray-400 font-normal italic">Not Provided by MLS</span>}
 					</p>
 				</div>
 
 				{/* Zoning */}
-				<div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800/80 sm:col-span-2 lg:col-span-2">
+				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100  sm:col-span-2 lg:col-span-2">
 					<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
 						<Building2 className="w-3.5 h-3.5" />
 						<span>Zoning & Classification</span>
 					</div>
-					<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+					<p className="text-sm font-semibold text-gray-900 ">
 						{zoning ? (
 							<>
 								{zoning} {zoningDesc ? `- ${zoningDesc}` : ""}
@@ -120,7 +120,7 @@ export default function CountyTaxSection({ property }: CountyTaxSectionProps) {
 
 			{/* County Appraiser Direct Link */}
 			{appraiserUrl && (
-				<div className="mt-4 pt-3 border-t border-gray-100 dark:border-zinc-800 flex justify-end">
+				<div className="mt-4 pt-3 border-t border-gray-100  flex justify-end">
 					<a
 						href={appraiserUrl}
 						target="_blank"
