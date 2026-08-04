@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { clerkClient } from "@clerk/nextjs/server";
 
 async function getMappedLead(id: string) {
 	const lead = await prisma.lead.findUnique({
@@ -242,9 +243,33 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
 	try {
 		const { id } = await params;
+		
+		const lead = await prisma.lead.findUnique({
+			where: { id },
+			select: { userId: true },
+		});
+
+		if (lead?.userId) {
+			try {
+				const client = await clerkClient();
+				await client.users.deleteUser(lead.userId);
+			} catch (err) {
+				console.error("Error deleting user from Clerk:", err);
+			}
+
+			try {
+				await prisma.user.delete({
+					where: { clerkId: lead.userId },
+				});
+			} catch (err) {
+				console.error("Error deleting user from User table:", err);
+			}
+		}
+
 		await prisma.lead.delete({
 			where: { id },
 		});
+		
 		return NextResponse.json({
 			message: "Lead deleted successfully",
 		});

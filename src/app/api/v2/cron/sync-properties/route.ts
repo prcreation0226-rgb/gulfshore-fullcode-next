@@ -21,6 +21,8 @@ export async function GET(req: NextRequest) {
 		return Response.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
+	const forceAll = req.nextUrl.searchParams.get("forceAll") === "true";
+
 	try {
 		// Find the most recent BridgeModificationTimestamp in our DB
 		const lastSynced = await prisma.property.findFirst({
@@ -43,17 +45,18 @@ export async function GET(req: NextRequest) {
 				.split("T")[0];
 		}
 
-		console.log(`[Cron] Auto-sync triggered — modification lookback: ${queryDate}`);
+		console.log(`[Cron] Auto-sync triggered — modification lookback: ${queryDate} | forceAll: ${forceAll}`);
 
 		// Run in background so cron-job.org doesn't timeout (30s limit)
-		syncTodaysActiveProperties({ count: 0, date: queryDate }).catch(err => {
+		syncTodaysActiveProperties({ count: 0, date: queryDate, forceAll }).catch(err => {
 			console.error("[Cron Background] Sync failed:", err);
 		});
 
 		return Response.json({
 			success: true,
-			message: "Sync started in background",
+			message: forceAll ? "Full historical sync started in background" : "Incremental sync started in background",
 			syncedFrom: queryDate,
+			forceAll,
 			triggeredAt: new Date().toISOString(),
 		});
 	} catch (err: any) {

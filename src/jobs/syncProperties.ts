@@ -183,9 +183,11 @@ export async function runSyncPass(
 export async function syncTodaysActiveProperties({
 	count,
 	date,
+	forceAll = false,
 }: {
 	count: number;
 	date?: string;
+	forceAll?: boolean;
 }) {
 	// Use the provided date from the cron router (which correctly looks back to last sync)
 	// or fallback to 7 days ago for safety.
@@ -193,15 +195,18 @@ export async function syncTodaysActiveProperties({
 	fallbackDate.setDate(fallbackDate.getDate() - 7);
 	const defaultDate = fallbackDate.toISOString().split("T")[0];
 	
-	const modificationDate = date || defaultDate;
+	const modificationDate = forceAll ? "2000-01-01" : (date || defaultDate);
+	const newListingsDate = forceAll ? "2000-01-01" : (date || defaultDate);
 	
-	// For new listings, also use the same lookback date to ensure we don't miss any properties
-	// that came on market while the cron job was inactive.
-	const newListingsDate = date || defaultDate;
+	const oneYearAgoDate = new Date();
+	oneYearAgoDate.setFullYear(oneYearAgoDate.getFullYear() - 1);
+	const soldDate = forceAll ? oneYearAgoDate.toISOString().split("T")[0] : modificationDate;
 
 	console.log(`[Sync] === Bridge Sync Started ===`);
+	console.log(`[Sync] forceAll mode: ${forceAll}`);
 	console.log(`[Sync] Modification pass date: ${modificationDate}`);
 	console.log(`[Sync] New listings (OnMarketDate) pass date: ${newListingsDate}`);
+	console.log(`[Sync] Sold listings pass date: ${soldDate}`);
 
 	// --- Pass 1: Modification timestamp (updates + existing listings) ---
 	const pass1 = await runSyncPass(
@@ -223,7 +228,7 @@ export async function syncTodaysActiveProperties({
 	const pass3 = await runSyncPass(
 		"BridgeModificationTimestamp_Closed",
 		fetchBridgeBatch,
-		modificationDate,
+		soldDate,
 		"Closed"
 	);
 
