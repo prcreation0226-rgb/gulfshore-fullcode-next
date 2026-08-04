@@ -5,6 +5,7 @@ import MarketReportSection from "@/components/search/marketReportSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function AdminMarketReportsPage() {
 	const [cityInput, setCityInput] = useState("");
@@ -26,15 +27,26 @@ export default function AdminMarketReportsPage() {
 				</p>
 			</div>
 
-			<div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+		<div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
 				<form onSubmit={handleSearch} className="flex gap-4 items-end max-w-md">
 					<div className="flex-1 space-y-2">
-						<label className="text-sm font-medium">Search City</label>
-						<Input 
-							placeholder="e.g. Naples, Fort Myers..." 
-							value={cityInput}
-							onChange={(e) => setCityInput(e.target.value)}
-						/>
+						<label className="text-sm font-medium">Select City</label>
+						<Select value={cityInput} onValueChange={(val) => setCityInput(val)}>
+							<SelectTrigger className="w-full bg-white">
+								<SelectValue placeholder="Select a city..." />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="Naples">Naples</SelectItem>
+								<SelectItem value="Fort Myers">Fort Myers</SelectItem>
+								<SelectItem value="Cape Coral">Cape Coral</SelectItem>
+								<SelectItem value="Bonita Springs">Bonita Springs</SelectItem>
+								<SelectItem value="Estero">Estero</SelectItem>
+								<SelectItem value="Marco Island">Marco Island</SelectItem>
+								<SelectItem value="Lehigh Acres">Lehigh Acres</SelectItem>
+								<SelectItem value="Punta Gorda">Punta Gorda</SelectItem>
+								<SelectItem value="Ave Maria">Ave Maria</SelectItem>
+							</SelectContent>
+						</Select>
 					</div>
 					<Button type="submit">
 						<Search className="w-4 h-4 mr-2" />
