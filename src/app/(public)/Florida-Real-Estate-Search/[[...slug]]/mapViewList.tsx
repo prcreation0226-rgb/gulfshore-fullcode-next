@@ -75,7 +75,7 @@ export default function MapViewList({
 
 	const gridClass =
 		view === "map"
-			? "grid mx-2 xl:mx-4 gap-2 lg:grid-cols-1 xl:grid-cols-2 md:grid-cols-1"
+			? "grid px-4 lg:px-2 xl:px-4 gap-4 lg:grid-cols-1 xl:grid-cols-2 md:grid-cols-1"
 			: "grid w-11/12 max-w-[1600px] mx-auto gap-4 lg:grid-cols-3 grid-cols-1 xl:grid-cols-3 md:grid-cols-2";
 
 	if (loading) {
