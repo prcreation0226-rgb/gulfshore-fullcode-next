@@ -75,7 +75,7 @@ export default function MapViewList({
 
 	const gridClass =
 		view === "map"
-			? "grid px-4 lg:px-2 xl:px-4 gap-4 lg:grid-cols-1 xl:grid-cols-2 md:grid-cols-1"
+			? "grid w-11/12 mx-auto lg:w-full lg:px-2 xl:px-4 gap-4 lg:grid-cols-1 xl:grid-cols-2 md:grid-cols-1"
 			: "grid w-11/12 max-w-[1600px] mx-auto gap-4 lg:grid-cols-3 grid-cols-1 xl:grid-cols-3 md:grid-cols-2";
 
 	if (loading) {
@@ -190,7 +190,7 @@ export default function MapViewList({
 					</Button>
 
 					<hr />
-					<div className={`bg-white w-dvw rounded-t-xl mt-20`}>
+					<div className={`bg-white w-full rounded-t-xl mt-20`}>
 						<div className="flex flex-col text-start items-start justify-start px-5 md:px-6 lg:px-7">
 							<div className="items-start justify-start flex flex-col">
 								<h2 className="lg:text-xl text-lg text-start font-semibold lg:font-medium">
