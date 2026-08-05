@@ -48,10 +48,11 @@ export default function CardCarousel({
 	const imageArray = images;
 
 	return (
-		<div className="p-0 bg-gray-300">
-			<div className="relative overflow-hidden">
+		<div className="p-0 bg-gray-300 w-full h-full">
+			<div className="relative overflow-hidden w-full h-full">
 				{imageArray.length ? (
 					<Carousel
+						className="w-full h-full"
 						opts={{
 							loop: true,
 						}}>

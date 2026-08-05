@@ -54,7 +54,7 @@ const PropertyCard = (property: Property & { isSelected?: boolean }) => {
 					: "border-[#E8E4DC] shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.12)] hover:-translate-y-1"}
 			`}>
 				{/* ── Image carousel ── */}
-				<div className="relative overflow-hidden">
+				<div className="relative overflow-hidden shrink-0 w-full aspect-[16/9]">
 					<CardCarousel property={property} />
 
 					{/* Gold shimmer overlay on hover */}
