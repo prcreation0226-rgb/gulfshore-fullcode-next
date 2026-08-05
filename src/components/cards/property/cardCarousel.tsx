@@ -87,6 +87,7 @@ export default function CardCarousel({
 						</CarouselContent>
 
 						<div
+							className="absolute inset-0 pointer-events-none"
 							onClick={(e) => {
 								e.preventDefault();
 								e.stopPropagation();
@@ -94,12 +95,12 @@ export default function CardCarousel({
 							<CarouselPrevious
 								variant="outline"
 								size="icon"
-								className="left-1.5 z-20 cursor-pointer !bg-white/90 hover:!bg-white text-black border-0 shadow-md top-1/2 h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+								className="left-1.5 z-20 pointer-events-auto cursor-pointer !bg-white/90 hover:!bg-white text-black border-0 shadow-md absolute top-1/2 -translate-y-1/2 h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
 							/>
 							<CarouselNext
 								variant="outline"
 								size="icon"
-								className="right-1.5 z-20 cursor-pointer !bg-white/90 hover:!bg-white text-black border-0 shadow-md top-1/2 h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+								className="right-1.5 z-20 pointer-events-auto cursor-pointer !bg-white/90 hover:!bg-white text-black border-0 shadow-md absolute top-1/2 -translate-y-1/2 h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
 							/>
 						</div>
 					</Carousel>
