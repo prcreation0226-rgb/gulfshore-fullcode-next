@@ -138,7 +138,8 @@ export async function processSavedSearches() {
 				const baths = prop.BathroomsTotalInteger || "2+";
 				const poolStr = prop.PoolPrivateYN ? "pool home" : "home";
 
-				const searchTitle = search.name && search.name !== "Saved Search" ? search.name : `${beds} bed ${baths} bath ${poolStr} under ${priceStr}`;
+				let searchTitleRaw = search.name && search.name !== "Saved Search" ? search.name : `${beds} bed ${baths} bath ${poolStr} under ${priceStr}`;
+				const searchTitle = searchTitleRaw.split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 				const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.SITE_URL || "https://gulfshore-fullcode-next-production.up.railway.app";
 				const domain = baseUrl.replace(/^https?:\/\//, '');
 				const smsMessage = `Dimitri Schwarz 239.992.9119 ${domain} - ${searchTitle} - ${count} New Listing${count > 1 ? 's' : ''}`;

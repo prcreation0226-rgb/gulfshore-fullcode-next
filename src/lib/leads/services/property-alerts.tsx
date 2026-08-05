@@ -301,7 +301,7 @@ import {
               fontFamily: "'Poppins', Arial, sans-serif",
             }}
           >
-            {capitalize(property.FullAddress).replace(" Fl", " FL")}
+            {capitalize(`${property.FullAddress}, ${property.City}, ${property.StateOrProvince || 'FL'} ${property.PostalCode || ''}`.trim()).replace(" Fl", " FL").replace(" Fl,", " FL,")}
           </Text>
   
           {/* City + subtype */}
