@@ -73,8 +73,8 @@ export default function CardCarousel({
 											<Image
 												src={img}
 												alt={`${property.FullAddress}-${index}`}
-												width={456}
-												height={Math.round((426 * 9) / 16)}
+												fill={true}
+												sizes="(max-width: 768px) 100vw, 456px"
 												loading={index === 0 ? "eager" : "lazy"}
 												priority={index === 0}
 												unoptimized
