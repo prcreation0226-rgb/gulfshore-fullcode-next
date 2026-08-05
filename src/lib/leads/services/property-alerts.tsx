@@ -382,7 +382,7 @@ import {
           )}
   
           {/* HOA */}
-          {property.MandatoryHOAYN && property.HOAFee && (
+          {property.MandatoryHOAYN && property.HOAFee != null && property.HOAFee > 0 && (
             <Text
               style={{
                 fontSize: "11px",
