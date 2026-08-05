@@ -18,7 +18,7 @@ import {
 	parseFiltersFromSearchParams,
 } from "@/lib/search-filters";
 
-export const SortComponent = () => {
+export const SortComponent = ({ classname }: { classname?: string }) => {
 	const { filters } = useSelector((state: RootState) => state.search);
 	const dispatch = useDispatch<AppDispatch>();
 	const pathname = usePathname();
@@ -67,7 +67,7 @@ export const SortComponent = () => {
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<Button
-						className="text-center border md:h-10 rounded-md border-gray-200 shadow-none justify-center md:justify-between items-center text-gray-700 hover:text-primary hover:border-primary hover:bg-white data-[state=open]:border-primary data-[state=open]:text-primary data-[state=open]:bg-white"
+						className={`text-center border md:h-10 rounded-md border-gray-200 shadow-none justify-center md:justify-between items-center text-gray-700 hover:text-primary hover:border-primary hover:bg-white data-[state=open]:border-primary data-[state=open]:text-primary data-[state=open]:bg-white ${classname || ""}`}
 						variant={"outline"}>
 						<SortAsc />
 						<span className="font-medium text-sm">Sort</span>

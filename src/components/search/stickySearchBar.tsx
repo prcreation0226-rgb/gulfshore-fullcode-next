@@ -144,6 +144,7 @@ export default function StickySearchBar() {
 				
 				{/* Mobile Filters Button - Always Visible */}
 				<Filters classname="!flex md:!hidden flex-shrink-0 !w-auto !px-3" />
+				<SortComponent classname="!flex md:!hidden flex-shrink-0 !w-auto !px-3" />
 
 				<a
 					className="hidden md:block ml-auto"
@@ -261,7 +262,7 @@ export default function StickySearchBar() {
 					</DropdownMenu>
 
 					<Filters classname="hidden md:!inline-flex" />
-					<SortComponent />
+					<SortComponent classname="hidden md:!inline-flex" />
 					<SaveSearchButton />
 				</div>
 			</div>
