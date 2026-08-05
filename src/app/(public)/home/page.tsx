@@ -110,6 +110,7 @@ export default async function Home() {
 					sort: "OnMarketTimestamp",
 					limit: "8",
 					order: "desc",
+					minPrice: "500000",
 				}}
 			/>
 
