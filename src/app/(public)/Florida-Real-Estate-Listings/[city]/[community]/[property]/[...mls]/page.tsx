@@ -325,7 +325,7 @@ export default async function Listing({
 			</div>
 
 			<div className="w-11/12 my-12 mx-auto">
-				<div className="mb-8">
+				{/* <div className="mb-8">
 					<Suspense>
 						<WalkScore
 							latitude={parseFloat(property.Latitude?.toString() || "")}
@@ -333,7 +333,7 @@ export default async function Listing({
 							address={property.FullAddress}
 						/>
 					</Suspense>
-				</div>
+				</div> */}
 				<PropertyDetailsTable property={property} />
 				<Suspense>
 					<MortgageCalculator
