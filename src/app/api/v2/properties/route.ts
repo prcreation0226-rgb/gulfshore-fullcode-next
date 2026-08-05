@@ -282,6 +282,11 @@ export async function GET(req: NextRequest) {
 				where.AND = where.AND || [];
 				where.AND.push({ OR: propTypeOR });
 			}
+		} else {
+			// Hide Land by default if no specific property types are requested
+			where.PropertyType = {
+				notIn: ["Residential Lease", "Land"],
+			};
 		}
 
 		// ---- Geo Bounding Box ----

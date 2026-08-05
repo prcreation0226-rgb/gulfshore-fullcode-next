@@ -12,6 +12,7 @@ export async function GET(req: Request) {
 
 		const properties = await prisma.property.findMany({
 			where: {
+				PropertyType: { not: "Residential Lease" },
 				OR: [
 					{ City: { contains: q } },
 					{ Community: { contains: q } },

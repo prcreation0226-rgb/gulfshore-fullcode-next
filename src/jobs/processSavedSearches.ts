@@ -113,6 +113,9 @@ export async function processSavedSearches() {
 				if (orConditions.length > 0) {
 					baseWhere.OR = orConditions;
 				}
+				baseWhere.PropertyType = { not: "Residential Lease" };
+			} else {
+				baseWhere.PropertyType = { notIn: ["Residential Lease", "Land"] };
 			}
 
 			const finalWhere = {
