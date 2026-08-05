@@ -253,8 +253,9 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
 			try {
 				const client = await clerkClient();
 				await client.users.deleteUser(lead.userId);
-			} catch (err) {
+			} catch (err: any) {
 				console.error("Error deleting user from Clerk:", err);
+				throw new Error("Failed to delete user from authentication server: " + err.message);
 			}
 
 			try {
