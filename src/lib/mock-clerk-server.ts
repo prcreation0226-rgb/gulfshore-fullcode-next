@@ -91,3 +91,11 @@ export async function currentUser() {
 		return null;
 	}
 }
+
+export const clerkClient = async () => ({
+	users: {
+		deleteUser: async (id: string) => {
+			console.log("Mock clerk user deleted:", id);
+		}
+	}
+});
