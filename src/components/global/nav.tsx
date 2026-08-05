@@ -298,57 +298,72 @@ export const DrawerMenu = ({
 							{ path: "/contact", label: "Contact" },
 							{ path: "/about", label: "About" },
 						].map(({ path: navPath, label }) => (
-							<Link
-								key={navPath}
-								href={navPath}
-								className="relative block w-full px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base">
-								<span className="relative z-10">{label}</span>
-								{path === navPath && (
-									<div className="absolute inset-0 bg-linear-to-r from-blue-100 to-purple-100 opacity-50 rounded-xl" />
-								)}
-							</Link>
+							<SheetClose key={navPath} asChild>
+								<Link
+									href={navPath}
+									className="relative block w-full px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base">
+									<span className="relative z-10">{label}</span>
+									{path === navPath && (
+										<div className="absolute inset-0 bg-linear-to-r from-blue-100 to-purple-100 opacity-50 rounded-xl" />
+									)}
+								</Link>
+							</SheetClose>
 						))}
 						<SignedOut>
-							<Link href="/signup" className="w-full block">
-								<button className="w-full text-left relative px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base cursor-pointer">
-									Sign Up
-								</button>
-							</Link>
-							<Link href="/signin" className="w-full block">
-								<button className="w-full text-left relative px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base cursor-pointer">
-									Sign In
-								</button>
-							</Link>
-							<Link
-								href="/admin/dashboard"
-								className="relative block w-full px-4 py-3 rounded-xl text-[#B89A6A] hover:bg-[#B89A6A]/10 hover:text-[#B89A6A] transition-all duration-200 font-bold text-base">
-								<span>Admin Panel</span>
-							</Link>
+							<SheetClose asChild>
+								<Link href="/signup" className="w-full block">
+									<button className="w-full text-left relative px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base cursor-pointer">
+										Sign Up
+									</button>
+								</Link>
+							</SheetClose>
+							<SheetClose asChild>
+								<Link href="/signin" className="w-full block">
+									<button className="w-full text-left relative px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base cursor-pointer">
+										Sign In
+									</button>
+								</Link>
+							</SheetClose>
+							<SheetClose asChild>
+								<Link
+									href="/admin/dashboard"
+									className="relative block w-full px-4 py-3 rounded-xl text-[#B89A6A] hover:bg-[#B89A6A]/10 hover:text-[#B89A6A] transition-all duration-200 font-bold text-base">
+									<span>Admin Panel</span>
+								</Link>
+							</SheetClose>
 						</SignedOut>
 						<SignedIn>
 							{" "}
 							{user?.publicMetadata?.role === "admin" && (
-								<Link
-									href="/admin/dashboard"
-									className="relative block w-full px-4 py-3 rounded-xl text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 font-bold text-base">
-									<span>Admin Dashboard</span>
-								</Link>
+								<SheetClose asChild>
+									<Link
+										href="/admin/dashboard"
+										className="relative block w-full px-4 py-3 rounded-xl text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 font-bold text-base">
+										<span>Admin Dashboard</span>
+									</Link>
+								</SheetClose>
 							)}
-							<Link
-								href="/favorites"
-								className="relative block w-full px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base">
-								<span>Saved Properties</span>
-							</Link>
-							<Link
-								href="/user/saved-searches"
-								className="relative block w-full px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base">
-								<span>Saved Searches</span>
-							</Link>
-							<SignOutButton>
-								<button className="w-full text-left relative px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 font-semibold cursor-pointer text-base">
-									Sign Out
-								</button>
-							</SignOutButton>
+							<SheetClose asChild>
+								<Link
+									href="/favorites"
+									className="relative block w-full px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base">
+									<span>Saved Properties</span>
+								</Link>
+							</SheetClose>
+							<SheetClose asChild>
+								<Link
+									href="/user/saved-searches"
+									className="relative block w-full px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base">
+									<span>Saved Searches</span>
+								</Link>
+							</SheetClose>
+							<SheetClose asChild>
+								<SignOutButton>
+									<button className="w-full text-left relative px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 font-semibold cursor-pointer text-base">
+										Sign Out
+									</button>
+								</SignOutButton>
+							</SheetClose>
 						</SignedIn>
 					</div>
 				</div>
