@@ -94,12 +94,12 @@ export default function CardCarousel({
 							<CarouselPrevious
 								variant="outline"
 								size="icon"
-								className="left-2 z-20 cursor-pointer bg-white/90 hover:bg-white text-black border-0 shadow-sm top-1/2 md:left-2 h-8 w-8 flex opacity-70 md:opacity-0 group-hover:opacity-100 transition-opacity"
+								className="left-1.5 z-20 cursor-pointer bg-white/90 hover:bg-white text-black border-0 shadow-md top-1/2 h-9 w-9 flex opacity-90 transition-opacity"
 							/>
 							<CarouselNext
 								variant="outline"
 								size="icon"
-								className="right-2 z-20 cursor-pointer bg-white/90 hover:bg-white text-black border-0 shadow-sm top-1/2 md:right-2 h-8 w-8 flex opacity-70 md:opacity-0 group-hover:opacity-100 transition-opacity"
+								className="right-1.5 z-20 cursor-pointer bg-white/90 hover:bg-white text-black border-0 shadow-md top-1/2 h-9 w-9 flex opacity-90 transition-opacity"
 							/>
 						</div>
 					</Carousel>
