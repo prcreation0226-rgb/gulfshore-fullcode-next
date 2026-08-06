@@ -123,15 +123,7 @@ export default async function RootLayout({
 				<SearchLayoutClient filterParams={filtersParams}>
 						<div
 							id="container"
-							className="min-h-full flex-col flex w-full gap-2">
-							<div className="sticky top-0 z-40 bg-white pt-4 pb-2 w-full">
-								<div className="w-11/12 max-w-[1600px] mx-auto">
-									<h1 className="lg:text-xl text-lg font-medium text-primary">
-										{seoData?.heading ||
-											"Listings in Florida and Surrounding Area"}
-									</h1>
-								</div>
-							</div>
+							className="min-h-full w-full">
 							<div>{children}</div>
 
 							<div className="w-11/12 max-w-[1600px] mx-auto">

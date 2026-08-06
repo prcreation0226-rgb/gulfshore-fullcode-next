@@ -3,6 +3,7 @@ import MapViewList from "./mapViewList";
 import React from "react";
 import { parseFiltersFromQuery } from "@/lib/search-filters";
 import CityFAQ from "@/components/city/city-faq";
+import GetSeoData from "@/hooks/getSeoData";
 
 export default async function ListingsPage({
 	params,
@@ -13,7 +14,6 @@ export default async function ListingsPage({
 	}>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-	let data;
 	const slug = (await params).slug || [];
 	const sp = await searchParams;
 	const view = typeof sp.view === "string" ? sp.view : undefined;
@@ -28,11 +28,23 @@ export default async function ListingsPage({
 		page: filterFromQuery.page ?? filterFromSlug.page ?? "1",
 	};
 
+	let seoData;
+	try {
+		seoData = await GetSeoData({
+			params: filterFromSlug,
+		});
+	} catch (error) {
+		console.error("Error fetching SEO data:", error);
+	}
+
+	const heading = seoData?.heading || "Listings in Florida and Surrounding Area";
+
 	return (
 		<>
 			<MapViewList
 				filter={filter}
 				view={view === "map" ? "map" : "list"}
+				heading={heading}
 			/>
 			<CityFAQ city={filter.city} />
 		</>

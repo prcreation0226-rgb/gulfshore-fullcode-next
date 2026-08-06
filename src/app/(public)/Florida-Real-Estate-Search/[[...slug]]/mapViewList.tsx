@@ -22,9 +22,11 @@ import { useDispatch, useSelector } from "react-redux";
 export default function MapViewList({
 	filter,
 	view,
+	heading,
 }: {
 	view: any;
 	filter: any;
+	heading: string;
 }) {
 	const {
 		mobileMapView,
@@ -120,8 +122,13 @@ export default function MapViewList({
 		window.history.pushState(null, "", newUrl);
 	};
 
-	const StatusTabs = (
-		<div className="sticky top-[52px] z-40 bg-white pb-2 w-full mb-6">
+	const StickyHeader = (
+		<div className="sticky top-0 z-40 bg-white w-full mb-6">
+			<div className="w-11/12 max-w-[1600px] mx-auto pt-4 pb-2">
+				<h1 className="lg:text-xl text-lg font-medium text-primary">
+					{heading}
+				</h1>
+			</div>
 			<div className="w-11/12 max-w-[1600px] mx-auto flex border-b border-[#E8E4DC] gap-6 text-sm">
 				<button
 					onClick={() => handleStatusChange("Active")}
@@ -162,7 +169,7 @@ export default function MapViewList({
 	if ((success && total === 0) || error) {
 		return (
 			<div className="w-full">
-				{StatusTabs}
+				{StickyHeader}
 				<div
 					className={
 						"w-full overflow-x-hidden flex flex-col items-center justify-center text-center py-20 px-4 bg-muted/10 rounded-lg border border-border"
@@ -218,7 +225,7 @@ export default function MapViewList({
 
 	return (
 		<div>
-			{StatusTabs}
+			{StickyHeader}
 
 			<div ref={topRef} className="scroll-mt-4" />
 			<div className={gridClass}>
