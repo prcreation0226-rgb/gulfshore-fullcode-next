@@ -56,12 +56,12 @@ export default function CardCarousel({
 						opts={{
 							loop: true,
 						}}>
-						<CarouselContent>
+						<CarouselContent className="ml-0">
 							{imageArray.map((img: string, index: number) => (
-								<CarouselItem key={index}>
+								<CarouselItem key={index} className="pl-0">
 									<AspectRatio
 										ratio={16 / 9}
-										className="w-full max-w-[456px]">
+										className="w-full">
 										{imageErrors[index] ? (
 											<div className="w-full h-full bg-gradient-to-br from-[#F5F2EB] to-[#EBE6DC] flex flex-col items-center justify-center gap-2 border border-[#E8E4DC] rounded-t-2xl">
 												<Landmark size={36} className="text-[#B89A6A] stroke-[1.25]" />
