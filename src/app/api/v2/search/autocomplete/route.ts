@@ -138,7 +138,7 @@ export async function GET(req: Request) {
 					city: p.City ?? undefined,
 					community: p.Community ?? undefined,
 					zip: p.PostalCode ?? undefined,
-					MLSNumber: p.MLSNumber || p.ListingId ?? undefined,
+					MLSNumber: p.MLSNumber || p.ListingId || undefined,
 				});
 			}
 
