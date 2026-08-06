@@ -121,7 +121,7 @@ export default function MapViewList({
 	};
 
 	const StatusTabs = (
-		<div className="sticky top-[52px] z-20 bg-white pb-2 w-full mb-6">
+		<div className="sticky top-[52px] z-40 bg-white pb-2 w-full mb-6">
 			<div className="w-11/12 max-w-[1600px] mx-auto flex border-b border-[#E8E4DC] gap-6 text-sm">
 				<button
 					onClick={() => handleStatusChange("Active")}

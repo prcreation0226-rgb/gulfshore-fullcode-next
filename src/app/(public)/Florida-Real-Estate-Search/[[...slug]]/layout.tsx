@@ -124,7 +124,7 @@ export default async function RootLayout({
 						<div
 							id="container"
 							className="min-h-full flex-col flex w-full gap-2">
-							<div className="sticky top-0 z-20 bg-white pt-4 pb-2 w-full">
+							<div className="sticky top-0 z-40 bg-white pt-4 pb-2 w-full">
 								<div className="w-11/12 max-w-[1600px] mx-auto">
 									<h1 className="lg:text-xl text-lg font-medium text-primary">
 										{seoData?.heading ||

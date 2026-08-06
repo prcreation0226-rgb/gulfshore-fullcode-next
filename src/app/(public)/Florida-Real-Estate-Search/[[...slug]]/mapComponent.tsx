@@ -486,7 +486,7 @@ export default function MapComponent({
 
 			{/* FEMA Flood Zone Legend & Loading Box */}
 			{showFema && !showDrone && (
-				<div className="absolute top-4 right-4 z-40 bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl shadow-lg p-3.5 max-w-xs transition-all duration-300">
+				<div className="absolute top-16 md:top-4 right-4 z-40 bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl shadow-lg p-3 max-w-[280px] sm:max-w-xs transition-all duration-300">
 					<div className="flex items-center justify-between gap-3 mb-2 pb-2 border-b border-gray-100">
 						<span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
 							<span>🌊 FEMA Flood Zone Legend</span>
