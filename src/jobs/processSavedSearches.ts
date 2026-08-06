@@ -122,6 +122,11 @@ export async function processSavedSearches() {
 				...baseWhere,
 				StandardStatus: "Active",
 				createdAt: { gt: lookbackDate },
+				// Prevent spam from bulk historical imports by ensuring the property is actually new to the market
+				OR: [
+					{ DaysOnMarket: { lte: 14 } },
+					{ OnMarketDate: { gt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) } }
+				]
 			};
 
 			const matchingProperties = await prisma.property.findMany({
@@ -195,7 +200,11 @@ export async function processSavedSearches() {
 			const newestProperty = await prisma.property.findFirst({
 				where: { 
 					StandardStatus: "Active",
-					createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) } 
+					createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+					OR: [
+						{ DaysOnMarket: { lte: 14 } },
+						{ OnMarketDate: { gt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) } }
+					]
 				},
 				orderBy: { createdAt: 'desc' }
 			});
