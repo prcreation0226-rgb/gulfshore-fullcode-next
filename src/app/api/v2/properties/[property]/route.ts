@@ -84,12 +84,19 @@ export async function GET(
 			return { ...rest, images: sImages };
 		});
 
-		// Strip raw from main property response (large field, not needed by frontend)
+		// Strip Media and PublicRemarks from raw to save space, but keep the rest for frontend
+		const rawSubset = res.raw as any;
+		if (rawSubset) {
+			delete rawSubset.Media;
+			delete rawSubset.PublicRemarks;
+		}
+
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { raw: _raw, ...resWithoutRaw } = res as any;
 
 		const finalData = {
 			...resWithoutRaw,
+			raw: rawSubset,
 			images: resolvedImages,
 			similar,
 		};
