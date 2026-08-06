@@ -121,39 +121,41 @@ export default function MapViewList({
 	};
 
 	const StatusTabs = (
-		<div className="w-11/12 max-w-[1600px] mx-auto mb-6 flex border-b border-[#E8E4DC] gap-6 text-sm">
-			<button
-				onClick={() => handleStatusChange("Active")}
-				className={`pb-2.5 font-medium border-b-2 transition-all ${
-					currentStatus === "Active"
-						? "border-[#B89A6A] text-[#1C1712] font-semibold"
-						: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
-				}`}
-			>
-				Active Listings
-			</button>
-			{(filter.developmentName || filter.subdivision) && (
+		<div className="sticky top-[52px] z-20 bg-white pb-2 w-full mb-6">
+			<div className="w-11/12 max-w-[1600px] mx-auto flex border-b border-[#E8E4DC] gap-6 text-sm">
 				<button
-					onClick={() => handleStatusChange("Sold")}
+					onClick={() => handleStatusChange("Active")}
 					className={`pb-2.5 font-medium border-b-2 transition-all ${
-						currentStatus === "Sold"
+						currentStatus === "Active"
 							? "border-[#B89A6A] text-[#1C1712] font-semibold"
 							: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
 					}`}
 				>
-					Sold Listings
+					Active Listings
 				</button>
-			)}
-			<button
-				onClick={() => handleStatusChange("Pending")}
-				className={`pb-2.5 font-medium border-b-2 transition-all ${
-					currentStatus === "Pending"
-						? "border-[#B89A6A] text-[#1C1712] font-semibold"
-						: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
-				}`}
-			>
-				Pending Listings
-			</button>
+				{(filter.developmentName || filter.subdivision) && (
+					<button
+						onClick={() => handleStatusChange("Sold")}
+						className={`pb-2.5 font-medium border-b-2 transition-all ${
+							currentStatus === "Sold"
+								? "border-[#B89A6A] text-[#1C1712] font-semibold"
+								: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
+						}`}
+					>
+						Sold Listings
+					</button>
+				)}
+				<button
+					onClick={() => handleStatusChange("Pending")}
+					className={`pb-2.5 font-medium border-b-2 transition-all ${
+						currentStatus === "Pending"
+							? "border-[#B89A6A] text-[#1C1712] font-semibold"
+							: "border-transparent text-[#7A7060] hover:text-[#1C1712]"
+					}`}
+				>
+					Pending Listings
+				</button>
+			</div>
 		</div>
 	);
 
