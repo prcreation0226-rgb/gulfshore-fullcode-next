@@ -123,7 +123,7 @@ export default async function RootLayout({
 				<SearchLayoutClient filterParams={filtersParams}>
 						<div
 							id="container"
-							className="h-full flex-col flex w-full gap-2">
+							className="min-h-full flex-col flex w-full gap-2">
 							<div className="sticky top-0 z-20 bg-white pt-4 pb-2 w-full">
 								<div className="w-11/12 max-w-[1600px] mx-auto">
 									<h1 className="lg:text-xl text-lg font-medium text-primary">
