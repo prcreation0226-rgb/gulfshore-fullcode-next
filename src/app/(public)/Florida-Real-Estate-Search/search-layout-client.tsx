@@ -19,10 +19,10 @@ export default function SearchLayoutClient({
 	const path = usePathname();
 
 	return (
-		<div className="flex flex-col lg:flex-row w-full h-full relative">
+		<div className={`flex flex-col lg:flex-row w-full relative ${isMapView ? "h-[calc(100vh-110px)] overflow-hidden lg:h-auto lg:overflow-visible" : "h-full"}`}>
 			{/* Left side: Map (only renders when isMapView is true) */}
 			{isMapView && (
-				<div className="w-full lg:w-[52%] xl:w-[54%] h-[50vh] lg:h-[calc(100vh-140px)] sticky top-[80px] lg:top-[140px] z-30 shrink-0">
+				<div className="w-full lg:w-[52%] xl:w-[54%] h-[50%] lg:h-[calc(100vh-140px)] lg:sticky lg:top-[140px] z-30 shrink-0">
 					<Map filterParams={filterParams} />
 				</div>
 			)}
@@ -31,7 +31,7 @@ export default function SearchLayoutClient({
 			<div
 				className={`${
 					isMapView
-						? "flex w-full lg:w-[48%] xl:w-[46%] flex-col bg-white z-10 pt-4"
+						? "flex w-full lg:w-[48%] xl:w-[46%] flex-col bg-white z-10 pt-4 h-[50%] overflow-y-auto lg:h-auto lg:overflow-y-visible"
 						: "w-full relative bg-white mx-auto flex flex-col"
 				}`}
 			>

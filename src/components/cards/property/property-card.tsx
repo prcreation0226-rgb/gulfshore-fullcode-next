@@ -191,7 +191,7 @@ export const PropertyCard2 = ({
 			bg-[#FAFAF8] border border-[#E8E4DC]
 			shadow-[0_4px_24px_rgba(0,0,0,0.12)]
 			rounded-2xl
-			max-h-[420px] w-full
+			max-h-[250px] md:max-h-[420px] w-full
 		">
 			{/* Close button */}
 			<button
