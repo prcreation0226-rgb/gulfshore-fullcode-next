@@ -4,6 +4,7 @@ import React from "react";
 import { parseFiltersFromQuery } from "@/lib/search-filters";
 import CityFAQ from "@/components/city/city-faq";
 import GetSeoData from "@/hooks/getSeoData";
+import capitalizeWords from "@/hooks/capitalize-letter";
 
 export default async function ListingsPage({
 	params,
@@ -37,7 +38,12 @@ export default async function ListingsPage({
 		console.error("Error fetching SEO data:", error);
 	}
 
-	const heading = seoData?.heading || "Listings in Florida and Surrounding Area";
+	let heading = seoData?.heading || "Listings in Florida and Surrounding Area";
+	
+	const searchKeyword = filter.q || filter.subdivision || filter.school;
+	if (searchKeyword) {
+		heading = `${capitalizeWords(searchKeyword as string)}, Florida`;
+	}
 
 	return (
 		<>
