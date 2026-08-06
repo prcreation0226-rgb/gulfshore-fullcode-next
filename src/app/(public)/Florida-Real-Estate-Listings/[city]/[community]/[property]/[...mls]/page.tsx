@@ -361,12 +361,12 @@ export default async function Listing({
 					limit: "12",
 					order: "desc",
 					excludeMLS: property.MLSNumber,
-					propertyType: (() => {
+					propertyTypes: (() => {
 						const subType = property.PropertySubType || "";
 						const type = property.PropertyType || "";
 						if (subType === "Single Family Residence") return "Homes";
 						if (subType.includes("Rise") || subType === "Townhouse" || type.includes("Condominium")) return "Condos";
-						if (type === "Land" || type.includes("Lot")) return "Residential-Lots";
+						if (type === "Land" || type.includes("Lot") || type === "Lots & Land") return "Residential-Lots";
 						return "Homes";
 					})(),
 				}}
@@ -401,12 +401,12 @@ export default async function Listing({
 							limit: "5",
 							city: property.City,
 							excludeMLS: property.MLSNumber,
-							propertyType: (() => {
+							propertyTypes: (() => {
 								const subType = property.PropertySubType || "";
 								const type = property.PropertyType || "";
 								if (subType === "Single Family Residence") return "Homes";
 								if (subType.includes("Rise") || subType === "Townhouse" || type.includes("Condominium")) return "Condos";
-								if (type === "Land" || type.includes("Lot")) return "Residential-Lots";
+								if (type === "Land" || type.includes("Lot") || type === "Lots & Land") return "Residential-Lots";
 								return "Homes";
 							})(),
 						}}
