@@ -62,6 +62,15 @@ export async function GET(
 				ListingId: {
 					not: res.ListingId,
 				},
+				// Match property type logic
+				...(res.PropertyType === "Land" || res.PropertyType?.includes("Lot") || res.PropertyType === "Lots & Land"
+					? { PropertyType: "Land" }
+					: res.PropertySubType === "Single Family Residence"
+					? { PropertySubType: "Single Family Residence" }
+					: res.PropertySubType?.includes("Rise") || res.PropertySubType === "Townhouse" || res.PropertyType?.includes("Condominium")
+					? { PropertySubType: { in: ["Low Rise (1-3)", "Mid Rise (4-7)", "High Rise (8+)", "Townhouse"] } }
+					: { PropertySubType: "Single Family Residence" }
+				)
 			},
 			take: 9,
 		});
