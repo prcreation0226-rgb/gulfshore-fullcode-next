@@ -22,7 +22,7 @@ export default function SearchLayoutClient({
 		<div className="flex flex-col lg:flex-row w-full h-full relative">
 			{/* Left side: Map (only renders when isMapView is true) */}
 			{isMapView && (
-				<div className="w-full lg:w-[52%] xl:w-[54%] h-[75vh] lg:h-[calc(100vh-140px)] relative lg:sticky lg:top-[140px] z-10 shrink-0">
+				<div className="w-full lg:w-[52%] xl:w-[54%] h-[50vh] lg:h-[calc(100vh-140px)] sticky top-[80px] lg:top-[140px] z-10 shrink-0">
 					<Map filterParams={filterParams} />
 				</div>
 			)}
