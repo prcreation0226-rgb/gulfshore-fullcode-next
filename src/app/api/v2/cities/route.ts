@@ -76,6 +76,13 @@ export async function GET(req: NextRequest) {
 					not: "Residential Lease",
 				},
 				FullAddress: { not: "" },
+				ListPrice: {
+					not: null,
+					gte: 1000,
+				},
+				NOT: [
+					{ images: { equals: null } }
+				],
 			},
 			_count: {
 				_all: true,
