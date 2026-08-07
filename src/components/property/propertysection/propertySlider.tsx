@@ -196,8 +196,8 @@ export default function PropertySection({
 						</Link>
 					</CarouselContent>
 
-					<CarouselPrevious className="flex w-10 h-10 md:w-12 md:h-12 bg-accent -left-5 md:-left-16 top-[80%] md:top-[80%] md:-translate-y-1/2 z-10 opacity-80 hover:opacity-100" />
-					<CarouselNext className="flex w-10 h-10 md:w-12 md:h-12 bg-accent -right-5 md:-right-16 top-[80%] md:top-[80%] md:-translate-y-1/2 z-10 opacity-80 hover:opacity-100" />
+					<CarouselPrevious className="flex w-10 h-10 md:w-12 md:h-12 !bg-accent text-white -left-1 md:-left-16 top-[80%] md:top-[80%] md:-translate-y-1/2 z-10 opacity-90 hover:opacity-100" />
+					<CarouselNext className="flex w-10 h-10 md:w-12 md:h-12 !bg-accent text-white -right-1 md:-right-16 top-[80%] md:top-[80%] md:-translate-y-1/2 z-10 opacity-90 hover:opacity-100" />
 				</Carousel>
 			</Suspense>
 		</div>
