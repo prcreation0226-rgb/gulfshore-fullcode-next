@@ -84,10 +84,12 @@ export const Filters = ({
 	community,
 	classname,
 	asLink = false,
+	listenToUrl = false,
 }: {
 	community?: string;
 	classname?: string;
 	asLink?: boolean;
+	listenToUrl?: boolean;
 }) => {
 	const router = useRouter();
 	const dispatch = useDispatch<AppDispatch>();
@@ -123,10 +125,15 @@ export const Filters = ({
 
 	// Parse filters from URL query on mount
 	useEffect(() => {
-		if (searchParams.get("openFilters") === "true") {
+		if (listenToUrl && searchParams.get("openFilters") === "true") {
 			setOpen(true);
+			
+			// Remove the openFilters parameter from the URL so that subsequent clicks work
+			const newParams = new URLSearchParams(searchParams.toString());
+			newParams.delete("openFilters");
+			router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
 		}
-	}, [searchParams]);
+	}, [searchParams, listenToUrl, pathname, router]);
 
 	useEffect(() => {
 		const parsed = parseFiltersFromSearchParams(searchParams);
