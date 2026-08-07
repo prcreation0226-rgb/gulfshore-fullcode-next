@@ -47,14 +47,14 @@ const PropertyCard = (property: Property & { isSelected?: boolean }) => {
 			)}>
 
 			<article className={`
-				group relative h-full w-full bg-[#FAFAF8] rounded-2xl overflow-hidden
+				group relative h-full w-full bg-[#FAFAF8] rounded-2xl
 				border transition-all duration-500 ease-out flex flex-col
 				${isSelected
 					? "border-red-600 border-2 shadow-[0_0_24px_rgba(220,38,38,0.25)] ring-2 ring-red-500/50 -translate-y-1"
 					: "border-[#E8E4DC] shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.12)] hover:-translate-y-1"}
 			`}>
 				{/* ── Image carousel ── */}
-				<div className="relative overflow-hidden shrink-0 w-full aspect-[16/9]">
+				<div className="relative shrink-0 w-full aspect-[16/9] rounded-t-2xl">
 					<CardCarousel property={property} />
 
 					{/* Gold shimmer overlay on hover */}

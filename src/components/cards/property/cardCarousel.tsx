@@ -48,8 +48,8 @@ export default function CardCarousel({
 	const imageArray = images;
 
 	return (
-		<div className="p-0 bg-gray-300 w-full h-full">
-			<div className="relative overflow-hidden w-full h-full">
+		<div className="p-0 bg-gray-300 w-full h-full rounded-t-2xl">
+			<div className="relative overflow-visible w-full h-full rounded-t-2xl">
 				{imageArray.length ? (
 					<Carousel
 						className="w-full h-full"
@@ -96,12 +96,12 @@ export default function CardCarousel({
 							<CarouselPrevious
 								variant="outline"
 								size="icon"
-								className="left-1.5 z-20 pointer-events-auto cursor-pointer !bg-white/90 hover:!bg-white text-black border-0 shadow-md absolute top-1/2 -translate-y-1/2 h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+								className="absolute -left-3 md:left-1.5 top-[80%] md:top-1/2 -translate-y-1/2 z-20 pointer-events-auto cursor-pointer bg-accent text-white md:!bg-white/90 md:text-black md:hover:!bg-white border-0 shadow-md h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
 							/>
 							<CarouselNext
 								variant="outline"
 								size="icon"
-								className="right-1.5 z-20 pointer-events-auto cursor-pointer !bg-white/90 hover:!bg-white text-black border-0 shadow-md absolute top-1/2 -translate-y-1/2 h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+								className="absolute -right-3 md:right-1.5 top-[80%] md:top-1/2 -translate-y-1/2 z-20 pointer-events-auto cursor-pointer bg-accent text-white md:!bg-white/90 md:text-black md:hover:!bg-white border-0 shadow-md h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
 							/>
 						</div>
 					</Carousel>
