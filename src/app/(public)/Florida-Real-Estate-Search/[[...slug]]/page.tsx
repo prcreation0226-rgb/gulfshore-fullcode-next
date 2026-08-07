@@ -38,11 +38,13 @@ export default async function ListingsPage({
 		console.error("Error fetching SEO data:", error);
 	}
 
-	let heading = seoData?.heading || "Listings in Florida and Surrounding Area";
+	let heading = seoData?.heading;
 	
-	const searchKeyword = filter.q || filter.subdivision || filter.school;
+	const searchKeyword = filter.community || filter.city || filter.q || filter.subdivision || filter.school;
 	if (searchKeyword) {
-		heading = `${capitalizeWords(searchKeyword as string)}, Florida`;
+		heading = `Listings in ${capitalizeWords(searchKeyword as string)}, FL`;
+	} else if (!heading) {
+		heading = "Listings in Florida and Surrounding Area";
 	}
 
 	return (
