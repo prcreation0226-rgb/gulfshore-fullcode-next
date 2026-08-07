@@ -185,7 +185,7 @@ import {
         }}
       >
         {/* Hero Image */}
-        <Section style={{ position: "relative", margin: 0, padding: 0 }}>
+        <Section style={{ margin: 0, padding: 0 }}>
           <Link href={getPropertiesApiBaseUrl()+UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber ||"")}>
             <Img
               src={imgSrc}
@@ -200,19 +200,14 @@ import {
               }}
             />
           </Link>
+        </Section>
   
-          {/* Status badge */}
-          {property.StandardStatus && (
-            <Section
-              style={{
-                position: "absolute",
-                top: "16px",
-                left: "16px",
-                margin: 0,
-                padding: 0,
-              }}
-            >
-              <Text
+        {/* Card Body */}
+        <Section style={{ padding: "20px 24px 16px" }}>
+          {/* Status & DOM Badges */}
+          <Text style={{ margin: "0 0 12px 0", lineHeight: "1" }}>
+            {property.StandardStatus && (
+              <span
                 style={{
                   display: "inline-block",
                   backgroundColor: statusBg,
@@ -223,61 +218,31 @@ import {
                   textTransform: "uppercase",
                   padding: "4px 10px",
                   borderRadius: "20px",
-                  margin: 0,
+                  marginRight: "8px",
                   fontFamily: "'Poppins', Arial, sans-serif",
                 }}
               >
                 {property.StandardStatus}
-              </Text>
-            </Section>
-          )}
-  
-          {/* DOM badge */}
-          {property.DaysOnMarket != null && (
-            <Section
-              style={{
-                position: "absolute",
-                top: "16px",
-                right: "16px",
-                margin: 0,
-                padding: 0,
-              }}
-            >
-              <Text
+              </span>
+            )}
+            {property.DaysOnMarket != null && (
+              <span
                 style={{
                   display: "inline-block",
-                  backgroundColor: "rgba(0,0,0,0.65)",
-                  color: "#FFFFFF",
+                  backgroundColor: "#F3F4F6",
+                  color: "#374151",
                   fontSize: "10px",
                   fontWeight: "600",
                   padding: "4px 10px",
                   borderRadius: "20px",
-                  margin: 0,
                   fontFamily: "'Poppins', Arial, sans-serif",
                 }}
               >
                 {property.DaysOnMarket}d on market
-              </Text>
-            </Section>
-          )}
-  
-          {/* Gold gradient overlay at bottom */}
-          <Section
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: "80px",
-              background: "linear-gradient(to top, rgba(26,10,10,0.6), transparent)",
-              margin: 0,
-              padding: 0,
-            }}
-          />
-        </Section>
-  
-        {/* Card Body */}
-        <Section style={{ padding: "20px 24px 16px" }}>
+              </span>
+            )}
+          </Text>
+
           {/* Price */}
           <Text
             style={{
@@ -428,16 +393,15 @@ import {
                 style={{
                   backgroundColor: MID,
                   color: "#FFFFFF",
-                  padding: "12px 24px",
+                  padding: "12px 32px",
                   borderRadius: "6px",
                   fontSize: "12px",
                   fontWeight: "700",
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
                   textDecoration: "none",
-                  display: "block",
+                  display: "inline-block",
                   textAlign: "center",
-                  width: "100%",
                   fontFamily: "'Poppins', Arial, sans-serif",
                 }}
               >
