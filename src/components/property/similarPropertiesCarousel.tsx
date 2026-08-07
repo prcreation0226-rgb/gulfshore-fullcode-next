@@ -47,8 +47,8 @@ export default function SimilarPropertiesCarousel({
 						))}
 					</CarouselContent>
 					<div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-						<CarouselPrevious className="absolute flex w-10 h-10 md:w-12 md:h-12 bg-accent -left-5 md:-left-10 top-[72%] md:top-[72%] z-10 md:-translate-y-1/2" />
-						<CarouselNext className="absolute flex w-10 h-10 md:w-12 md:h-12 bg-accent -right-5 md:-right-10 top-[72%] md:top-[72%] z-10 md:-translate-y-1/2" />
+						<CarouselPrevious className="absolute flex w-10 h-10 md:w-12 md:h-12 bg-accent -left-2 md:-left-10 top-[72%] md:top-[72%] z-10 md:-translate-y-1/2" />
+						<CarouselNext className="absolute flex w-10 h-10 md:w-12 md:h-12 bg-accent -right-2 md:-right-10 top-[72%] md:top-[72%] z-10 md:-translate-y-1/2" />
 					</div>
 				</Carousel>
 			</div>
