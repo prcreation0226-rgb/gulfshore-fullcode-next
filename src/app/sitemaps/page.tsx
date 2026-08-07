@@ -4,10 +4,14 @@ import Link from "next/link";
 import React from "react";
 
 function capitalizeWords(str: string) {
+	const directions = ['ne', 'nw', 'se', 'sw', 'n', 's', 'e', 'w'];
 	return str
 		.toLowerCase()
 		.split(" ")
-		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+		.map((word) => {
+			if (directions.includes(word)) return word.toUpperCase();
+			return word.charAt(0).toUpperCase() + word.slice(1);
+		})
 		.join(" ");
 }
 

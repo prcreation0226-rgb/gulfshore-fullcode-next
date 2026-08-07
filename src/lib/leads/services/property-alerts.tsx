@@ -94,9 +94,13 @@ import {
   }
   
   function capitalize(s: string): string {
+    const directions = ['ne', 'nw', 'se', 'sw', 'n', 's', 'e', 'w'];
     return s
       .split(" ")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .map((w) => {
+        if (directions.includes(w.toLowerCase())) return w.toUpperCase();
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+      })
       .join(" ");
   }
 
