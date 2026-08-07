@@ -43,7 +43,7 @@ export default function CountyTaxSection({ property }: CountyTaxSectionProps) {
 	}
 
 	return (
-		<div className="bg-white  rounded-2xl border border-gray-100  p-6 shadow-sm my-6">
+		<div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm h-full flex flex-col">
 			<div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-gray-100 ">
 				<Landmark className="w-5 h-5 text-primary" />
 				<h3 className="text-lg font-bold text-gray-900 ">
@@ -120,7 +120,7 @@ export default function CountyTaxSection({ property }: CountyTaxSectionProps) {
 
 			{/* County Appraiser Direct Link */}
 			{appraiserUrl && (
-				<div className="mt-4 pt-3 border-t border-gray-100  flex justify-end">
+				<div className="mt-auto pt-4 border-t border-gray-100 flex justify-end">
 					<a
 						href={appraiserUrl}
 						target="_blank"

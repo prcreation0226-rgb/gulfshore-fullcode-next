@@ -133,7 +133,7 @@ export default function PropertyDetail(property: Property) {
 					</Suspense>
 				</div>
 
-				<div className="grid lg:grid-cols-2 grid-cols-1 gap-6 my-6 items-start">
+				<div className="grid lg:grid-cols-2 grid-cols-1 gap-6 my-6 items-stretch">
 					<div className="flex flex-col gap-2 px-2">
 						{!(property.raw as any)?.HighSchool &&
 						!(property.raw as any)?.MiddleSchool &&
