@@ -283,7 +283,7 @@ export const DrawerMenu = ({
 						{[
 							{ path: "/", label: "Home" },
 							{
-								path: "/Florida-Real-Estate-Search",
+								path: "/Florida-Real-Estate-Search?openFilters=true",
 								label: "Advanced Search (Filters)",
 							},
 							{
