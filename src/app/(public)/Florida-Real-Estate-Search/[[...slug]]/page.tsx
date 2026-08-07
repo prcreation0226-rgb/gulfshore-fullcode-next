@@ -40,7 +40,7 @@ export default async function ListingsPage({
 
 	let heading = seoData?.heading;
 	
-	const searchKeyword = filter.community || filter.city || filter.q || filter.subdivision || filter.school;
+	const searchKeyword = filter.developmentName || filter.city || filter.q || filter.subdivision || filter.school;
 	if (searchKeyword) {
 		heading = `Listings in ${capitalizeWords(searchKeyword as string)}, FL`;
 	} else if (!heading) {
