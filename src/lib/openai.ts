@@ -150,4 +150,50 @@ export function pickRandomFAQTopic(): string {
   return topics[Math.floor(Math.random() * topics.length)];
 }
 
+/**
+ * Generate multiple real estate FAQs in a single API call to save time and cost.
+ */
+export async function generateMultipleFAQs(count: number) {
+  const systemPrompt = `You are a knowledgeable real‑estate FAQ writer for Gulfshore Group.
+Generate exactly ${count} completely different FAQs (questions and answers) about Southwest Florida real estate (Naples, Fort Myers, etc.).
+Return a JSON array of objects, where each object has exactly:
+{
+  "question": "The question string",
+  "answer": "The detailed answer string",
+  "category": "Buying" // or "Selling" or "General"
+}
+Only use your internal knowledge, no external API calls. Ensure the output is a valid JSON array.`;
+
+  const response = await openai.createChatCompletion({
+    model: "gpt-4o-mini",
+    messages: [{ role: "system", content: systemPrompt }],
+    temperature: 0.7,
+    max_tokens: 2500,
+  });
+
+  const raw = response.data.choices?.[0]?.message?.content?.trim();
+  if (!raw) {
+    throw new Error("OpenAI returned empty content for FAQ batch");
+  }
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    const match = raw.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error("Failed to extract JSON array from OpenAI FAQ batch response");
+    parsed = JSON.parse(match[0]);
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error("OpenAI did not return a JSON array for FAQs");
+  }
+
+  return parsed.map((faq: any) => ({
+    question: faq.question || "Untitled Question",
+    answer: faq.answer || "No answer provided.",
+    category: faq.category || "General",
+  }));
+}
+
 export default openai;
