@@ -22,16 +22,25 @@ export async function GET(req: Request) {
     const blogPromises = topics.map(topic => generateBlogFromMemory(topic));
     const blogs = await Promise.all(blogPromises);
 
+    // Array of valid luxury home images from images.unsplash.com
+    const defaultImages = [
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1600607687931-cebf006362ce?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=1200&auto=format&fit=crop"
+    ];
+
     // 4. Save to Database and Publish Instantly
     const createdBlogs = await Promise.all(
-      blogs.map(blog =>
+      blogs.map((blog, index) =>
         prisma.blog.create({
           data: {
             title: blog.title,
             slug: blog.slug + "-" + Math.random().toString(36).substring(2, 7), // Ensure unique slug
             description: blog.description,
             content: blog.content,
-            coverImage: blog.coverImage || "https://source.unsplash.com/1200x800/?luxury,home", 
+            coverImage: blog.coverImage || defaultImages[index % defaultImages.length], 
             category: blog.category,
             metaTitle: blog.metaTitle,
             metaDescription: blog.metaDescription,
