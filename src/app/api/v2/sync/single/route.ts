@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 
 	const mediaRes = await fetch(mediaUrl);
 	const mediaData = await mediaRes.json();
-	const item = (mediaData.bundle || listings)[0];
+	const item = mediaData.bundle?.[0] || listings[0];
 
 	await prisma.property.upsert({
 		where: { ListingId: item.ListingId },
