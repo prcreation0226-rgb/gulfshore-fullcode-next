@@ -181,11 +181,11 @@ import {
       <Section
         style={{
           backgroundColor: "#FFFFFF",
-          borderRadius: "12px",
+          borderRadius: "0",
           overflow: "hidden",
           border: `1px solid ${BORDER}`,
-          marginBottom: "24px",
-          boxShadow: "0 4px 24px rgba(139,32,32,0.08)",
+          marginBottom: "32px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
         }}
       >
         {/* Hero Image */}
@@ -392,25 +392,25 @@ import {
           </Row>
           <Row>
             <Column align="center">
-              <Button
-                href={getPropertiesApiBaseUrl()+UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber||"")}
-                style={{
-                  backgroundColor: MID,
-                  color: "#FFFFFF",
-                  padding: "12px 32px",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  fontWeight: "700",
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  textDecoration: "none",
-                  display: "inline-block",
-                  textAlign: "center",
-                  fontFamily: "'Poppins', Arial, sans-serif",
-                }}
-              >
-                VIEW DETAILS
-              </Button>
+                <Button
+                  href={getPropertiesApiBaseUrl()+UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber||"")}
+                  style={{
+                    backgroundColor: MID,
+                    color: "#FFFFFF",
+                    padding: "14px 40px",
+                    borderRadius: "2px",
+                    fontSize: "11px",
+                    fontWeight: "700",
+                    letterSpacing: "0.15em",
+                    textTransform: "uppercase",
+                    textDecoration: "none",
+                    display: "inline-block",
+                    textAlign: "center",
+                    fontFamily: "'Poppins', Arial, sans-serif",
+                  }}
+                >
+                  VIEW DETAILS
+                </Button>
             </Column>
           </Row>
         </Section>
@@ -458,52 +458,80 @@ import {
   
         <Tailwind>
         <Body
-  style={{
-    backgroundColor: "#F0EBE3",
-    margin: 0,
-    padding: 0,
-    fontFamily: "'Poppins', Arial, sans-serif",
-  }}
->
-            <Container
-              style={{
-                maxWidth: "640px",
-                margin: "0 auto",
-                padding: "0",
-              }}
-            >
-              {/* ── Header ── */}
+          style={{
+            backgroundColor: "#F4F4F5",
+            margin: 0,
+            padding: "40px 0",
+            fontFamily: "'Poppins', Arial, sans-serif",
+          }}
+        >
+          <Container
+            style={{
+              maxWidth: "640px",
+              margin: "0 auto",
+              padding: "0",
+              backgroundColor: "#FFFFFF",
+              borderRadius: "4px",
+              overflow: "hidden",
+              boxShadow: "0 10px 40px rgba(0,0,0,0.08)",
+            }}
+          >
+              {/* ── Premium Header ── */}
               <Section
                 style={{
-                  background: `#FFFFFF`,
-                  padding: "40px 40px 32px",
+                  background: "#1A0A0A",
+                  padding: "40px 40px",
+                  textAlign: "center" as const,
+                  borderBottom: `3px solid ${GOLD}`,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: "24px",
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    color: "#FFFFFF",
+                    margin: "0 0 4px",
+                    fontFamily: "'Poppins', Arial, sans-serif",
+                    fontWeight: "400",
+                  }}
+                >
+                  GULFSHORE
+                </Text>
+                <Text
+                  style={{
+                    fontSize: "11px",
+                    letterSpacing: "0.3em",
+                    textTransform: "uppercase",
+                    color: GOLD,
+                    margin: "0",
+                    fontFamily: "'Poppins', Arial, sans-serif",
+                    fontWeight: "600",
+                  }}
+                >
+                  Real Estate Group
+                </Text>
+              </Section>
+  
+              {/* ── Title Area ── */}
+              <Section
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  padding: "48px 40px 0",
                   textAlign: "center" as const,
                 }}
               >
-                {/* Wordmark */}
-                <Text
-                  style={{
-                    fontSize: "26px",
-                    letterSpacing: "-0.01em",
-                    textTransform: "uppercase",
-                    color: MID,
-                    margin: "0 0 12px",
-                    fontFamily: "'Poppins', Arial, sans-serif",
-                    fontWeight: "700",
-                  }}
-                >
-                  Gulfshore Group
-                </Text>
-  
                 <Heading
                   as="h1"
                   style={{
-                    fontSize: "18px",
-                    fontWeight: "700",
+                    fontSize: "22px",
+                    fontWeight: "400",
                     color: DARK,
-                    margin: "0 0 8px",     
+                    margin: "0 0 12px",     
                     fontFamily: "'Poppins', Arial, sans-serif",
-                    lineHeight: "1.6",
+                    lineHeight: "1.4",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
                   }}
                 >
                   {alertTitle}
@@ -512,8 +540,8 @@ import {
                 <Text
                   style={{
                     fontSize: "14px",
-                    color: "rgba(84, 84, 84, 0.65)",
-                    margin: "0 0 28px",
+                    color: "#666666",
+                    margin: "0 0 24px",
                     fontFamily: "'Poppins', Arial, sans-serif",
                   }}
                 >
@@ -521,7 +549,7 @@ import {
                 </Text>
   
                 {/* Gold rule */}
-                <Section style={{ margin: "0 auto", maxWidth: "80px" }}>
+                <Section style={{ margin: "0 auto", maxWidth: "60px" }}>
                   <Hr
                     style={{
                       borderColor: GOLD,
@@ -536,13 +564,12 @@ import {
               <Section
                 style={{
                   backgroundColor: "#FFF",
-                  padding: "24px 40px",
-                  borderBottom: `1px solid ${BORDER}`,
+                  padding: "32px 40px 16px",
                 }}
               >
                 <Text
                   style={{
-                    fontSize: "15px",
+                    fontSize: "16px",
                     color: DARK,
                     margin: 0,
                     fontFamily: "'Poppins', Arial, sans-serif",
@@ -552,15 +579,15 @@ import {
                 </Text>
                 <Text
                   style={{
-                    fontSize: "13px",
-                    color: DARK,
-                    margin: "6px 0 0",
+                    fontSize: "14px",
+                    color: "#444444",
+                    margin: "12px 0 0",
                     lineHeight: "1.6",
                     fontFamily: "'Poppins', Arial, sans-serif",
                   }}
                 >
                   We've curated{" "}
-                  <strong style={{ color: DARK }}>
+                  <strong style={{ color: PRIMARY }}>
                   {Array.isArray(properties) ? `${properties.length} exceptional properties` : `1 exceptional property`}
                   </strong>{" "}
                   that align with your refined preferences. Each listing has been

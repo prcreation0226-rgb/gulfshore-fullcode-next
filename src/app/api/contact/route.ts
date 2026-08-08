@@ -155,27 +155,30 @@ export async function POST(request: Request) {
 							to: [email],
 							subject: `Thank you for reaching out to Gulfshore Group, ${resolvedFirstName || resolvedName}!`,
 							html: `
-								<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
-									<div style="text-align: center; margin-bottom: 24px;">
-										<h1 style="color: #064e3b; margin: 0; font-size: 24px;">Gulfshore Group</h1>
-										<p style="color: #6b7280; font-size: 14px; margin-top: 4px;">London Forster Realty</p>
-									</div>
-									<h2 style="color: #111827; font-size: 18px; margin-bottom: 12px;">Hello ${resolvedName},</h2>
-									<p style="color: #374151; font-size: 15px; line-height: 1.6;">
-										Thank you for contacting Gulfshore Group! We have received your inquiry and our dedicated real estate specialist will be in touch with you shortly.
-									</p>
-									<div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 20px 0;">
-										<p style="margin: 0; font-size: 14px; color: #4b5563;"><strong>Inquiry Type:</strong> ${userRole === "Seller" ? "Home Valuation / Seller" : "Buyer Inquiry"}</p>
-										${message ? `<p style="margin: 8px 0 0 0; font-size: 14px; color: #4b5563;"><strong>Message:</strong> ${message}</p>` : ""}
-									</div>
-									<p style="color: #374151; font-size: 15px; line-height: 1.6;">
-										If you have an urgent question, feel free to call us directly at <strong>+1 (239) 992-9119</strong>.
-									</p>
-									<hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-									<p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
-										© ${new Date().getFullYear()} Gulfshore Group London Forster Realty. All rights reserved.
-									</p>
-								</div>
+								<div style="background-color: #F4F4F5; margin: 0; padding: 40px 0; font-family: 'Poppins', Arial, sans-serif;">
+	<div style="max-width: 640px; margin: 0 auto; background-color: #FFFFFF; border-radius: 4px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.08);">
+		<div style="background: #1A0A0A; padding: 40px 40px; text-align: center; border-bottom: 3px solid #C9A96E;">
+			<p style="font-size: 24px; letter-spacing: 0.2em; text-transform: uppercase; color: #FFFFFF; margin: 0 0 4px; font-weight: 400; margin-top:0;">GULFSHORE</p>
+			<p style="font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: #C9A96E; margin: 0; font-weight: 600;">Real Estate Group</p>
+		</div>
+		<div style="padding: 48px 40px; text-align: center;">
+			<h1 style="font-size: 22px; font-weight: 400; color: #1A0A0A; margin: 0 0 12px; line-height: 1.4; text-transform: uppercase; letter-spacing: 0.05em;">Inquiry Received</h1>
+			<p style="font-size: 14px; color: #666666; margin: 0 0 24px;">Thank you for reaching out to us.</p>
+			<div style="margin: 0 auto 24px; max-width: 60px; border-top: 1px solid #C9A96E;"></div>
+			
+			<div style="text-align: left; font-size: 15px; color: #1A0A0A; line-height: 1.6;">
+				<p>Dear ${resolvedFirstName || resolvedName},</p>
+				<p>We have successfully received your message and our team will get back to you shortly.</p>
+				<p style="margin-bottom: 32px;">For immediate assistance, please feel free to reply to this email or call us directly.</p>
+			</div>
+			
+			<div style="background-color: #FAF7F2; padding: 24px; border: 1px solid #E8DDD8; border-radius: 4px; text-align: left;">
+				<h3 style="font-size: 13px; color: #666666; margin-top: 0; text-transform: uppercase; letter-spacing: 0.1em;">Your Message</h3>
+				<p style="font-size: 14px; color: #1A0A0A; margin-bottom: 0;"><em>"${message || 'No additional message provided.'}"</em></p>
+			</div>
+		</div>
+	</div>
+</div>
 							`,
 						});
 					} catch (userEmailErr) {

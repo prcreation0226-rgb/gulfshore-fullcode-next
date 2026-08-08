@@ -44,7 +44,7 @@ export function buildAdminLeadAlertHtml(
 	const propertyBlock = payload.property
 		? `
 			<tr>
-				<td style="padding:8px 0;color:#64748b;font-size:14px;">Property</td>
+				<td style="padding:8px 0;color:#666666;font-size:14px;">Property</td>
 				<td style="padding:8px 0;font-size:14px;">
 					<strong>${escapeHtml(payload.property.FullAddress)}</strong><br/>
 					MLS: ${escapeHtml(payload.property.MLSNumber)} ·
@@ -56,9 +56,9 @@ export function buildAdminLeadAlertHtml(
 	const filtersBlock = payload.filters
 		? `
 			<tr>
-				<td style="padding:8px 0;color:#64748b;font-size:14px;">Search Filters</td>
+				<td style="padding:8px 0;color:#666666;font-size:14px;">Search Filters</td>
 				<td style="padding:8px 0;font-size:14px;">
-					<pre style="margin:0;white-space:pre-wrap;font-family:monospace;font-size:12px;background:#f8fafc;padding:12px;border-radius:8px;">${escapeHtml(JSON.stringify(payload.filters, null, 2))}</pre>
+					<pre style="margin:0;white-space:pre-wrap;font-family:monospace;font-size:12px;background:#F4F4F5;padding:16px;border-radius:4px;border:1px solid #E8DDD8;color:#1A0A0A;">${escapeHtml(JSON.stringify(payload.filters, null, 2))}</pre>
 				</td>
 			</tr>`
 		: "";
@@ -66,7 +66,7 @@ export function buildAdminLeadAlertHtml(
 	const messageBlock = payload.message
 		? `
 			<tr>
-				<td style="padding:8px 0;color:#64748b;font-size:14px;">Message</td>
+				<td style="padding:8px 0;color:#666666;font-size:14px;">Message</td>
 				<td style="padding:8px 0;font-size:14px;">${escapeHtml(payload.message)}</td>
 			</tr>`
 		: "";
@@ -78,27 +78,30 @@ export function buildAdminLeadAlertHtml(
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>${escapeHtml(actionLabel)}</title>
 </head>
-<body style="margin:0;padding:24px;background:#f1f5f9;font-family:Arial,sans-serif;color:#0f172a;">
-	<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,0.08);">
+<body style="margin:0;padding:40px 0;background:#F4F4F5;font-family:'Poppins', Arial, sans-serif;color:#1A0A0A;">
+	<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:4px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.08);">
 		<tr>
-			<td style="padding:24px 28px;background:#0f766e;color:#ffffff;">
-				<h1 style="margin:0;font-size:22px;">${escapeHtml(actionLabel)}</h1>
-				<p style="margin:8px 0 0;font-size:14px;opacity:0.9;">Gulfshore Group CRM Alert</p>
+			<td style="background:#1A0A0A;padding:40px;text-align:center;border-bottom:3px solid #C9A96E;">
+				<p style="font-size:24px;letter-spacing:0.2em;text-transform:uppercase;color:#FFFFFF;margin:0 0 4px;font-weight:400;">GULFSHORE</p>
+				<p style="font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#C9A96E;margin:0;font-weight:600;">Real Estate Group</p>
 			</td>
 		</tr>
 		<tr>
-			<td style="padding:28px;">
-				<table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+			<td style="padding:48px 40px 16px;text-align:center;">
+				<h1 style="font-size:22px;font-weight:400;color:#1A0A0A;margin:0 0 12px;line-height:1.4;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(actionLabel)}</h1>
+				<p style="font-size:14px;color:#666666;margin:0 0 24px;">Gulfshore Group CRM Alert</p>
+				<div style="margin:0 auto 24px;max-width:60px;border-top:1px solid #C9A96E;"></div>
+				<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="text-align:left;">
 					<tr>
-						<td style="padding:8px 0;color:#64748b;font-size:14px;width:140px;">Lead</td>
+						<td style="padding:8px 0;color:#666666;font-size:14px;width:140px;">Lead</td>
 						<td style="padding:8px 0;font-size:14px;"><strong>${escapeHtml(payload.leadName || "Unknown")}</strong></td>
 					</tr>
 					<tr>
-						<td style="padding:8px 0;color:#64748b;font-size:14px;">Email</td>
+						<td style="padding:8px 0;color:#666666;font-size:14px;">Email</td>
 						<td style="padding:8px 0;font-size:14px;"><a href="mailto:${escapeHtml(payload.leadEmail)}" style="color:#0f766e;">${escapeHtml(payload.leadEmail)}</a></td>
 					</tr>
 					<tr>
-						<td style="padding:8px 0;color:#64748b;font-size:14px;">Timestamp</td>
+						<td style="padding:8px 0;color:#666666;font-size:14px;">Timestamp</td>
 						<td style="padding:8px 0;font-size:14px;">${escapeHtml(timestamp)}</td>
 					</tr>
 					${propertyBlock}
