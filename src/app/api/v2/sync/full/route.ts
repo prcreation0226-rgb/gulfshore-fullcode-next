@@ -83,9 +83,9 @@ export async function GET(req: NextRequest) {
 	let cursor = searchParams.get("cursor"); // ISO string timestamp
 	const status = searchParams.get("status") || "Active";
 
-	// Max batches per single HTTP request (to avoid Railway timeout)
-	// Each batch = 200 properties. 10 batches = 2000 properties per call.
-	const MAX_BATCHES_PER_REQUEST = 10;
+	// Max batches per single HTTP request (to avoid Railway proxy timeout)
+	// Each batch = 200 properties. 5 batches = 1000 properties per call.
+	const MAX_BATCHES_PER_REQUEST = 5;
 
 	let totalFetched = 0;
 	let totalSuccess = 0;
