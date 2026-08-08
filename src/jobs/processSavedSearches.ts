@@ -22,144 +22,150 @@ export async function processSavedSearches() {
 			include: { user: true },
 		});
 
+		// Group searches by user
+		const searchesByUser = new Map<string, { lead: any, searches: any[] }>();
 		for (const search of activeSearches) {
 			const lead = search.user;
 			if (!lead) continue;
-
-			// Look back 24 hours if never checked
-			const lookbackDate = search.lastNotifiedAt
-				? search.lastNotifiedAt
-				: new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-			const filtersObj = search.filters as any;
-			const searchParams = buildQueryFromFilters(filtersObj || {});
-			
-			// Build proper Prisma where clause from searchParams
-			const baseWhere: any = {};
-			
-			// Price Range
-			const minPrice = searchParams.get("minPrice") ? Number(searchParams.get("minPrice")) : null;
-			const maxPrice = searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : null;
-			if (minPrice !== null || maxPrice !== null) {
-				baseWhere.ListPrice = {};
-				if (minPrice !== null) baseWhere.ListPrice.gte = minPrice;
-				if (maxPrice !== null) baseWhere.ListPrice.lte = maxPrice;
+			if (!searchesByUser.has(lead.id)) {
+				searchesByUser.set(lead.id, { lead, searches: [] });
 			}
-			
-			// Locations (Read directly from filtersObj since buildQueryFromFilters strips them)
-			if (filtersObj.city) baseWhere.City = { contains: filtersObj.city.replace(/-/g, ' ') };
-			if (filtersObj.postalCode) baseWhere.PostalCode = filtersObj.postalCode;
-			if (filtersObj.mls || filtersObj.MLSNumber) baseWhere.MLSNumber = filtersObj.mls || filtersObj.MLSNumber;
-			if (filtersObj.subdivision) baseWhere.Development = { contains: filtersObj.subdivision };
-			if (filtersObj.developmentName) baseWhere.Community = { contains: filtersObj.developmentName.replace(/-/g, ' ') };
-			
-			// Beds / Baths
-			const bedsParam = searchParams.get("beds");
-			if (bedsParam) baseWhere.BedroomsTotal = { gte: parseInt(bedsParam) };
-			const bathsParam = searchParams.get("baths");
-			if (bathsParam) baseWhere.BathroomsFull = { gte: parseInt(bathsParam) };
-			
-			// Acres
-			const minAcres = searchParams.get("minAcres") ? parseFloat(searchParams.get("minAcres")!) : null;
-			const maxAcres = searchParams.get("maxAcres") ? parseFloat(searchParams.get("maxAcres")!) : null;
-			if (minAcres !== null || maxAcres !== null) {
-				baseWhere.LotSizeAcres = {};
-				if (minAcres !== null) baseWhere.LotSizeAcres.gte = minAcres;
-				if (maxAcres !== null) baseWhere.LotSizeAcres.lte = maxAcres;
-			}
-			
-			// Year Built
-			const builtYearMin = searchParams.get("builtYearMin") ? parseInt(searchParams.get("builtYearMin")!) : null;
-			const builtYearMax = searchParams.get("builtYearMax") ? parseInt(searchParams.get("builtYearMax")!) : null;
-			if (builtYearMin !== null || builtYearMax !== null) {
-				baseWhere.YearBuilt = {};
-				if (builtYearMin !== null) baseWhere.YearBuilt.gte = builtYearMin;
-				if (builtYearMax !== null) baseWhere.YearBuilt.lte = builtYearMax;
-			}
-			
-			// Bounding Box
-			if (filtersObj.north && filtersObj.south && filtersObj.east && filtersObj.west) {
-				baseWhere.AND = [
-					{ Latitude: { gte: parseFloat(String(filtersObj.south)), lte: parseFloat(String(filtersObj.north)) } },
-					{ Longitude: { gte: parseFloat(String(filtersObj.west)), lte: parseFloat(String(filtersObj.east)) } },
-				];
-			}
+			searchesByUser.get(lead.id)!.searches.push(search);
+		}
 
-			// Features
-			const featuresRaw = searchParams.get("features") || "";
-			const features = featuresRaw ? featuresRaw.split(",").map((f: string) => f.trim().toLowerCase()) : searchParams.getAll("features[]").map((f: string) => f.toLowerCase());
-			if (features.length > 0) {
-				if (features.some((f: string) => f.includes("spa"))) baseWhere.SpaYN = true;
-				if (features.some((f: string) => f.includes("waterfront"))) baseWhere.WaterfrontYN = true;
-				if (features.some((f: string) => f.includes("pool"))) baseWhere.PoolPrivateYN = true;
-				if (features.some((f: string) => f.includes("gulf"))) baseWhere.GulfAccessYN = true;
-				if (features.some((f: string) => f.includes("garage"))) baseWhere.GarageYN = true;
-			}
-			if (searchParams.get("hoa") === "yes") baseWhere.WaterfrontYN = { not: null };
-			
-			// Property Types
-			const types = searchParams.get("propertyTypes") ? searchParams.get("propertyTypes")!.split(",") : [];
-			if (types.length > 0) {
-				const orConditions: any[] = [];
-				if (types.includes("Homes") || types.includes("homes") || types.includes("Single Family")) {
-					orConditions.push({ PropertySubType: "Single Family Residence" });
-				}
-				if (types.includes("Condos") || types.includes("condos")) {
-					orConditions.push({ PropertySubType: { in: ["Low Rise (1-3)", "Mid Rise (4-7)", "High Rise (8+)", "Townhouse"] } });
-				}
-				if (types.includes("Lots") || types.includes("Residential-Lots") || types.includes("lots")) {
-					orConditions.push({ PropertyType: "Land" });
-				}
-				if (orConditions.length > 0) {
-					baseWhere.OR = orConditions;
-				}
-				baseWhere.PropertyType = { not: "Residential Lease" };
-			} else {
-				baseWhere.PropertyType = { notIn: ["Residential Lease", "Land"] };
-			}
+		for (const [userId, { lead, searches }] of searchesByUser.entries()) {
+			const allMatchingProperties = new Map<string, any>();
+			const searchesToUpdate = [];
 
-			const finalWhere = {
-				...baseWhere,
-				StandardStatus: "Active",
-				createdAt: { gt: lookbackDate },
-				// Prevent spam from bulk historical imports by ensuring the property is actually new to the market
-				OR: [
-					{ DaysOnMarket: { lte: 14 } },
-					{ OnMarketDate: { gt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) } }
-				]
-			};
+			for (const search of searches) {
+				// Look back 24 hours if never checked
+				const lookbackDate = search.lastNotifiedAt
+					? search.lastNotifiedAt
+					: new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-			const matchingProperties = await prisma.property.findMany({
-				where: finalWhere,
-			});
-
-			if (matchingProperties.length > 0) {
-				const count = matchingProperties.length;
-				const prop = matchingProperties[0];
+				const filtersObj = search.filters as any;
+				const searchParams = buildQueryFromFilters(filtersObj || {});
 				
-				// FORMAT SMS
-				let priceStr = prop.ListPrice ? `$${prop.ListPrice.toLocaleString()}` : "Price TBD";
-				if (prop.ListPrice && prop.ListPrice >= 1000000) {
-					priceStr = `${(prop.ListPrice / 1000000).toFixed(1)} Million`;
+				// Build proper Prisma where clause from searchParams
+				const baseWhere: any = {};
+				
+				// Price Range
+				const minPrice = searchParams.get("minPrice") ? Number(searchParams.get("minPrice")) : null;
+				const maxPrice = searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : null;
+				if (minPrice !== null || maxPrice !== null) {
+					baseWhere.ListPrice = {};
+					if (minPrice !== null) baseWhere.ListPrice.gte = minPrice;
+					if (maxPrice !== null) baseWhere.ListPrice.lte = maxPrice;
 				}
-				const beds = prop.BedroomsTotal || "2+";
-				const baths = prop.BathroomsTotalInteger || "2+";
-				const poolStr = prop.PoolPrivateYN ? "pool home" : "home";
+				
+				// Locations
+				if (filtersObj.city) baseWhere.City = { contains: filtersObj.city.replace(/-/g, ' ') };
+				if (filtersObj.postalCode) baseWhere.PostalCode = filtersObj.postalCode;
+				if (filtersObj.mls || filtersObj.MLSNumber) baseWhere.MLSNumber = filtersObj.mls || filtersObj.MLSNumber;
+				if (filtersObj.subdivision) baseWhere.Development = { contains: filtersObj.subdivision };
+				if (filtersObj.developmentName) baseWhere.Community = { contains: filtersObj.developmentName.replace(/-/g, ' ') };
+				
+				// Beds / Baths
+				const bedsParam = searchParams.get("beds");
+				if (bedsParam) baseWhere.BedroomsTotal = { gte: parseInt(bedsParam) };
+				const bathsParam = searchParams.get("baths");
+				if (bathsParam) baseWhere.BathroomsFull = { gte: parseInt(bathsParam) };
+				
+				// Acres
+				const minAcres = searchParams.get("minAcres") ? parseFloat(searchParams.get("minAcres")!) : null;
+				const maxAcres = searchParams.get("maxAcres") ? parseFloat(searchParams.get("maxAcres")!) : null;
+				if (minAcres !== null || maxAcres !== null) {
+					baseWhere.LotSizeAcres = {};
+					if (minAcres !== null) baseWhere.LotSizeAcres.gte = minAcres;
+					if (maxAcres !== null) baseWhere.LotSizeAcres.lte = maxAcres;
+				}
+				
+				// Year Built
+				const builtYearMin = searchParams.get("builtYearMin") ? parseInt(searchParams.get("builtYearMin")!) : null;
+				const builtYearMax = searchParams.get("builtYearMax") ? parseInt(searchParams.get("builtYearMax")!) : null;
+				if (builtYearMin !== null || builtYearMax !== null) {
+					baseWhere.YearBuilt = {};
+					if (builtYearMin !== null) baseWhere.YearBuilt.gte = builtYearMin;
+					if (builtYearMax !== null) baseWhere.YearBuilt.lte = builtYearMax;
+				}
+				
+				// Bounding Box
+				if (filtersObj.north && filtersObj.south && filtersObj.east && filtersObj.west) {
+					baseWhere.AND = [
+						{ Latitude: { gte: parseFloat(String(filtersObj.south)), lte: parseFloat(String(filtersObj.north)) } },
+						{ Longitude: { gte: parseFloat(String(filtersObj.west)), lte: parseFloat(String(filtersObj.east)) } },
+					];
+				}
 
-				let searchTitleRaw = search.name && search.name !== "Saved Search" ? search.name : `${beds} bed ${baths} bath ${poolStr} under ${priceStr}`;
-				const searchTitle = searchTitleRaw
-					.replace(/-/g, " ")
-					.split(" ")
-					.filter(Boolean)
-					.map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-					.join(" ");
+				// Features
+				const featuresRaw = searchParams.get("features") || "";
+				const features = featuresRaw ? featuresRaw.split(",").map((f: string) => f.trim().toLowerCase()) : searchParams.getAll("features[]").map((f: string) => f.toLowerCase());
+				if (features.length > 0) {
+					if (features.some((f: string) => f.includes("spa"))) baseWhere.SpaYN = true;
+					if (features.some((f: string) => f.includes("waterfront"))) baseWhere.WaterfrontYN = true;
+					if (features.some((f: string) => f.includes("pool"))) baseWhere.PoolPrivateYN = true;
+					if (features.some((f: string) => f.includes("gulf"))) baseWhere.GulfAccessYN = true;
+					if (features.some((f: string) => f.includes("garage"))) baseWhere.GarageYN = true;
+				}
+				if (searchParams.get("hoa") === "yes") baseWhere.WaterfrontYN = { not: null };
+				
+				// Property Types
+				const types = searchParams.get("propertyTypes") ? searchParams.get("propertyTypes")!.split(",") : [];
+				if (types.length > 0) {
+					const orConditions: any[] = [];
+					if (types.includes("Homes") || types.includes("homes") || types.includes("Single Family")) {
+						orConditions.push({ PropertySubType: "Single Family Residence" });
+					}
+					if (types.includes("Condos") || types.includes("condos")) {
+						orConditions.push({ PropertySubType: { in: ["Low Rise (1-3)", "Mid Rise (4-7)", "High Rise (8+)", "Townhouse"] } });
+					}
+					if (types.includes("Lots") || types.includes("Residential-Lots") || types.includes("lots")) {
+						orConditions.push({ PropertyType: "Land" });
+					}
+					if (orConditions.length > 0) {
+						baseWhere.OR = orConditions;
+					}
+					baseWhere.PropertyType = { not: "Residential Lease" };
+				} else {
+					baseWhere.PropertyType = { notIn: ["Residential Lease", "Land"] };
+				}
+
+				const finalWhere = {
+					...baseWhere,
+					StandardStatus: "Active",
+					createdAt: { gt: lookbackDate },
+					// Prevent spam from bulk historical imports by ensuring the property is actually new to the market
+					OR: [
+						{ DaysOnMarket: { lte: 14 } },
+						{ OnMarketDate: { gt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) } }
+					]
+				};
+
+				const matchingProperties = await prisma.property.findMany({
+					where: finalWhere,
+				});
+
+				if (matchingProperties.length > 0) {
+					searchesToUpdate.push(search.id);
+					for (const prop of matchingProperties) {
+						allMatchingProperties.set(prop.id, prop);
+					}
+				}
+			}
+
+			// If this user has matches across any of their searches, send exactly one aggregated alert.
+			if (allMatchingProperties.size > 0) {
+				const count = allMatchingProperties.size;
+				const propertiesArray = Array.from(allMatchingProperties.values());
+
+				// FORMAT SMS
 				const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.SITE_URL || "https://gulfshore-fullcode-next-production.up.railway.app";
 				const domain = baseUrl.replace(/^https?:\/\//, '');
-				const smsMessage = `Dimitri Schwarz 239.992.9119 ${domain} - ${searchTitle} - ${count} New Listing${count > 1 ? 's' : ''}`;
+				const smsMessage = `Dimitri Schwarz 239.992.9119 ${domain} - You have ${count} New Listing${count > 1 ? 's' : ''} matching your saved searches.`;
 
 				// SEND SMS
 				if (lead.phone) {
-					console.log(`[SavedSearch] Match found for Lead ${lead.email}. Sending SMS.`);
+					console.log(`[SavedSearch] Matches found for Lead ${lead.email}. Sending SMS.`);
 					await sendSMS(lead.phone, smsMessage).catch(err => console.error("SMS Error:", err));
 				}
 
@@ -169,18 +175,18 @@ export async function processSavedSearches() {
 					await sendPropertyAlert({
 						to: lead.email,
 						recipientName: lead.firstName || "Valued Client",
-						subject: `${count} New Property Match${count > 1 ? 'es' : ''}: ${searchTitle}`,
-						alertTitle: count > 1 ? "New Homes Matching Your Search" : "A New Home Matching Your Search",
-						alertSubtitle: count > 1 ? `We found ${count} new properties that match your saved preferences.` : `We found a new ${poolStr} in ${prop.City} that matches your saved preferences.`,
-						properties: matchingProperties as any,
+						subject: `${count} New Property Match${count > 1 ? 'es' : ''} for Your Saved Searches`,
+						alertTitle: "New Homes Matching Your Searches",
+						alertSubtitle: `We found ${count} new propert${count > 1 ? 'ies' : 'y'} that match your saved preferences across all your searches.`,
+						properties: propertiesArray as any,
 					}).catch(err => console.error("Email Error:", err));
 				}
 
 				alertedLeadIds.add(lead.id);
 
-				// Update lastNotifiedAt
-				await prisma.savedSearch.update({
-					where: { id: search.id },
+				// Update lastNotifiedAt for all the searches that produced matches
+				await prisma.savedSearch.updateMany({
+					where: { id: { in: searchesToUpdate } },
 					data: { lastNotifiedAt: new Date() },
 				});
 			}
