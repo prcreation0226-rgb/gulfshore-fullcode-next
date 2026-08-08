@@ -80,34 +80,34 @@ async function upsertOne(item: any): Promise<"ok" | "skip" | "fail"> {
  */
 export async function GET(req: NextRequest) {
 	const { searchParams } = new URL(req.url);
-	const startOffset = parseInt(searchParams.get("offset") || "0");
+	let cursor = searchParams.get("cursor"); // ISO string timestamp
 	const status = searchParams.get("status") || "Active";
 
 	// Max batches per single HTTP request (to avoid Railway timeout)
 	// Each batch = 200 properties. 10 batches = 2000 properties per call.
 	const MAX_BATCHES_PER_REQUEST = 10;
 
-	let offset = startOffset;
 	let totalFetched = 0;
 	let totalSuccess = 0;
 	let totalFailed = 0;
 	let batchCount = 0;
 
-	console.log(`[FullSync] Starting full sync — status: ${status}, offset: ${offset}`);
+	console.log(`[FullSync] Starting full sync — status: ${status}, cursor: ${cursor}`);
 
 	while (batchCount < MAX_BATCHES_PER_REQUEST) {
 		// --- Fetch from Bridge ---
 		let data: any;
 		try {
-			data = await fetchAllBridgeListings(offset, BATCH_SIZE, status);
+			data = await fetchAllBridgeListings(cursor, BATCH_SIZE, status);
 		} catch (fetchErr: any) {
-			console.error(`[FullSync] Fetch failed at offset ${offset}: ${fetchErr?.message}`);
+			console.error(`[FullSync] Fetch failed at cursor ${cursor}: ${fetchErr?.message}`);
 			break;
 		}
 
 		const listings: any[] = data.bundle || [];
 		if (listings.length === 0) {
-			console.log(`[FullSync] No more listings at offset ${offset}. Done!`);
+			console.log(`[FullSync] No more listings at cursor ${cursor}. Done!`);
+			cursor = null; // signal: fully complete
 			break;
 		}
 
@@ -123,23 +123,28 @@ export async function GET(req: NextRequest) {
 		}
 
 		totalFetched += listings.length;
-		offset += BATCH_SIZE;
+		
+		const lastListing = listings[listings.length - 1];
+		if (lastListing?.BridgeModificationTimestamp) {
+			cursor = lastListing.BridgeModificationTimestamp;
+		}
+		
 		batchCount++;
 
 		console.log(
-			`[FullSync] Batch ${batchCount}: offset=${offset}, fetched=${totalFetched}, success=${totalSuccess}, failed=${totalFailed}`
+			`[FullSync] Batch ${batchCount}: cursor=${cursor}, fetched=${totalFetched}, success=${totalSuccess}, failed=${totalFailed}`
 		);
 
 		if (listings.length < BATCH_SIZE) {
 			// Last page — we're done
-			offset = -1; // signal: fully complete
+			cursor = null; // signal: fully complete
 			break;
 		}
 
 		await sleep(300); // Breathe between Bridge API calls
 	}
 
-	const isComplete = offset === -1;
+	const isComplete = cursor === null;
 
 	return Response.json({
 		success: true,
@@ -147,11 +152,10 @@ export async function GET(req: NextRequest) {
 		totalFetched,
 		totalSuccess,
 		totalFailed,
-		startOffset,
-		nextOffset: isComplete ? null : offset,
+		nextCursor: cursor,
 		isComplete,
 		message: isComplete
-			? `✅ Full sync complete! All ${totalFetched} ${status} properties synced.`
-			: `Synced ${totalFetched} properties. Call again with ?offset=${offset}&status=${status} to continue.`,
+			? `✅ Full sync complete! All ${status} properties synced.`
+			: `Synced ${totalFetched} properties. Call again with ?cursor=${cursor}&status=${status} to continue.`,
 	});
 }

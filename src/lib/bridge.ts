@@ -72,17 +72,20 @@ export async function fetchBridgeBatchByOnMarketDate(
  * zero properties are missed regardless of timestamps.
  */
 export async function fetchAllBridgeListings(
-	offset: number,
+	cursorTimestamp: string | null,
 	limit: number,
 	status: string
 ) {
-	const filter = `StandardStatus.eq=${status}`;
+	let filter = `StandardStatus.eq=${status}`;
+	if (cursorTimestamp) {
+		filter += `&BridgeModificationTimestamp.gt=${cursorTimestamp}`;
+	}
 
 	const url =
 		`${BASE_URL}/${SOURCE}/listings` +
 		`?access_token=${API_KEY}` +
 		`&limit=${limit}` +
-		`&offset=${offset}` +
+		`&sortBy=BridgeModificationTimestamp&order=asc` +
 		`&${filter}`;
 
 	const res = await fetch(url);
