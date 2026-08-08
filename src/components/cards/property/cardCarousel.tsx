@@ -96,12 +96,12 @@ export default function CardCarousel({
 							<CarouselPrevious
 								variant="outline"
 								size="icon"
-								className="absolute -left-3 md:left-1.5 top-[80%] md:top-1/2 -translate-y-1/2 z-20 pointer-events-auto cursor-pointer bg-white text-black hover:bg-gray-100 border-0 shadow-md h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+								className="absolute -left-3 md:left-1.5 top-1/2 -translate-y-1/2 z-20 pointer-events-auto cursor-pointer bg-white text-black hover:bg-gray-100 border-0 shadow-md h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
 							/>
 							<CarouselNext
 								variant="outline"
 								size="icon"
-								className="absolute -right-3 md:right-1.5 top-[80%] md:top-1/2 -translate-y-1/2 z-20 pointer-events-auto cursor-pointer bg-white text-black hover:bg-gray-100 border-0 shadow-md h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+								className="absolute -right-3 md:right-1.5 top-1/2 -translate-y-1/2 z-20 pointer-events-auto cursor-pointer bg-white text-black hover:bg-gray-100 border-0 shadow-md h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
 							/>
 						</div>
 					</Carousel>
