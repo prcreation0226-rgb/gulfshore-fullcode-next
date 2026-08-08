@@ -19,6 +19,7 @@ export default function CountyTaxSection({ property }: CountyTaxSectionProps) {
 	const taxYear = property.TaxYear || rawData.TaxYear || null;
 	const zoning = property.Zoning || rawData.Zoning || null;
 	const zoningDesc = property.ZoningDescription || rawData.ZoningDescription || null;
+	const currentUse = rawData.CurrentUse || null;
 
 	// Generate Official County Appraiser Link
 	let appraiserUrl: string | null = null;
@@ -71,6 +72,17 @@ export default function CountyTaxSection({ property }: CountyTaxSectionProps) {
 					</div>
 					<p className="text-sm font-semibold text-gray-900 ">
 						{parcelNumber ? parcelNumber : <span className="text-gray-400 font-normal italic">Not Provided by MLS</span>}
+					</p>
+				</div>
+
+				{/* Land Use Code */}
+				<div className="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+					<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
+						<Building2 className="w-3.5 h-3.5" />
+						<span>Land Use Code</span>
+					</div>
+					<p className="text-sm font-semibold text-gray-900 ">
+						{currentUse ? currentUse : <span className="text-gray-400 font-normal italic">Not Provided by MLS</span>}
 					</p>
 				</div>
 

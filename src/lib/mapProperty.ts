@@ -241,6 +241,8 @@ export function mapProperty(raw: any) {
 			MiddleSchool: raw.MiddleSchool ?? null,
 			ElementarySchool: raw.ElementarySchool ?? null,
 			VirtualTourThumbnail: raw.VirtualTourThumbnail ?? null,
+			ParcelNumber: raw.ParcelNumber ?? null,
+			CurrentUse: raw.CurrentUse ?? null,
 		},
 	};
 }
