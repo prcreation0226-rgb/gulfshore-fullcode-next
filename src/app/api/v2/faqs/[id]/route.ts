@@ -8,6 +8,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         
         const updateData: any = { ...body };
         
+        // Remove fields that shouldn't be updated
+        delete updateData.id;
+        delete updateData.createdAt;
+        delete updateData.updatedAt;
+        
         // Handle cityId specifically to parse it or set to null
         if (body.cityId !== undefined) {
             updateData.cityId = body.cityId ? parseInt(body.cityId) : null;

@@ -21,6 +21,7 @@ import {
 import { Search, Edit, Plus, Trash2, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { toast } from "sonner";
 
 interface Blog {
 	id: string;
@@ -65,8 +66,21 @@ export default function BlogsPage() {
 		try {
 			await axios.delete(`/api/blogs/${id}`);
 			await fetchBlogs();
+			toast.success("Blog deleted successfully!");
 		} catch (error: any) {
-			alert("Failed to delete blog: " + error.message);
+			toast.error("Failed to delete blog: " + error.message);
+		}
+	};
+
+	const handleTogglePublish = async (blog: Blog) => {
+		try {
+			await axios.put(`/api/blogs/${blog.id}`, {
+				published: !blog.published,
+			});
+			await fetchBlogs();
+			toast.success(`Blog ${blog.published ? 'Unpublished' : 'Published'} successfully!`);
+		} catch (error: any) {
+			toast.error("Failed to update status: " + error.message);
 		}
 	};
 
@@ -148,7 +162,11 @@ export default function BlogsPage() {
 									</TableCell>
 									<TableCell>
 										<Badge
-											variant={blog.published ? "default" : "secondary"}>
+											variant={blog.published ? "default" : "secondary"}
+											className="cursor-pointer"
+											onClick={() => handleTogglePublish(blog)}
+											title="Click to toggle status"
+										>
 											{blog.published ? "Published" : "Draft"}
 										</Badge>
 									</TableCell>

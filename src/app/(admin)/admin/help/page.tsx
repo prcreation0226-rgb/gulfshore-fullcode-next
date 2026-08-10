@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 const adminFaqs = [
 	{
@@ -147,13 +148,14 @@ export default function HelpPage() {
 			const data = await res.json();
 			if (data.success) {
 				setIsDialogOpen(false);
+				toast.success(editingId ? "FAQ updated successfully!" : "FAQ created successfully!");
 				fetchWebsiteFaqs();
 			} else {
-				alert(data.error || "Failed to save FAQ");
+				toast.error(data.error || "Failed to save FAQ");
 			}
 		} catch (error) {
 			console.error("Save error:", error);
-			alert("An error occurred while saving the FAQ");
+			toast.error("An error occurred while saving the FAQ");
 		} finally {
 			setSubmitting(false);
 		}
@@ -169,13 +171,14 @@ export default function HelpPage() {
 			});
 			const data = await res.json();
 			if (data.success) {
+				toast.success(`FAQ ${!faq.isActive ? 'Published' : 'Unpublished'} successfully!`);
 				fetchWebsiteFaqs();
 			} else {
-				alert(data.error || "Failed to update FAQ status");
+				toast.error(data.error || "Failed to update FAQ status");
 			}
 		} catch (error) {
 			console.error("Update error:", error);
-			alert("An error occurred while updating the FAQ status");
+			toast.error("An error occurred while updating the FAQ status");
 		}
 	};
 
@@ -187,13 +190,14 @@ export default function HelpPage() {
 			const res = await fetch(`/api/v2/faqs/${id}`, { method: "DELETE" });
 			const data = await res.json();
 			if (data.success) {
+				toast.success("FAQ deleted successfully!");
 				fetchWebsiteFaqs();
 			} else {
-				alert(data.error || "Failed to delete FAQ");
+				toast.error(data.error || "Failed to delete FAQ");
 			}
 		} catch (error) {
 			console.error("Delete error:", error);
-			alert("An error occurred while deleting the FAQ");
+			toast.error("An error occurred while deleting the FAQ");
 		}
 	};
 
