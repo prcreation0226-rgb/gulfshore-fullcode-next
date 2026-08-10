@@ -13,6 +13,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         delete updateData.createdAt;
         delete updateData.updatedAt;
         delete updateData.cityId;
+        delete updateData.city;
 
         // Parse order if provided
         if (body.order !== undefined) {
