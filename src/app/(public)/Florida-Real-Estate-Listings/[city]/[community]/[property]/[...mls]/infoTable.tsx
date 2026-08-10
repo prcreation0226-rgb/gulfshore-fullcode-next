@@ -86,6 +86,23 @@ function parseList(input: any) {
 	return [];
 }
 
+// Helper to calculate annual fee based on frequency
+function getAnnualFee(fee: any, freq: any): number {
+	const numFee = typeof fee === "number" ? fee : Number(String(fee || "").replace(/[^\d.-]/g, ""));
+	if (Number.isNaN(numFee) || numFee === 0) return 0;
+	
+	const f = String(freq || "").toLowerCase();
+	let multiplier = 0; // Default 0 if no frequency is provided (can't reliably annualize)
+	if (f.includes("month")) multiplier = 12;
+	else if (f.includes("quarter")) multiplier = 4;
+	else if (f.includes("semi")) multiplier = 2;
+	else if (f.includes("annual") || f.includes("year")) multiplier = 1;
+	else if (f.includes("week")) multiplier = 52;
+	else if (f === "" || f === "undefined" || f === "null") multiplier = 1; // Fallback to 1 if missing but fee exists
+
+	return numFee * multiplier;
+}
+
 // Compact Yes/No with icons to improve scan-ability
 function YesNoBadge({
 	value,
@@ -302,7 +319,6 @@ export default function PropertyDetailsTable({
 
 							{(property.raw as any)?.NABOR_MandatoryHOAYN ? (
 								<>
-									{" "}
 									<InfoRow
 										label="HOA Fee"
 										value={(property.raw as any)?.NABOR_HOAFee}
@@ -326,6 +342,24 @@ export default function PropertyDetailsTable({
 												?.NABOR_MasterHOAFeeFrequency
 										}
 									/>
+									{/* Calculate and show Total Annual HOA Fee */}
+									{(() => {
+										const hoaFee = getAnnualFee((property.raw as any)?.NABOR_HOAFee, (property.raw as any)?.NABOR_HOAFeeFrequency);
+										const masterHoaFee = getAnnualFee((property.raw as any)?.NABOR_MasterHOAFee, (property.raw as any)?.NABOR_MasterHOAFeeFrequency);
+										const standardHoa = getAnnualFee((property.raw as any)?.AssociationFee, (property.raw as any)?.AssociationFeeFrequency);
+										
+										const totalAnnual = hoaFee + masterHoaFee + standardHoa;
+										if (totalAnnual > 0) {
+											return (
+												<InfoRow
+													label="Total Annual HOA Fee"
+													value={totalAnnual}
+													formatter={formatCurrency}
+												/>
+											);
+										}
+										return null;
+									})()}
 								</>
 							) : (
 								<InfoRow label="HOA" value={"NO HOA"} />
