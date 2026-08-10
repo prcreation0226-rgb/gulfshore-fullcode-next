@@ -5,9 +5,16 @@ import { generateBlogFromMemory, pickRandomTopic } from "@/lib/openai";
 const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function GET(req: Request) {
-  // 1. Verify Secret
+  // 1. Verify Secret (Allow via Header or Query Param)
+  const url = new URL(req.url);
+  const secretParam = url.searchParams.get("secret");
   const authHeader = req.headers.get("authorization");
-  if (!authHeader || authHeader !== `Bearer ${CRON_SECRET}`) {
+  
+  const isValidAuth = 
+    (authHeader === `Bearer ${CRON_SECRET}`) || 
+    (secretParam === CRON_SECRET);
+
+  if (!isValidAuth) {
     return new NextResponse(
       JSON.stringify({ error: "Invalid or missing CRON secret" }),
       { status: 401, headers: { "Content-Type": "application/json" } }
