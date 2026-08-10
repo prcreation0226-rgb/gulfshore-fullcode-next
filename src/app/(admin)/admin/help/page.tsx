@@ -263,6 +263,7 @@ export default function HelpPage() {
 												<TableHead>Question</TableHead>
 												<TableHead className="w-[100px]">Order</TableHead>
 												<TableHead className="w-[120px]">Status</TableHead>
+												<TableHead className="w-[150px]">Created At</TableHead>
 												<TableHead className="w-[120px]">Actions</TableHead>
 											</TableRow>
 										</TableHeader>
@@ -287,6 +288,11 @@ export default function HelpPage() {
 														>
 															{faq.isActive ? "Published" : "Draft"}
 														</Badge>
+													</TableCell>
+													<TableCell>
+														<div className="text-sm text-muted-foreground">
+															{faq.createdAt ? new Date(faq.createdAt).toLocaleDateString() : "N/A"}
+														</div>
 													</TableCell>
 													<TableCell>
 														<div className="flex items-center gap-2">
