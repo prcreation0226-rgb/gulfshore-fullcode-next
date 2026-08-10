@@ -268,8 +268,9 @@ export default function PropertyCriteria({
 						<p className="text-sm font-medium mb-2">Property Types</p>
 						<div className="flex flex-wrap gap-3">
 							{propertyTypeOptions.map((type) => (
-								<label key={type} className="flex items-center gap-2">
+								<div key={type} className="flex items-center gap-2">
 									<Checkbox
+										id={`ptype-${type}`}
 										checked={criteria.propertyTypes.includes(type)}
 										onCheckedChange={(checked) =>
 											handleCheckboxChange(
@@ -279,8 +280,8 @@ export default function PropertyCriteria({
 											)
 										}
 									/>
-									<span>{type}</span>
-								</label>
+									<label htmlFor={`ptype-${type}`} className="cursor-pointer">{type}</label>
+								</div>
 							))}
 						</div>
 					</div>
@@ -290,10 +291,11 @@ export default function PropertyCriteria({
 						<p className="text-sm font-medium mb-2">Features</p>
 						<div className="flex flex-wrap gap-3">
 							{featureOptions.map((feature) => (
-								<label
+								<div
 									key={feature}
 									className="flex items-center gap-2">
 									<Checkbox
+										id={`feat-${feature}`}
 										checked={criteria.features.includes(feature)}
 										onCheckedChange={(checked) =>
 											handleCheckboxChange(
@@ -303,8 +305,8 @@ export default function PropertyCriteria({
 											)
 										}
 									/>
-									<span>{feature}</span>
-								</label>
+									<label htmlFor={`feat-${feature}`} className="cursor-pointer">{feature}</label>
+								</div>
 							))}
 						</div>
 					</div>
@@ -332,10 +334,10 @@ export default function PropertyCriteria({
 										${c.minPrice} - ${c.maxPrice}
 									</p>
 									{c.propertyTypes?.length > 0 && (
-										<p>Types: {c.propertyTypes.join(", ")}</p>
+										<p>Types: {Array.isArray(c.propertyTypes) ? c.propertyTypes.join(", ") : c.propertyTypes}</p>
 									)}
 									{c.features?.length > 0 && (
-										<p>Features: {c.features.join(", ")}</p>
+										<p>Features: {Array.isArray(c.features) ? c.features.join(", ") : c.features}</p>
 									)}
 								</div>
 								<Button
