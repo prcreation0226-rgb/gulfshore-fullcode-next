@@ -98,6 +98,10 @@ export async function PUT(req: any, { params }: { params: Promise<{ id: string }
 			);
 		}
 
+		if (published === true && !blogRecord.publishedAt) {
+			updateData.publishedAt = new Date();
+		}
+
 		const updatedBlog = await prisma.blog.update({
 			where: { id: blogRecord.id },
 			data: updateData,

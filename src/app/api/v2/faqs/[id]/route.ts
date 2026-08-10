@@ -12,11 +12,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         delete updateData.id;
         delete updateData.createdAt;
         delete updateData.updatedAt;
-        
-        // Handle cityId specifically to parse it or set to null
-        if (body.cityId !== undefined) {
-            updateData.cityId = body.cityId ? parseInt(body.cityId) : null;
-        }
+        delete updateData.cityId;
 
         // Parse order if provided
         if (body.order !== undefined) {
