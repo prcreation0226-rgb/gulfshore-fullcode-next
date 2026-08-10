@@ -28,7 +28,10 @@ export default function SocialShare({
 }) {
 	const [copied, setCopied] = useState(false);
 
-	const propertyUrlLink = "https://gulfshoregroup.com" + propertyUrl;
+	const propertyUrlLink =
+		typeof window !== "undefined"
+			? `${window.location.origin}${propertyUrl}`
+			: `https://gulfshoregroup.com${propertyUrl}`;
 	// Function to copy URL
 	const copyToClipboard = () => {
 		navigator.clipboard.writeText(propertyUrlLink);
