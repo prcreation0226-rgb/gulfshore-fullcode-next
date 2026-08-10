@@ -64,7 +64,7 @@ export default function CityFAQ({ city }: { city?: string | null }) {
 	React.useEffect(() => {
 		async function loadFaqs() {
 			try {
-				const res = await fetch("/api/v2/faqs?category=City");
+				const res = await fetch("/api/v2/faqs?category=City&limit=11");
 				const json = await res.json();
 				if (json.success && Array.isArray(json.data) && json.data.length > 0) {
 					// Only keep active FAQs

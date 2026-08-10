@@ -14,8 +14,12 @@ export async function GET(req: Request) {
     );
   }
 
-  // 2. Choose 4 Topics
-  const topics = Array.from({ length: 4 }, () => pickRandomTopic());
+  // 2. Choose 4 Unique Topics
+  const topicSet = new Set<string>();
+  while (topicSet.size < 4) {
+    topicSet.add(pickRandomTopic());
+  }
+  const topics = Array.from(topicSet);
 
   // 3. Generate 4 Blogs in Parallel using OpenAI
   try {
@@ -46,8 +50,8 @@ export async function GET(req: Request) {
             metaDescription: blog.metaDescription,
             metaKeywords: blog.metaKeywords ? (blog.metaKeywords as any) : [],
             author: blog.author || "Gulfshore Group",
-            published: true, // Instantly publish
-            publishedAt: new Date(),
+            published: false, // Save as Draft for review
+            publishedAt: null,
           },
         })
       )

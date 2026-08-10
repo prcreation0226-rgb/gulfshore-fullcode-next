@@ -26,12 +26,9 @@ export async function GET(req: Request) {
     );
   }
 
-  // 3. Replace Old FAQs with New Ones
+  // 3. Save New FAQs as Drafts (Inactive)
   try {
-    // Delete all existing FAQs
-    await prisma.faq.deleteMany({});
-
-    // Insert new ones
+    // Insert new ones as Drafts
     const createdFaqs = await Promise.all(
       faqs.map((faq: any) =>
         prisma.faq.create({
@@ -39,7 +36,7 @@ export async function GET(req: Request) {
             question: faq.question,
             answer: faq.answer,
             category: faq.category,
-            isActive: true, // Make instantly visible
+            isActive: false, // Save as Draft for review
           },
         })
       )
