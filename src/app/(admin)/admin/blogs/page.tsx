@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Edit, Plus } from "lucide-react";
+import { Search, Edit, Plus, Trash2, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -46,6 +46,16 @@ export default function BlogsPage() {
 			setTotalCount(res.data.totalCount || 0);
 		} catch (error: any) {
 			setError(error);
+		}
+	};
+
+	const handleDelete = async (id: string) => {
+		if (!confirm("Are you sure you want to delete this blog?")) return;
+		try {
+			await axios.delete(`/api/blogs/${id}`);
+			await fetchBlogs();
+		} catch (error: any) {
+			alert("Failed to delete blog: " + error.message);
 		}
 	};
 
@@ -134,13 +144,28 @@ export default function BlogsPage() {
 									<TableCell className="text-xs text-muted-foreground">
 										{new Date(blog.createdAt).toLocaleDateString()}
 									</TableCell>
-									<TableCell>
+									<TableCell className="flex gap-2 items-center">
+										<Link href={`/blogs/${blog.slug}`} target="_blank">
+											<Button variant="ghost" size="icon" title="View on Website">
+												<Eye className="h-4 w-4" />
+												<span className="sr-only">View</span>
+											</Button>
+										</Link>
 										<Link href={`/admin/blogs/${blog.id}`}>
-											<Button variant="ghost" size="icon">
-												<Edit className="h-4 w-4" />
+											<Button variant="ghost" size="icon" title="Edit Blog">
+												<Edit className="h-4 w-4 text-blue-600" />
 												<span className="sr-only">Edit</span>
 											</Button>
 										</Link>
+										<Button 
+											variant="ghost" 
+											size="icon" 
+											onClick={() => handleDelete(blog.id)}
+											title="Delete Blog"
+										>
+											<Trash2 className="h-4 w-4 text-red-600" />
+											<span className="sr-only">Delete</span>
+										</Button>
 									</TableCell>
 								</TableRow>
 							))}

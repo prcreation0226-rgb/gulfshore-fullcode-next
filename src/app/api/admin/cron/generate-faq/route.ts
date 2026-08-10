@@ -35,7 +35,7 @@ export async function GET(req: Request) {
           data: {
             question: faq.question,
             answer: faq.answer,
-            category: faq.category,
+            category: "City", // Always assign to City so it shows up on website
             isActive: false, // Save as Draft for review
           },
         })

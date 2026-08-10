@@ -24,8 +24,18 @@ import {
 	Trash2,
 	CheckCircle2,
 	AlertCircle,
+	AlertCircle,
 	Globe,
 } from "lucide-react";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 
 const adminFaqs = [
@@ -67,6 +77,7 @@ export default function HelpPage() {
 	const [questionInput, setQuestionInput] = useState("");
 	const [answerInput, setAnswerInput] = useState("");
 	const [orderInput, setOrderInput] = useState("0");
+	const [isActiveInput, setIsActiveInput] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
 
 	const filteredAdminFaqs = adminFaqs.filter(
@@ -100,11 +111,13 @@ export default function HelpPage() {
 			setQuestionInput(faq.question);
 			setAnswerInput(faq.answer);
 			setOrderInput(String(faq.order ?? 0));
+			setIsActiveInput(faq.isActive ?? true);
 		} else {
 			setEditingId(null);
 			setQuestionInput("");
 			setAnswerInput("");
 			setOrderInput(String(websiteFaqs.length + 1));
+			setIsActiveInput(true);
 		}
 		setIsDialogOpen(true);
 	};
@@ -120,7 +133,7 @@ export default function HelpPage() {
 				answer: answerInput.trim(),
 				category: "City",
 				order: parseInt(orderInput) || 0,
-				isActive: true,
+				isActive: isActiveInput,
 			};
 
 			const url = editingId ? `/api/v2/faqs/${editingId}` : "/api/v2/faqs";
@@ -144,6 +157,26 @@ export default function HelpPage() {
 			alert("An error occurred while saving the FAQ");
 		} finally {
 			setSubmitting(false);
+		}
+	};
+
+	const handleToggleActive = async (faq: any) => {
+		try {
+			const payload = { ...faq, isActive: !faq.isActive };
+			const res = await fetch(`/api/v2/faqs/${faq.id}`, {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(payload),
+			});
+			const data = await res.json();
+			if (data.success) {
+				fetchWebsiteFaqs();
+			} else {
+				alert(data.error || "Failed to update FAQ status");
+			}
+		} catch (error) {
+			console.error("Update error:", error);
+			alert("An error occurred while updating the FAQ status");
 		}
 	};
 
@@ -224,39 +257,60 @@ export default function HelpPage() {
 									</p>
 								</div>
 							) : (
-								<div className="space-y-3">
-									{websiteFaqs.map((faq, index) => (
-										<div
-											key={faq.id || index}
-											className="border rounded-lg p-4 bg-card hover:border-gray-300 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
-										>
-											<div className="space-y-1 flex-1">
-												<div className="flex items-center gap-2">
-													<span className="text-xs bg-muted text-muted-foreground font-semibold px-2 py-0.5 rounded">
-														#{faq.order ?? index + 1}
-													</span>
-													<h4 className="font-semibold text-gray-900 text-base">{faq.question}</h4>
-												</div>
-												<p className="text-sm text-muted-foreground leading-relaxed pl-8">
-													{faq.answer}
-												</p>
-											</div>
-											<div className="flex items-center gap-2 self-end md:self-center shrink-0">
-												<button
-													onClick={() => handleOpenDialog(faq)}
-													className="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-												>
-													<Pencil className="h-3.5 w-3.5 text-blue-600" /> Edit
-												</button>
-												<button
-													onClick={() => handleDeleteFaq(faq.id)}
-													className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-red-200 text-red-600 rounded-md text-xs font-medium hover:bg-red-50 transition-colors"
-												>
-													<Trash2 className="h-3.5 w-3.5" /> Delete
-												</button>
-											</div>
-										</div>
-									))}
+								<div className="rounded-md border">
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead>Question</TableHead>
+												<TableHead className="w-[100px]">Order</TableHead>
+												<TableHead className="w-[120px]">Status</TableHead>
+												<TableHead className="w-[120px]">Actions</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{websiteFaqs.map((faq, index) => (
+												<TableRow key={faq.id || index}>
+													<TableCell>
+														<div className="font-medium text-gray-900">{faq.question}</div>
+														<div className="text-xs text-muted-foreground mt-1 max-w-[500px] truncate">
+															{faq.answer}
+														</div>
+													</TableCell>
+													<TableCell>
+														<span className="text-sm bg-muted px-2 py-1 rounded">#{faq.order ?? index + 1}</span>
+													</TableCell>
+													<TableCell>
+														<Badge
+															variant={faq.isActive ? "default" : "secondary"}
+															className="cursor-pointer"
+															onClick={() => handleToggleActive(faq)}
+															title="Click to toggle status"
+														>
+															{faq.isActive ? "Published" : "Draft"}
+														</Badge>
+													</TableCell>
+													<TableCell>
+														<div className="flex items-center gap-2">
+															<button
+																onClick={() => handleOpenDialog(faq)}
+																className="p-2 border rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+																title="Edit FAQ"
+															>
+																<Pencil className="h-4 w-4 text-blue-600" />
+															</button>
+															<button
+																onClick={() => handleDeleteFaq(faq.id)}
+																className="p-2 border rounded-md text-red-600 hover:bg-red-50 transition-colors"
+																title="Delete FAQ"
+															>
+																<Trash2 className="h-4 w-4" />
+															</button>
+														</div>
+													</TableCell>
+												</TableRow>
+											))}
+										</TableBody>
+									</Table>
 								</div>
 							)}
 						</CardContent>
@@ -385,6 +439,18 @@ export default function HelpPage() {
 								onChange={(e) => setOrderInput(e.target.value)}
 							/>
 							<p className="text-xs text-muted-foreground">Lower numbers appear first in the list.</p>
+						</div>
+						<div className="flex items-center gap-2 mt-2">
+							<input
+								type="checkbox"
+								id="isActiveToggle"
+								checked={isActiveInput}
+								onChange={(e) => setIsActiveInput(e.target.checked)}
+								className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+							/>
+							<label htmlFor="isActiveToggle" className="text-sm font-medium text-gray-700">
+								Published (Visible on website)
+							</label>
 						</div>
 						<DialogFooter className="mt-6">
 							<button
