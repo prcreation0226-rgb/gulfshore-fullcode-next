@@ -8,6 +8,7 @@ import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
 	DropdownMenuContent,
+	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import {
@@ -237,7 +238,6 @@ export default function StickySearchBar() {
 						</DropdownMenuContent>
 					</DropdownMenu>
 
-					{/* Property Type Dropdown */}
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
@@ -248,6 +248,27 @@ export default function StickySearchBar() {
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent>
+							<DropdownMenuItem
+								onSelect={() => {
+									const nextFilters = {
+										...filters,
+										propertyTypes: ["Residential", "Land", "Commercial", "Income"],
+										page: "1",
+									};
+									const nextParams = buildQueryFromFilters(nextFilters, params);
+									dispatch(setFilters(nextFilters));
+									router.replace(`${path}?${nextParams.toString()}`, { scroll: false });
+									window.scrollTo({ top: 0, behavior: "smooth" });
+									document.getElementById("container")?.scrollTo({
+										top: 0,
+										behavior: "smooth",
+									});
+								}}
+								className="font-semibold text-primary cursor-pointer mb-1"
+							>
+								Select All Types
+							</DropdownMenuItem>
+							<div className="h-px bg-gray-200 my-1" />
 							{propertyTypeOptions.map((type) => (
 								<DropdownMenuCheckboxItem
 									key={type.value}
