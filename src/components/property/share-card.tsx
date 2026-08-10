@@ -42,10 +42,9 @@ export default function SocialShare({
 	// Function to share via SMS
 	const shareViaSMS = () => {
 		const smsBody = `Check out this property! ${propertyUrlLink}`;
-		window.open(
-			`sms:?&body=${encodeURIComponent(smsBody)}`,
-			"_blank"
-		);
+		const isIos = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+		const separator = isIos ? '&' : '?';
+		window.open(`sms:${separator}body=${encodeURIComponent(smsBody)}`, "_self");
 	};
 
 	return (
