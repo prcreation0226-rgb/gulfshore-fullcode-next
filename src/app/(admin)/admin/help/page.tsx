@@ -24,7 +24,6 @@ import {
 	Trash2,
 	CheckCircle2,
 	AlertCircle,
-	AlertCircle,
 	Globe,
 } from "lucide-react";
 import {
