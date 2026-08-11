@@ -31,16 +31,6 @@ export default function CountyTaxSection({ property }: CountyTaxSectionProps) {
 	}
 
 	// Generate Official County Appraiser Link
-
-	const county = property.CountyOrParish || rawData.CountyOrParish || null;
-	const parcelNumber = rawData.ParcelNumber || null;
-	const taxAmount = rawData.TaxAnnualAmount || null;
-	const taxYear = property.TaxYear || rawData.TaxYear || null;
-	const zoning = property.Zoning || rawData.Zoning || null;
-	const zoningDesc = property.ZoningDescription || rawData.ZoningDescription || null;
-	const currentUse = rawData.CurrentUse || null;
-
-	// Generate Official County Appraiser Link
 	let appraiserUrl: string | null = null;
 	let appraiserName = "County Appraiser";
 
