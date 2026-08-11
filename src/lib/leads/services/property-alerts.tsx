@@ -398,7 +398,7 @@ import {
                     backgroundColor: MID,
                     color: "#FFFFFF",
                     padding: "14px 40px",
-                    borderRadius: "2px",
+                    borderRadius: "6px",
                     fontSize: "11px",
                     fontWeight: "700",
                     letterSpacing: "0.15em",
@@ -479,38 +479,52 @@ import {
               {/* ── Premium Header ── */}
               <Section
                 style={{
-                  background: "#1A0A0A",
+                  background: "#FFFFFF",
                   padding: "40px 40px",
-                  textAlign: "center" as const,
-                  borderBottom: `3px solid ${GOLD}`,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: "24px",
-                    letterSpacing: "0.2em",
-                    textTransform: "uppercase",
-                    color: "#FFFFFF",
-                    margin: "0 0 4px",
-                    fontFamily: "'Poppins', Arial, sans-serif",
-                    fontWeight: "400",
-                  }}
-                >
-                  GULFSHORE
-                </Text>
-                <Text
-                  style={{
-                    fontSize: "11px",
-                    letterSpacing: "0.3em",
-                    textTransform: "uppercase",
-                    color: GOLD,
-                    margin: "0",
-                    fontFamily: "'Poppins', Arial, sans-serif",
-                    fontWeight: "600",
-                  }}
-                >
-                  Real Estate Group
-                </Text>
+                <table align="center" border={0} cellPadding="0" cellSpacing="0" role="presentation">
+                  <tbody>
+                    <tr>
+                      <td style={{ paddingRight: "16px", verticalAlign: "middle" }}>
+                        <Img
+                          src={`${getPropertiesApiBaseUrl()}/logored.svg`}
+                          width="56"
+                          height="56"
+                          alt="Gulfshore Group Logo"
+                          style={{ display: "block" }}
+                        />
+                      </td>
+                      <td style={{ verticalAlign: "middle", textAlign: "left" }}>
+                        <Text
+                          style={{
+                            fontSize: "26px",
+                            fontWeight: "700",
+                            color: "#D90429",
+                            margin: "0 0 4px 0",
+                            fontFamily: "'Poppins', Arial, sans-serif",
+                            letterSpacing: "0.02em",
+                            lineHeight: "1",
+                          }}
+                        >
+                          GULFSHORE GROUP
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: "18px",
+                            color: "#4B5563",
+                            margin: "0",
+                            fontFamily: "'Poppins', Arial, sans-serif",
+                            fontWeight: "500",
+                            lineHeight: "1",
+                          }}
+                        >
+                          London Forster Realty
+                        </Text>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </Section>
   
               {/* ── Title Area ── */}

@@ -118,9 +118,9 @@ export default async function Listing({
 
 	const formattedCommunity = capitalizeWords(Meta?.community || development || property.Community || "").trim();
 	const formattedCity = capitalizeWords(Meta?.city || property.City || "").trim();
-	const headerTitle = formattedCommunity.toLowerCase() === formattedCity.toLowerCase() || !formattedCommunity
+	const headerTitle = formattedCommunity.toLowerCase() === formattedCity.toLowerCase() || !formattedCommunity || formattedCommunity.toLowerCase() === "others" || formattedCommunity.toLowerCase() === "other"
 		? `${formattedCity}, FL`
-		: `${formattedCommunity} ${formattedCity}, FL`;
+		: `${formattedCommunity}, ${formattedCity} FL`;
 
 	const jsonLd = createRealEstateJsonLd(property);
 	return (
@@ -350,7 +350,14 @@ export default async function Listing({
 					<h2 className="py-4 px-2 font-semibold mt-10 lg:mt-12 text-lg lg:text-xl">
 						Other Properties For Sale in{" "}
 						<span className="text-primary">
-							{development || property.Community || property.City}, {capitalizeWords(property.City)} Florida
+							{(() => {
+								const comm = (development || property.Community || "").trim();
+								const cityStr = capitalizeWords(property.City || "").trim();
+								if (!comm || comm.toLowerCase() === cityStr.toLowerCase() || comm.toLowerCase() === "others" || comm.toLowerCase() === "other") {
+									return `${cityStr}, Florida`;
+								}
+								return `${capitalizeWords(comm)}, ${cityStr} Florida`;
+							})()}
 						</span>
 					</h2>
 				}
