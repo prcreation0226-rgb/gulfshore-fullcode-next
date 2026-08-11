@@ -235,23 +235,15 @@ export default function MapComponent({
 			setFemaLoading(true);
 			const femaType = new google.maps.ImageMapType({
 				getTileUrl: (coord, zoom) => {
-					// FEMA NFHL Tiles only render at zoom level 10 or higher to save bandwidth.
+					// ArcGIS hosted FEMA NFHL flood zone tiles (dfirm 2024)
+					// More reliable than direct FEMA server which is often down
 					if (zoom < 10) return null;
-					
-					const initialResolution = 2 * Math.PI * 6378137 / 256;
-					const originShift = 2 * Math.PI * 6378137 / 2;
-					const zoomResolution = initialResolution / Math.pow(2, zoom);
-					const tileWidth = 256 * zoomResolution;
-					const minX = coord.x * tileWidth - originShift;
-					const maxX = (coord.x + 1) * tileWidth - originShift;
-					const minY = originShift - (coord.y + 1) * tileWidth;
-					const maxY = originShift - coord.y * tileWidth;
-					const bbox = `${minX},${minY},${maxX},${maxY}`;
-					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=3857&layers=show:28&size=256,256&imageSR=3857&format=png32&transparent=true&f=image`;
+					// Primary: ArcGIS Living Atlas FEMA NFHL service
+					return `https://tiles.arcgis.com/tiles/P3ePLMYs2RVChkJx/arcgis/rest/services/FEMA_NFHL/MapServer/tile/${zoom}/${coord.y}/${coord.x}`;
 				},
 				tileSize: new google.maps.Size(256, 256),
-				opacity: 0.65,
-				name: "FEMA Flood Zone Map",
+				opacity: 0.7,
+				name: "FEMA Flood Zone Map (ArcGIS 2024)",
 			});
 			femaOverlayRef.current = femaType;
 			mapRef.current.overlayMapTypes.insertAt(0, femaType);
