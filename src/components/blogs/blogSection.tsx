@@ -11,7 +11,7 @@ export default async function BlogSection() {
 			const response = await fetch(
 				`${baseUrl}/api/v2/blogs?published=true&limit=4`,
 				{
-					next: { revalidate: 3600 },
+					next: { revalidate: 10 },
 				}
 			);
 			if (!response.ok) return [];

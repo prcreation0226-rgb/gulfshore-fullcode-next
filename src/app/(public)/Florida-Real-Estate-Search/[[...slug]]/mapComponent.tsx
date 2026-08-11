@@ -235,22 +235,13 @@ export default function MapComponent({
 			setFemaLoading(true);
 			const femaType = new google.maps.ImageMapType({
 				getTileUrl: (coord, zoom) => {
-					// FEMA NFHL Tiles only render at zoom level 10 or higher to save bandwidth.
-					if (zoom < 10) return null;
-					
-					const initialResolution = 2 * Math.PI * 6378137 / 256;
-					const originShift = 2 * Math.PI * 6378137 / 2;
-					const zoomResolution = initialResolution / Math.pow(2, zoom);
-					const tileWidth = 256 * zoomResolution;
-					const minX = coord.x * tileWidth - originShift;
-					const maxX = (coord.x + 1) * tileWidth - originShift;
-					const minY = originShift - (coord.y + 1) * tileWidth;
-					const maxY = originShift - coord.y * tileWidth;
-					const bbox = `${minX},${minY},${maxX},${maxY}`;
-					return `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=${bbox}&bboxSR=3857&layers=show:28&size=256,256&imageSR=3857&format=png32&transparent=true&f=image`;
+					if (zoom < 9) return null;
+					// ESRI USA Flood Hazard Reduced Set — fully public, no API key needed
+					// Shows FEMA NFHL flood zones: red=high risk, orange=moderate, green=low
+					return `https://server.arcgisonline.com/ArcGIS/rest/services/USA_Flood_Hazard_Reduced_Set/MapServer/tile/${zoom}/${coord.y}/${coord.x}`;
 				},
 				tileSize: new google.maps.Size(256, 256),
-				opacity: 0.65,
+				opacity: 0.7,
 				name: "FEMA Flood Zone Map",
 			});
 			femaOverlayRef.current = femaType;

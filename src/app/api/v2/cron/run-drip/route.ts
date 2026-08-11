@@ -85,6 +85,7 @@ export async function GET() {
 						if (!existingLog) {
 							// We need to send it!
 							let sent = false;
+							let failed = false;
 							
 							// Replace variables in message
 							const personalizedMessage = campaign.messageTemplate
@@ -105,6 +106,7 @@ export async function GET() {
 									sent = true;
 								} catch (e) {
 									console.error("Email send failed:", e);
+									failed = true;
 								}
 							} 
 							
@@ -119,17 +121,20 @@ export async function GET() {
 									sent = true;
 								} catch (e) {
 									console.error("SMS send failed:", e);
+									failed = true;
 								}
 							}
 
+							// Create log entry regardless of success or failure to prevent infinite retry loops
+							await prisma.dripCampaignLog.create({
+								data: {
+									campaignId: campaign.id,
+									userId: lead.id,
+									status: sent ? "sent" : "failed",
+								},
+							});
+
 							if (sent) {
-								await prisma.dripCampaignLog.create({
-									data: {
-										campaignId: campaign.id,
-										userId: lead.id,
-										status: "sent",
-									},
-								});
 								totalSent++;
 							}
 						}

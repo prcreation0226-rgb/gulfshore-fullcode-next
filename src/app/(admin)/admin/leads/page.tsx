@@ -106,6 +106,8 @@ export default function LeadsPage() {
 
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [quickTagLeadId, setQuickTagLeadId] = useState<string | null>(null);
+	const [viewLead, setViewLead] = useState<IPrismaLead | null>(null);
+	const [isViewOpen, setIsViewOpen] = useState(false);
 
 	const TAG_OPTIONS = ["Buyer", "Seller", "Hot Lead", "Cold Lead", "Investor"];
 
@@ -499,11 +501,15 @@ export default function LeadsPage() {
 										</td>
 										<td className="py-3 px-4">
 											<div className="flex items-center gap-1">
-												<Link href={`/admin/leads/${lead.id || lead._id}`} title="View">
-													<Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
-														<Eye className="h-4 w-4" />
-													</Button>
-												</Link>
+												<Button
+													title="Quick View"
+													variant="ghost"
+													size="icon"
+													className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+													onClick={() => { setViewLead(lead); setIsViewOpen(true); }}
+												>
+													<Eye className="h-4 w-4" />
+												</Button>
 												<Link href={`/admin/leads/${lead.id || lead._id}`} title="Edit">
 													<Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
 														<Edit className="h-4 w-4" />
@@ -727,6 +733,81 @@ export default function LeadsPage() {
 							<Button type="submit">Create Lead</Button>
 						</DialogFooter>
 					</form>
+				</DialogContent>
+			</Dialog>
+
+			{/* QUICK VIEW MODAL */}
+			<Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+				<DialogContent className="sm:max-w-[560px] w-[95vw] rounded-xl">
+					<DialogHeader>
+						<DialogTitle className="text-xl font-bold">
+							{viewLead?.firstName} {viewLead?.lastName}
+						</DialogTitle>
+						<DialogDescription>Lead Details</DialogDescription>
+					</DialogHeader>
+
+					{viewLead && (
+						<div className="space-y-4 py-2">
+							{/* Contact Info */}
+							<div className="grid grid-cols-2 gap-3">
+								<div className="bg-muted/40 rounded-lg p-3 space-y-1">
+									<p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Email</p>
+									<p className="text-sm font-medium break-all">{viewLead.email || "—"}</p>
+								</div>
+								<div className="bg-muted/40 rounded-lg p-3 space-y-1">
+									<p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Phone</p>
+									<p className="text-sm font-medium">{viewLead.phone || "—"}</p>
+								</div>
+								<div className="bg-muted/40 rounded-lg p-3 space-y-1">
+									<p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Status</p>
+									<Badge className={getStatusColor(viewLead.status)}>{viewLead.status || "—"}</Badge>
+								</div>
+								<div className="bg-muted/40 rounded-lg p-3 space-y-1">
+									<p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Source</p>
+									<Badge className={getSourceColor(viewLead.source || "")}>{viewLead.source?.replaceAll("_", " ") || "—"}</Badge>
+								</div>
+								<div className="bg-muted/40 rounded-lg p-3 space-y-1">
+									<p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Score</p>
+									<Badge className={getScoreColor(viewLead.scoreLabel)}>
+										{viewLead.scoreLabel || "Cold"} ({viewLead.score || 0} pts)
+									</Badge>
+								</div>
+								<div className="bg-muted/40 rounded-lg p-3 space-y-1">
+									<p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Last Contact</p>
+									<p className="text-sm font-medium">
+										{viewLead.lastContactedAt
+											? new Date(viewLead.lastContactedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+											: new Date(viewLead.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+									</p>
+								</div>
+							</div>
+
+							{/* Tags */}
+							{viewLead.tags && viewLead.tags.length > 0 && (
+								<div className="bg-muted/40 rounded-lg p-3 space-y-2">
+									<p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Tags</p>
+									<div className="flex flex-wrap gap-1.5">
+										{viewLead.tags.map((tag, i) => (
+											<Badge key={i} className="text-xs bg-[#d90429]/10 text-[#d90429] border-0">{String(tag)}</Badge>
+										))}
+									</div>
+								</div>
+							)}
+
+							{/* Created At */}
+							<div className="bg-muted/40 rounded-lg p-3 space-y-1">
+								<p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Created At</p>
+								<p className="text-sm font-medium">{new Date(viewLead.createdAt).toLocaleString()}</p>
+							</div>
+						</div>
+					)}
+
+					<DialogFooter className="gap-2 flex-col sm:flex-row">
+						<Button variant="outline" onClick={() => setIsViewOpen(false)}>Close</Button>
+						<Link href={`/admin/leads/${viewLead?.id || viewLead?._id}`}>
+							<Button className="w-full sm:w-auto" onClick={() => setIsViewOpen(false)}>Open Full Profile →</Button>
+						</Link>
+					</DialogFooter>
 				</DialogContent>
 			</Dialog>
 		</div>

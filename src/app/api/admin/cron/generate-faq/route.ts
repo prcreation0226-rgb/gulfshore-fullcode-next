@@ -5,9 +5,16 @@ import { generateMultipleFAQs } from "@/lib/openai";
 const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function GET(req: Request) {
-  // 1. Verify Secret
+  // 1. Verify Secret (Allow via Header or Query Param)
+  const url = new URL(req.url);
+  const secretParam = url.searchParams.get("secret");
   const authHeader = req.headers.get("authorization");
-  if (!authHeader || authHeader !== `Bearer ${CRON_SECRET}`) {
+  
+  const isValidAuth = 
+    (authHeader === `Bearer ${CRON_SECRET}`) || 
+    (secretParam === CRON_SECRET);
+
+  if (!isValidAuth) {
     return new NextResponse(
       JSON.stringify({ error: "Invalid or missing CRON secret" }),
       { status: 401, headers: { "Content-Type": "application/json" } }
@@ -26,20 +33,17 @@ export async function GET(req: Request) {
     );
   }
 
-  // 3. Replace Old FAQs with New Ones
+  // 3. Save New FAQs as Drafts (Inactive)
   try {
-    // Delete all existing FAQs
-    await prisma.faq.deleteMany({});
-
-    // Insert new ones
+    // Insert new ones as Drafts
     const createdFaqs = await Promise.all(
       faqs.map((faq: any) =>
         prisma.faq.create({
           data: {
             question: faq.question,
             answer: faq.answer,
-            category: faq.category,
-            isActive: true, // Make instantly visible
+            category: "City", // Always assign to City so it shows up on website
+            isActive: false, // Save as Draft for review
           },
         })
       )

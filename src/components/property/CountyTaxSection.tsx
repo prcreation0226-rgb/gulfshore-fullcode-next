@@ -21,6 +21,15 @@ export default function CountyTaxSection({ property }: CountyTaxSectionProps) {
 	const zoningDesc = property.ZoningDescription || rawData.ZoningDescription || null;
 	const currentUse = rawData.CurrentUse || null;
 
+	let finalCurrentUse = currentUse;
+	if (Array.isArray(currentUse)) {
+		finalCurrentUse = currentUse.join(", ");
+	}
+
+	if (!county && !parcelNumber && (taxAmount === null || taxAmount === undefined) && !taxYear && !zoning && !finalCurrentUse) {
+		return null;
+	}
+
 	// Generate Official County Appraiser Link
 	let appraiserUrl: string | null = null;
 	let appraiserName = "County Appraiser";
@@ -54,80 +63,82 @@ export default function CountyTaxSection({ property }: CountyTaxSectionProps) {
 
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 				{/* County */}
-				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100 ">
-					<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
-						<MapPin className="w-3.5 h-3.5" />
-						<span>County / Parish</span>
+				{county && (
+					<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100 ">
+						<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
+							<MapPin className="w-3.5 h-3.5" />
+							<span>County / Parish</span>
+						</div>
+						<p className="text-sm font-semibold text-gray-900 ">
+							{county} County
+						</p>
 					</div>
-					<p className="text-sm font-semibold text-gray-900 ">
-						{county ? `${county} County` : <span className="text-gray-400 font-normal italic">Not Provided by MLS</span>}
-					</p>
-				</div>
+				)}
 
 				{/* Parcel Number */}
-				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100 ">
-					<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
-						<FileText className="w-3.5 h-3.5" />
-						<span>Parcel / Folio ID</span>
+				{parcelNumber && (
+					<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100 ">
+						<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
+							<FileText className="w-3.5 h-3.5" />
+							<span>Parcel / Folio ID</span>
+						</div>
+						<p className="text-sm font-semibold text-gray-900 ">
+							{parcelNumber}
+						</p>
 					</div>
-					<p className="text-sm font-semibold text-gray-900 ">
-						{parcelNumber ? parcelNumber : <span className="text-gray-400 font-normal italic">Not Provided by MLS</span>}
-					</p>
-				</div>
+				)}
 
 				{/* Land Use Code */}
-				<div className="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
-					<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
-						<Building2 className="w-3.5 h-3.5" />
-						<span>Land Use Code</span>
+				{finalCurrentUse && (
+					<div className="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+						<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
+							<Building2 className="w-3.5 h-3.5" />
+							<span>Land Use Code</span>
+						</div>
+						<p className="text-sm font-semibold text-gray-900 ">
+							{finalCurrentUse}
+						</p>
 					</div>
-					<p className="text-sm font-semibold text-gray-900 ">
-						{currentUse ? currentUse : <span className="text-gray-400 font-normal italic">Not Provided by MLS</span>}
-					</p>
-				</div>
+				)}
 
 				{/* Annual Tax */}
-				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100 ">
-					<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
-						<Landmark className="w-3.5 h-3.5" />
-						<span>Annual Tax Amount</span>
+				{taxAmount !== null && taxAmount !== undefined && (
+					<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100 ">
+						<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
+							<Landmark className="w-3.5 h-3.5" />
+							<span>Annual Tax Amount</span>
+						</div>
+						<p className="text-sm font-semibold text-gray-900 ">
+							${Number(taxAmount).toLocaleString()}
+						</p>
 					</div>
-					<p className="text-sm font-semibold text-gray-900 ">
-						{taxAmount !== null && taxAmount !== undefined ? (
-							`$${Number(taxAmount).toLocaleString()}`
-						) : (
-							<span className="text-gray-400 font-normal italic">Not Provided by MLS</span>
-						)}
-					</p>
-				</div>
+				)}
 
 				{/* Tax Year */}
-				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100 ">
-					<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
-						<Calendar className="w-3.5 h-3.5" />
-						<span>Tax Year</span>
+				{taxYear && (
+					<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100 ">
+						<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
+							<Calendar className="w-3.5 h-3.5" />
+							<span>Tax Year</span>
+						</div>
+						<p className="text-sm font-semibold text-gray-900 ">
+							{taxYear}
+						</p>
 					</div>
-					<p className="text-sm font-semibold text-gray-900 ">
-						{taxYear ? taxYear : <span className="text-gray-400 font-normal italic">Not Provided by MLS</span>}
-					</p>
-				</div>
+				)}
 
 				{/* Zoning */}
-				<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100  sm:col-span-2 lg:col-span-2">
-					<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
-						<Building2 className="w-3.5 h-3.5" />
-						<span>Zoning & Classification</span>
+				{zoning && (
+					<div className="p-3.5 rounded-xl bg-gray-50  border border-gray-100  sm:col-span-2 lg:col-span-2">
+						<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-1">
+							<Building2 className="w-3.5 h-3.5" />
+							<span>Zoning & Classification</span>
+						</div>
+						<p className="text-sm font-semibold text-gray-900 ">
+							{zoning} {zoningDesc ? `- ${zoningDesc}` : ""}
+						</p>
 					</div>
-					<p className="text-sm font-semibold text-gray-900 ">
-						{zoning ? (
-							<>
-								{zoning} {zoningDesc ? `- ${zoningDesc}` : ""}
-							</>
-						) : (
-							<span className="text-gray-400 font-normal italic">Not Provided by MLS</span>
-						)}
-					</p>
-				</div>
+				)}
 			</div>
 
 			{/* County Appraiser Direct Link */}

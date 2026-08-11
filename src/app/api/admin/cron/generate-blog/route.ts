@@ -5,17 +5,28 @@ import { generateBlogFromMemory, pickRandomTopic } from "@/lib/openai";
 const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function GET(req: Request) {
-  // 1. Verify Secret
+  // 1. Verify Secret (Allow via Header or Query Param)
+  const url = new URL(req.url);
+  const secretParam = url.searchParams.get("secret");
   const authHeader = req.headers.get("authorization");
-  if (!authHeader || authHeader !== `Bearer ${CRON_SECRET}`) {
+  
+  const isValidAuth = 
+    (authHeader === `Bearer ${CRON_SECRET}`) || 
+    (secretParam === CRON_SECRET);
+
+  if (!isValidAuth) {
     return new NextResponse(
       JSON.stringify({ error: "Invalid or missing CRON secret" }),
       { status: 401, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  // 2. Choose 4 Topics
-  const topics = Array.from({ length: 4 }, () => pickRandomTopic());
+  // 2. Choose 4 Unique Topics
+  const topicSet = new Set<string>();
+  while (topicSet.size < 4) {
+    topicSet.add(pickRandomTopic());
+  }
+  const topics = Array.from(topicSet);
 
   // 3. Generate 4 Blogs in Parallel using OpenAI
   try {
@@ -46,8 +57,8 @@ export async function GET(req: Request) {
             metaDescription: blog.metaDescription,
             metaKeywords: blog.metaKeywords ? (blog.metaKeywords as any) : [],
             author: blog.author || "Gulfshore Group",
-            published: true, // Instantly publish
-            publishedAt: new Date(),
+            published: false, // Save as Draft for review
+            publishedAt: null,
           },
         })
       )

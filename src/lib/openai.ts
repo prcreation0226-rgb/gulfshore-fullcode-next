@@ -21,7 +21,7 @@ Write a complete SEO‑friendly blog post about the given topic. Return the resu
 - slug (string, URL‑friendly, lowercase, hyphens)
 - description (short 2‑3 sentence summary)
 - content (full HTML string, use <h2>, <p>, <ul>, <li> tags as needed)
-- coverImage (placeholder image URL, e.g., https://source.unsplash.com/1200x800/?real‑estate)
+- coverImage (set this to empty string "")
 - category (choose from "market", "buyer_guide", "seller_guide", "general")
 - metaTitle (string, ≤ 60 chars)
 - metaDescription (string, ≤ 160 chars)

@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
         const queryParams = req.nextUrl.searchParams;
         const cityId = queryParams.get("cityId");
         const category = queryParams.get("category");
+        const limit = Number(queryParams.get("limit")) || 20;
         
         let whereClause: any = {};
         
@@ -19,7 +20,8 @@ export async function GET(req: NextRequest) {
 
         const faqs = await prisma.faq.findMany({
             where: whereClause,
-            orderBy: { order: 'asc' },
+            orderBy: [ { order: 'asc' }, { updatedAt: 'desc' } ],
+            take: limit,
             include: { city: true }
         });
         

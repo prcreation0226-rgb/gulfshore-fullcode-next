@@ -28,7 +28,10 @@ export default function SocialShare({
 }) {
 	const [copied, setCopied] = useState(false);
 
-	const propertyUrlLink = "https://gulfshoregroup.com" + propertyUrl;
+	const propertyUrlLink =
+		typeof window !== "undefined"
+			? `${window.location.origin}${propertyUrl}`
+			: `https://gulfshoregroup.com${propertyUrl}`;
 	// Function to copy URL
 	const copyToClipboard = () => {
 		navigator.clipboard.writeText(propertyUrlLink);
@@ -39,10 +42,9 @@ export default function SocialShare({
 	// Function to share via SMS
 	const shareViaSMS = () => {
 		const smsBody = `Check out this property! ${propertyUrlLink}`;
-		window.open(
-			`sms:?&body=${encodeURIComponent(smsBody)}`,
-			"_blank"
-		);
+		const isIos = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+		const separator = isIos ? '&' : '?';
+		window.open(`sms:${separator}body=${encodeURIComponent(smsBody)}`, "_self");
 	};
 
 	return (

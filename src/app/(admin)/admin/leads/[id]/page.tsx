@@ -576,7 +576,7 @@ export default function LeadProfilePage() {
 														{view.address} <ExternalLink className="w-3.5 h-3.5" />
 													</a>
 													<p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-0.5">
-														{view.price ? `$${view.price.toLocaleString()}` : "Price N/A"} • <span className="text-muted-foreground font-normal">{view.propertyType}</span>
+														{view.price ? `$${Number(view.price).toLocaleString()}` : "Price N/A"} • <span className="text-muted-foreground font-normal">{view.propertyType}</span>
 													</p>
 													{view.mlsNumber && (
 														<span className="text-[11px] text-muted-foreground">MLS#: {view.mlsNumber}</span>
@@ -729,7 +729,7 @@ export default function LeadProfilePage() {
 							</div>
 
 							<div className="space-y-3 pt-4 border-t border-border max-h-[300px] overflow-y-auto">
-								{tasks.length > 0 ? (
+								{Array.isArray(tasks) && tasks.length > 0 ? (
 									tasks.map((task: any) => {
 										const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "completed";
 										return (
