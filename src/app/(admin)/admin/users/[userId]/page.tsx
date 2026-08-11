@@ -179,24 +179,23 @@ export default function UserDetailPage() {
 																	<a
 																		className="underline"
 																		href={`${UrlMaker(
-																			property.property.City,
-																			property.property.Development,
-																			property.property.PropertyAddress,
-																			property.property.MLSNumber
+																			property.property?.City || "",
+																			property.property?.Development || "",
+																			property.property?.PropertyAddress || "",
+																			property.property?.MLSNumber || ""
 																		)}`}>
 																		{" "}
 																		{
-																			property.property
-																				.PropertyAddress
+																			property.property?.PropertyAddress || "Unknown Property"
 																		}
 																	</a>
 																</TableCell>
 																<TableCell>
-																	{property.property.City}
+																	{property.property?.City || "-"}
 																</TableCell>
 																<TableCell>
 																	$
-																	{property.property.CurrentPrice.toLocaleString()}
+																	{property.property?.CurrentPrice?.toLocaleString() || "0"}
 																</TableCell>
 																<TableCell>
 																	{new Date(
@@ -245,23 +244,22 @@ export default function UserDetailPage() {
 																	<a
 																		className="underline"
 																		href={`${UrlMaker(
-																			property.property.City,
-																			property.property.Development,
-																			property.property.PropertyAddress,
-																			property.property.MLSNumber
+																			property.property?.City || "",
+																			property.property?.Development || "",
+																			property.property?.PropertyAddress || "",
+																			property.property?.MLSNumber || ""
 																		)}`}>
 																		{" "}
 																		{
-																			property.property
-																				.PropertyAddress
+																			property.property?.PropertyAddress || "Unknown Property"
 																		}
 																	</a>
 																</TableCell>
 																<TableCell>
-																	{property.property.City}
+																	{property.property?.City || "-"}
 																</TableCell>
 																<TableCell>
-																	${property.property.CurrentPrice}
+																	${property.property?.CurrentPrice || "0"}
 																</TableCell>
 																<TableCell>
 																	{new Date(
@@ -426,27 +424,46 @@ export default function UserDetailPage() {
 															{search.subscriptionFrequency}
 														</TableCell>
 														<TableCell>
-															{search.filters.propertyTypes?.join(
-																", "
-															) || "All"}
+															{(() => {
+																const f = typeof search.filters === 'string' ? JSON.parse(search.filters) : search.filters || {};
+																return f.propertyTypes?.join(", ") || "All";
+															})()}
 														</TableCell>
 														<TableCell>
-															{search.filters.city || "-"}
+															{(() => {
+																const f = typeof search.filters === 'string' ? JSON.parse(search.filters) : search.filters || {};
+																return f.city || "-";
+															})()}
 														</TableCell>
 														<TableCell>
-															{search.filters.developmentName || "-"}
+															{(() => {
+																const f = typeof search.filters === 'string' ? JSON.parse(search.filters) : search.filters || {};
+																return f.developmentName || "-";
+															})()}
 														</TableCell>
 														<TableCell>
-															{search.filters.minPrice || "-"}
+															{(() => {
+																const f = typeof search.filters === 'string' ? JSON.parse(search.filters) : search.filters || {};
+																return f.minPrice || "-";
+															})()}
 														</TableCell>
 														<TableCell>
-															{search.filters.maxPrice || "-"}
+															{(() => {
+																const f = typeof search.filters === 'string' ? JSON.parse(search.filters) : search.filters || {};
+																return f.maxPrice || "-";
+															})()}
 														</TableCell>
 														<TableCell>
-															{search.filters.beds || "-"}
+															{(() => {
+																const f = typeof search.filters === 'string' ? JSON.parse(search.filters) : search.filters || {};
+																return f.beds || "-";
+															})()}
 														</TableCell>
 														<TableCell>
-															{search.filters.baths || "-"}
+															{(() => {
+																const f = typeof search.filters === 'string' ? JSON.parse(search.filters) : search.filters || {};
+																return f.baths || "-";
+															})()}
 														</TableCell>
 														<TableCell>
 															<Filters
