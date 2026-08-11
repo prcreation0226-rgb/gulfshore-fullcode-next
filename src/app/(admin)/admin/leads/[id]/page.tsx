@@ -729,7 +729,7 @@ export default function LeadProfilePage() {
 							</div>
 
 							<div className="space-y-3 pt-4 border-t border-border max-h-[300px] overflow-y-auto">
-								{tasks.length > 0 ? (
+								{Array.isArray(tasks) && tasks.length > 0 ? (
 									tasks.map((task: any) => {
 										const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "completed";
 										return (
