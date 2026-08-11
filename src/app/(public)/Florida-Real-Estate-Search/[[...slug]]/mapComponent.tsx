@@ -235,15 +235,14 @@ export default function MapComponent({
 			setFemaLoading(true);
 			const femaType = new google.maps.ImageMapType({
 				getTileUrl: (coord, zoom) => {
-					// ArcGIS hosted FEMA NFHL flood zone tiles (dfirm 2024)
-					// More reliable than direct FEMA server which is often down
-					if (zoom < 10) return null;
-					// Primary: ArcGIS Living Atlas FEMA NFHL service
-					return `https://tiles.arcgis.com/tiles/P3ePLMYs2RVChkJx/arcgis/rest/services/FEMA_NFHL/MapServer/tile/${zoom}/${coord.y}/${coord.x}`;
+					if (zoom < 9) return null;
+					// ESRI USA Flood Hazard Reduced Set — fully public, no API key needed
+					// Shows FEMA NFHL flood zones: red=high risk, orange=moderate, green=low
+					return `https://server.arcgisonline.com/ArcGIS/rest/services/USA_Flood_Hazard_Reduced_Set/MapServer/tile/${zoom}/${coord.y}/${coord.x}`;
 				},
 				tileSize: new google.maps.Size(256, 256),
 				opacity: 0.7,
-				name: "FEMA Flood Zone Map (ArcGIS 2024)",
+				name: "FEMA Flood Zone Map",
 			});
 			femaOverlayRef.current = femaType;
 			mapRef.current.overlayMapTypes.insertAt(0, femaType);
