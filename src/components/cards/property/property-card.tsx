@@ -29,9 +29,9 @@ const isValidField = (value: any) => {
 };
 
 /* ─── Main Card (Grid/List view) ─────────────────────────────────────── */
-const PropertyCard = (property: Property & { isSelected?: boolean }) => {
+const PropertyCard = (property: Property & { isSelected?: boolean, showCarouselArrows?: boolean }) => {
 	const dispatch = useDispatch();
-	const { isSelected, ...restProperty } = property;
+	const { isSelected, showCarouselArrows, ...restProperty } = property;
 	return (
 		<a
 			tabIndex={0}

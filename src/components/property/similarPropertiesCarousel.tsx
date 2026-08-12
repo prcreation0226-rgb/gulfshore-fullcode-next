@@ -4,8 +4,6 @@ import {
 	Carousel,
 	CarouselContent,
 	CarouselItem,
-	CarouselNext,
-	CarouselPrevious,
 } from "@/components/ui/carousel";
 import PropertyCard from "@/components/cards/property/property-card";
 import { Property } from "@/app/generated/prisma/client";
@@ -40,11 +38,7 @@ export default function SimilarPropertiesCarousel({
 								key={property.MLSNumber}
 								className="pl-2 md:pl-4 basis-[85%] md:basis-1/2 lg:basis-1/3 relative group"
 							>
-								<div className="relative">
-									<PropertyCard {...property} />
-									<CarouselPrevious className="flex md:hidden absolute w-8 h-8 !bg-[#d90429] !text-white hover:!bg-[#b8032a] !border-white shadow-sm -left-3 top-[75%] z-20 !opacity-100 transition-colors disabled:!opacity-100 disabled:cursor-not-allowed" />
-									<CarouselNext className="flex md:hidden absolute w-8 h-8 !bg-[#d90429] !text-white hover:!bg-[#b8032a] !border-white shadow-sm -right-3 top-[75%] z-20 !opacity-100 transition-colors disabled:!opacity-100 disabled:cursor-not-allowed" />
-								</div>
+								<PropertyCard {...property} showCarouselArrows={true} />
 							</CarouselItem>
 						))}
 					</CarouselContent>
