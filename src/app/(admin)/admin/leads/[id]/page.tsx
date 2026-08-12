@@ -342,6 +342,18 @@ export default function LeadProfilePage() {
 	};
 
 	// -------------------- UI --------------------
+	if (loading) {
+		return <div className="flex items-center justify-center min-h-[50vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+	}
+
+	if (error) {
+		return <div className="text-center p-8 text-red-500">{error}</div>;
+	}
+
+	if (!lead) {
+		return <div className="text-center p-8 text-muted-foreground">Lead not found</div>;
+	}
+
 	return (
 		<div className="space-y-6">
 			{/* HEADER */}

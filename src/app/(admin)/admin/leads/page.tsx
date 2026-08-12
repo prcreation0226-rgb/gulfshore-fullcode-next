@@ -390,7 +390,6 @@ export default function LeadsPage() {
 										"Score",
 										"Source",
 										"Tags",
-										"Score",
 										"Last Contact",
 										"Action",
 									].map((head) => (
@@ -472,25 +471,7 @@ export default function LeadsPage() {
 												</div>
 											</div>
 										</td>
-										<td className="py-3 px-4">
-											{(() => {
-												const label = lead.scoreLabel || "Cold";
-												const score = lead.score ?? 0;
-												const cfg =
-													label === "Ready to Buy" || score > 75
-														? { emoji: "💰", cls: "bg-green-100 text-green-800" }
-													: label === "Hot" || score > 50
-														? { emoji: "🔥", cls: "bg-red-100 text-red-800" }
-													: label === "Warm" || score > 25
-														? { emoji: "🌡️", cls: "bg-orange-100 text-orange-800" }
-														: { emoji: "❄️", cls: "bg-slate-100 text-slate-700" };
-												return (
-													<span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>
-														{cfg.emoji} {label} · {score}
-													</span>
-												);
-											})()}
-										</td>
+
 										<td className="py-3 px-4 text-xs text-muted-foreground">
 											<div className="flex items-center gap-1">
 												<Calendar className="h-3 w-3" />
