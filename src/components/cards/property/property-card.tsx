@@ -127,10 +127,13 @@ const PropertyCard = (property: Property & { isSelected?: boolean }) => {
 						})()}
 					</p>
 
-					{/* Divider & Arrow Button */}
+					{/* Divider & Arrow Buttons */}
 					<div className="relative w-full">
+						<div className="absolute -left-5 top-1/2 -translate-y-1/2 bg-[#d90429] w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm border border-white group-hover:bg-[#b8032a] transition-colors z-10 cursor-pointer">
+							<ArrowRight size={14} strokeWidth={2.5} className="rotate-180" />
+						</div>
 						<div className="h-px w-full bg-gradient-to-r from-transparent via-[#DDD8CE] to-transparent" />
-						<div className="absolute -right-5 top-1/2 -translate-y-1/2 bg-[#d90429] w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm border border-white group-hover:bg-[#b8032a] transition-colors">
+						<div className="absolute -right-5 top-1/2 -translate-y-1/2 bg-[#d90429] w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm border border-white group-hover:bg-[#b8032a] transition-colors z-10 cursor-pointer">
 							<ArrowRight size={14} strokeWidth={2.5} />
 						</div>
 					</div>
