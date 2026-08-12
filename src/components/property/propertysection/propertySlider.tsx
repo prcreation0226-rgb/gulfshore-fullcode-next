@@ -150,8 +150,8 @@ export default function PropertySection({
 						{properties.map((property: Property) => (
 							<CarouselItem
 								key={property.MLSNumber}
-								className="md:basis-1/2 lg:basis-1/2 xl:basis-1/3 relative group">
-								<PropertyCard {...property} showCarouselArrows={true} />
+								className="md:basis-1/2 lg:basis-1/2 xl:basis-1/3">
+								<PropertyCard {...property} />
 							</CarouselItem>
 						))}
 
@@ -195,6 +195,9 @@ export default function PropertySection({
 							</CarouselItem>
 						</Link>
 					</CarouselContent>
+
+					<CarouselPrevious className="flex w-8 h-8 md:w-10 md:h-10 bg-white text-[#1C1712] hover:bg-gray-50 hover:text-black border border-[#E8E4DC] shadow-sm left-0 md:-left-16 top-[46%] md:top-[46%] md:-translate-y-1/2 z-10 opacity-90 hover:opacity-100 transition-colors" />
+					<CarouselNext className="flex w-8 h-8 md:w-10 md:h-10 bg-white text-[#1C1712] hover:bg-gray-50 hover:text-black border border-[#E8E4DC] shadow-sm right-0 md:-right-16 top-[46%] md:top-[46%] md:-translate-y-1/2 z-10 opacity-90 hover:opacity-100 transition-colors" />
 				</Carousel>
 			</Suspense>
 		</div>
