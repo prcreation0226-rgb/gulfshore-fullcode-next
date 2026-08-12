@@ -35,21 +35,19 @@ export default function SimilarPropertiesCarousel({
 					className="w-full"
 				>
 					<CarouselContent className="-ml-2 md:-ml-4">
-						{properties.map((property, index) => (
+						{properties.map((property: Property) => (
 							<CarouselItem
-								key={index}
-								className="pl-2 md:pl-4 basis-full md:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+								key={property.MLSNumber}
+								className="pl-2 md:pl-4 basis-[85%] md:basis-1/2 lg:basis-1/3 relative group"
 							>
-								<div className="h-full py-2">
-									<PropertyCard {...(property as any)} />
+								<div className="relative">
+									<PropertyCard {...property} />
+									<CarouselPrevious className="flex md:hidden absolute w-8 h-8 !bg-[#d90429] !text-white hover:!bg-[#b8032a] !border-white shadow-sm -left-3 top-[75%] z-20 !opacity-100 transition-colors disabled:!opacity-100 disabled:cursor-not-allowed" />
+									<CarouselNext className="flex md:hidden absolute w-8 h-8 !bg-[#d90429] !text-white hover:!bg-[#b8032a] !border-white shadow-sm -right-3 top-[75%] z-20 !opacity-100 transition-colors disabled:!opacity-100 disabled:cursor-not-allowed" />
 								</div>
 							</CarouselItem>
 						))}
 					</CarouselContent>
-					<div>
-						<CarouselPrevious className="flex md:hidden w-8 h-8 !bg-[#d90429] !text-white hover:!bg-[#b8032a] !border-white shadow-sm left-2 top-[75%] z-20 opacity-100 transition-colors" />
-						<CarouselNext className="flex md:hidden w-8 h-8 !bg-[#d90429] !text-white hover:!bg-[#b8032a] !border-white shadow-sm right-2 top-[75%] z-20 opacity-100 transition-colors" />
-					</div>
 				</Carousel>
 			</div>
 		</section>

@@ -150,8 +150,12 @@ export default function PropertySection({
 						{properties.map((property: Property) => (
 							<CarouselItem
 								key={property.MLSNumber}
-								className="md:basis-1/2 lg:basis-1/2 xl:basis-1/3">
-								<PropertyCard {...property} />
+								className="md:basis-1/2 lg:basis-1/2 xl:basis-1/3 relative group">
+								<div className="relative">
+									<PropertyCard {...property} />
+									<CarouselPrevious className="flex md:hidden absolute w-8 h-8 !bg-[#d90429] !text-white hover:!bg-[#b8032a] !border-white shadow-sm -left-3 top-[75%] z-20 !opacity-100 transition-colors disabled:!opacity-100 disabled:cursor-not-allowed" />
+									<CarouselNext className="flex md:hidden absolute w-8 h-8 !bg-[#d90429] !text-white hover:!bg-[#b8032a] !border-white shadow-sm -right-3 top-[75%] z-20 !opacity-100 transition-colors disabled:!opacity-100 disabled:cursor-not-allowed" />
+								</div>
 							</CarouselItem>
 						))}
 
@@ -195,11 +199,6 @@ export default function PropertySection({
 							</CarouselItem>
 						</Link>
 					</CarouselContent>
-
-					<CarouselPrevious className="flex md:hidden w-8 h-8 !bg-[#d90429] !text-white hover:!bg-[#b8032a] !border-white shadow-sm left-2 top-[75%] z-20 opacity-100 transition-colors" />
-					<CarouselNext className="flex md:hidden w-8 h-8 !bg-[#d90429] !text-white hover:!bg-[#b8032a] !border-white shadow-sm right-2 top-[75%] z-20 opacity-100 transition-colors" />
-
-
 				</Carousel>
 			</Suspense>
 		</div>
