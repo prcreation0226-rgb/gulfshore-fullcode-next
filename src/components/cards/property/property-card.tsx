@@ -11,6 +11,7 @@ import { X, BedDouble, Bath, Ruler, CalendarDays, Trees, Landmark, Eye, ArrowRig
 import { Property } from "@/app/generated/prisma/client";
 import { useDispatch } from "react-redux";
 import { setHoveredMLS } from "@/state/slices/searchSlice";
+import { CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 
 const isValidField = (value: any) => {
 	return (
