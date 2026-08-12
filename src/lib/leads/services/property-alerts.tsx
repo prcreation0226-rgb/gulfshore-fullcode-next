@@ -374,19 +374,14 @@ import {
         >
           <Row style={{ marginBottom: "16px" }}>
             <Column>
-              <Text
-                style={{
-                  fontSize: "11px",
-                  color: "#999",
-                  margin: 0,
-                  fontFamily: "'Poppins', Arial, sans-serif",
-                }}
-              >
-                Courtesy of{" "}
-                <span style={{ color: "#1A0A0A" }}>{property.ListOfficeName || "Listing Office"}</span>
-                {property.ListAgentFullName
-                  ? ` · ${property.ListAgentFullName}`
-                  : ""}
+              <Text style={{ fontSize: "11px", color: "#666", margin: "0 0 4px", fontFamily: "'Poppins', Arial, sans-serif" }}>
+                <strong>Source:</strong> NAPLESMLS#{property.MLSNumber || "N/A"}
+              </Text>
+              <Text style={{ fontSize: "11px", color: "#666", margin: "0 0 4px", fontFamily: "'Poppins', Arial, sans-serif" }}>
+                <strong>Listing Office:</strong> {property.ListOfficeName || "N/A"}
+              </Text>
+              <Text style={{ fontSize: "11px", color: "#666", margin: 0, fontFamily: "'Poppins', Arial, sans-serif" }}>
+                <strong>Showing Office:</strong> GULFSHORE GROUP
               </Text>
             </Column>
           </Row>

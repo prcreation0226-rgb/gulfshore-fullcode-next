@@ -155,14 +155,15 @@ const PropertyCard = (property: Property & { isSelected?: boolean }) => {
 
 				{/* ── Footer ── */}
 				<div className="
-					px-5 py-2.5 mt-auto
+					px-5 py-3 mt-auto
 					border-t border-[#EDEAE3]
 					bg-[#F5F3EE]
 				">
-					<p className="text-[10px] leading-relaxed text-[#A09890] tracking-wide">
-						Courtesy of <span className="text-[#7A7060]">{property.ListOfficeName}</span>
-						{" · "}Showing office: <span className="text-[#7A7060]">GULFSHORE GROUP</span>
-					</p>
+					<div className="text-[10px] leading-snug text-[#A09890] tracking-wide flex flex-col gap-1">
+						<p><span className="font-semibold text-[#8C847A]">Source:</span> NAPLESMLS#{property.MLSNumber}</p>
+						<p><span className="font-semibold text-[#8C847A]">Listing Office:</span> <span className="text-[#7A7060]">{property.ListOfficeName || (property.raw as any)?.ListOfficeName || "N/A"}</span></p>
+						<p><span className="font-semibold text-[#8C847A]">Showing Office:</span> <span className="text-[#7A7060]">GULFSHORE GROUP</span></p>
+					</div>
 				</div>
 			</article>
 		</a>
@@ -297,21 +298,21 @@ export const PropertyCard2 = ({
 						</div>
 					)}
 
-					{/* Footer row */}
-					<div className="flex items-end justify-between mt-auto pt-3">
-						<p className="text-[10px] text-[#A09890] leading-tight max-w-[70%]">
-							{property.ListOfficeName
-								? `Courtesy of ${property.ListOfficeName} · GULFSHORE GROUP`
-								: ""}
-						</p>
-						<Image
-							className="h-5 w-auto opacity-40 hidden sm:block shrink-0 ml-2"
-							src="https://res.cloudinary.com/dm68hqwp9/image/upload/v1752289229/brokerreciprocitylogo_jl5omm.jpg"
-							alt="MLS"
-							width={84}
-							height={90}
-						/>
+					{/* Footer */}
+					<div className="p-3 border-t border-[#E8E4DC] bg-[#FAF9F7] text-[10px] text-[#A09890] mt-auto">
+						<div className="flex flex-col gap-1 opacity-90">
+							<p><span className="font-semibold text-[#8C847A]">Source:</span> NAPLESMLS#{property.MLSNumber}</p>
+							<p><span className="font-semibold text-[#8C847A]">Listing Office:</span> <span className="text-[#7A7060]">{property.ListOfficeName || (property.raw as any)?.ListOfficeName || "N/A"}</span></p>
+							<p><span className="font-semibold text-[#8C847A]">Showing Office:</span> <span className="text-[#7A7060]">GULFSHORE GROUP</span></p>
+						</div>
 					</div>
+					<Image
+						className="h-5 w-auto opacity-40 hidden sm:block shrink-0 ml-2 mt-2"
+						src="https://res.cloudinary.com/dm68hqwp9/image/upload/v1752289229/brokerreciprocitylogo_jl5omm.jpg"
+						alt="MLS"
+						width={84}
+						height={90}
+					/>
 				</div>
 			</Link>
 		</Card>
