@@ -47,8 +47,8 @@ export default function SimilarPropertiesCarousel({
 						))}
 					</CarouselContent>
 					<div>
-						<CarouselPrevious className="flex md:hidden w-8 h-8 bg-[#d90429] text-white hover:bg-[#b8032a] border border-white shadow-sm left-2 top-[75%] z-20 opacity-100 transition-colors" />
-						<CarouselNext className="flex md:hidden w-8 h-8 bg-[#d90429] text-white hover:bg-[#b8032a] border border-white shadow-sm right-2 top-[75%] z-20 opacity-100 transition-colors" />
+						<CarouselPrevious className="flex md:hidden w-8 h-8 !bg-[#d90429] !text-white hover:!bg-[#b8032a] !border-white shadow-sm left-2 top-[75%] z-20 opacity-100 transition-colors" />
+						<CarouselNext className="flex md:hidden w-8 h-8 !bg-[#d90429] !text-white hover:!bg-[#b8032a] !border-white shadow-sm right-2 top-[75%] z-20 opacity-100 transition-colors" />
 					</div>
 				</Carousel>
 			</div>
