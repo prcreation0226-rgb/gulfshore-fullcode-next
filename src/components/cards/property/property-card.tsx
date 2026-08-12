@@ -128,21 +128,24 @@ const PropertyCard = (property: Property & { isSelected?: boolean }) => {
 					</p>
 
 					{/* Divider */}
-					<div className="h-px w-full bg-gradient-to-r from-transparent via-[#DDD8CE] to-transparent mb-3" />
+					<div className="h-px w-full bg-gradient-to-r from-transparent via-[#DDD8CE] to-transparent" />
 
-					{/* Stats row */}
-					<PropertyCardInfoLabels property={property} />
+					{/* Centered Stats Block */}
+					<div className="flex-1 flex flex-col justify-center py-2">
+						{/* Stats row */}
+						<PropertyCardInfoLabels property={property} />
 
-					{/* HOA — shown only when relevant */}
-					{property.MandatoryHOAYN && (property.HOAFee ?? 0) > 0 && (
-						<div className="mt-2 flex items-center gap-1.5">
-							<Landmark size={12} className="text-[#B89A6A]" aria-hidden="true" />
-							<span className="text-[11px] text-[#9A9082]">
-								HOA: <span className="text-[#5A5248] font-medium">${property.HOAFee ?? 0}</span>
-								{" / "}{property.HOAFeeFreq}
-							</span>
-						</div>
-					)}
+						{/* HOA — shown only when relevant */}
+						{property.MandatoryHOAYN && (property.HOAFee ?? 0) > 0 && (
+							<div className="mt-2 flex items-center gap-1.5">
+								<Landmark size={12} className="text-[#B89A6A]" aria-hidden="true" />
+								<span className="text-[11px] text-[#9A9082]">
+									HOA: <span className="text-[#5A5248] font-medium">${property.HOAFee ?? 0}</span>
+									{" / "}{property.HOAFeeFreq}
+								</span>
+							</div>
+						)}
+					</div>
 				</div>
 
 				{/* ── Footer ── */}
