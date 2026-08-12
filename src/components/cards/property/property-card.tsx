@@ -127,8 +127,13 @@ const PropertyCard = (property: Property & { isSelected?: boolean }) => {
 						})()}
 					</p>
 
-					{/* Divider */}
-					<div className="h-px w-full bg-gradient-to-r from-transparent via-[#DDD8CE] to-transparent my-1" />
+					{/* Divider & Arrow Button */}
+					<div className="relative w-full">
+						<div className="h-px w-full bg-gradient-to-r from-transparent via-[#DDD8CE] to-transparent" />
+						<div className="absolute -right-5 top-1/2 -translate-y-1/2 bg-[#d90429] w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm border border-white group-hover:bg-[#b8032a] transition-colors">
+							<ArrowRight size={14} strokeWidth={2.5} />
+						</div>
+					</div>
 
 					{/* Centered Stats Block */}
 					<div className="flex-1 flex flex-col justify-center py-4">

@@ -94,10 +94,10 @@ export default function CardCarousel({
 								e.stopPropagation();
 							}}>
 							<CarouselPrevious
-								className="absolute left-1 md:left-2 top-1/2 -translate-y-1/2 z-20 pointer-events-auto cursor-pointer bg-[#d90429] text-white hover:bg-[#b8032a] border-0 shadow-md h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+								className="absolute left-1 md:-left-4 top-1/2 -translate-y-1/2 z-20 pointer-events-auto cursor-pointer bg-white/90 text-black hover:bg-white border-0 shadow-md h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
 							/>
 							<CarouselNext
-								className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 z-20 pointer-events-auto cursor-pointer bg-[#d90429] text-white hover:bg-[#b8032a] border-0 shadow-md h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+								className="absolute right-1 md:-right-4 top-1/2 -translate-y-1/2 z-20 pointer-events-auto cursor-pointer bg-white/90 text-black hover:bg-white border-0 shadow-md h-9 w-9 flex opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
 							/>
 						</div>
 					</Carousel>
