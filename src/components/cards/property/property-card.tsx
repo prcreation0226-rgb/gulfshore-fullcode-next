@@ -7,7 +7,7 @@ import UrlMaker from "@/hooks/url-maker";
 import { formatPrice } from "@/hooks/formatPrice";
 import capitalizeWords from "@/hooks/capitalize-letter";
 import CardCarousel from "./cardCarousel";
-import { X, BedDouble, Bath, Ruler, CalendarDays, Trees, Landmark, Eye, ArrowRight } from "lucide-react";
+import { X, BedDouble, Bath, Ruler, CalendarDays, Trees, Landmark, Eye, ArrowRight, ArrowLeft } from "lucide-react";
 import { Property } from "@/app/generated/prisma/client";
 import { useDispatch } from "react-redux";
 import { setHoveredMLS } from "@/state/slices/searchSlice";
@@ -127,10 +127,13 @@ const PropertyCard = (property: Property & { isSelected?: boolean }) => {
 						})()}
 					</p>
 
-					{/* Divider & Arrow Button */}
+					{/* Divider & Arrow Buttons */}
 					<div className="relative w-full">
-						<div className="h-px w-full bg-gradient-to-r from-transparent via-[#DDD8CE] to-transparent" />
-						<div className="absolute -right-5 top-1/2 -translate-y-1/2 bg-[#d90429] w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm border border-white group-hover:bg-[#b8032a] transition-colors">
+						<div className="absolute -left-5 top-1/2 -translate-y-1/2 bg-[#d90429] w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm border border-white group-hover:bg-[#b8032a] transition-colors z-10">
+							<ArrowLeft size={14} strokeWidth={2.5} />
+						</div>
+						<div className="h-px w-full bg-gradient-to-r from-transparent via-[#DDD8CE] to-transparent relative z-0" />
+						<div className="absolute -right-5 top-1/2 -translate-y-1/2 bg-[#d90429] w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm border border-white group-hover:bg-[#b8032a] transition-colors z-10">
 							<ArrowRight size={14} strokeWidth={2.5} />
 						</div>
 					</div>
