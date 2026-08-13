@@ -42,6 +42,10 @@ function useCarousel() {
   return context
 }
 
+function useCarouselOptional() {
+  return React.useContext(CarouselContext)
+}
+
 function Carousel({
   orientation = "horizontal",
   opts,
@@ -238,4 +242,5 @@ export {
   CarouselItem,
   CarouselPrevious,
   CarouselNext,
+  useCarouselOptional,
 }
