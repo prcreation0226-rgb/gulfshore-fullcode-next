@@ -176,7 +176,7 @@ const Navbar = () => {
 							</NavigationMenuItem>
 							<SignedOut>
 								<NavigationMenuItem>
-									<Link href="/signup">
+									<Link href={`/signup${path !== "/" ? `?redirect_url=${encodeURIComponent(path)}` : ""}`}>
 										<Button className="rounded-full font-bold cursor-pointer bg-primary hover:bg-accent text-white px-6">
 											Sign Up
 										</Button>
@@ -230,7 +230,7 @@ const Navbar = () => {
 								<UserButton />
 							</SignedIn>
 							<SignedOut>
-								<Link href="/signup">
+								<Link href={`/signup${path !== "/" ? `?redirect_url=${encodeURIComponent(path)}` : ""}`}>
 									<Button className="rounded-full font-bold cursor-pointer bg-primary hover:bg-accent text-white px-4 py-2 text-xs h-9">
 										Sign Up
 									</Button>
@@ -304,14 +304,14 @@ export const DrawerMenu = ({
 						))}
 						<SignedOut>
 							<SheetClose asChild>
-								<Link href="/signup" className="w-full block">
+								<Link href={`/signup${path !== "/" ? `?redirect_url=${encodeURIComponent(path)}` : ""}`} className="w-full block">
 									<button className="w-full text-left relative px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base cursor-pointer">
 										Sign Up
 									</button>
 								</Link>
 							</SheetClose>
 							<SheetClose asChild>
-								<Link href="/signin" className="w-full block">
+								<Link href={`/signin${path !== "/" ? `?redirect_url=${encodeURIComponent(path)}` : ""}`} className="w-full block">
 									<button className="w-full text-left relative px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base cursor-pointer">
 										Sign In
 									</button>
