@@ -358,14 +358,11 @@ export default function LeadProfilePage() {
 		<div className="space-y-6">
 			{/* HEADER */}
 			<div className="flex items-center justify-between gap-4">
-				<Link href="/admin/leads">
-					<Button
-						variant="outline"
-						size="sm"
-						className="flex items-center gap-2">
+				<Button asChild variant="outline" size="sm" className="flex items-center gap-2">
+					<Link href="/admin/leads">
 						<ArrowLeft className="h-4 w-4" /> Back
-					</Button>
-				</Link>
+					</Link>
+				</Button>
 				<div>
 					<h1 className="text-lg font-bold">
 						{lead.firstName} {lead.lastName}
