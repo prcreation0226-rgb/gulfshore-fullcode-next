@@ -114,7 +114,8 @@ export function trackViewedProperty(id: string) {
 			localStorage.setItem("viewHistory", JSON.stringify(previous));
 
 			if (previous.length >= 3) {
-				window.location.href = "https://gulfshoregroup.com/signup";
+				const currentPath = window.location.pathname;
+				window.location.href = `/signup?redirect_url=${encodeURIComponent(currentPath)}`;
 			}
 		}
 	}
