@@ -113,7 +113,7 @@ const PropertyCard = (property: Property & { isSelected?: boolean }) => {
 
 					{/* Address */}
 					<p className="
-						text-[13px] text-[#7A7060] leading-snug line-clamp-2 mb-3
+						text-[13px] text-[#7A7060] leading-snug line-clamp-2 mb-5
 						group-hover:text-[#B89A6A] transition-colors duration-300
 					">
 						{(() => {
@@ -161,7 +161,7 @@ const PropertyCard = (property: Property & { isSelected?: boolean }) => {
 					</div>
 
 					{/* Centered Stats Block */}
-					<div className="flex-1 flex flex-col justify-center pt-6 pb-2">
+					<div className="flex-1 flex flex-col justify-end pt-6 pb-2">
 						{/* Stats row */}
 						<PropertyCardInfoLabels property={property} />
 
