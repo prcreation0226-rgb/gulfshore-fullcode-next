@@ -108,6 +108,26 @@ export default function LeadsPage() {
 	const [quickTagLeadId, setQuickTagLeadId] = useState<string | null>(null);
 	const [viewLead, setViewLead] = useState<IPrismaLead | null>(null);
 	const [isViewOpen, setIsViewOpen] = useState(false);
+	const [fullViewLead, setFullViewLead] = useState<any>(null);
+	const [loadingFullViewLead, setLoadingFullViewLead] = useState(false);
+
+	const handleOpenView = async (lead: IPrismaLead) => {
+		setViewLead(lead);
+		setIsViewOpen(true);
+		setFullViewLead(null);
+		setLoadingFullViewLead(true);
+		try {
+			const res = await fetch(`/api/leads/${lead.id || lead._id}`);
+			if (res.ok) {
+				const data = await res.json();
+				setFullViewLead(data);
+			}
+		} catch (err) {
+			console.error("Failed to fetch full lead details", err);
+		} finally {
+			setLoadingFullViewLead(false);
+		}
+	};
 
 	const TAG_OPTIONS = ["Buyer", "Seller", "Hot Lead", "Cold Lead", "Investor"];
 
@@ -487,7 +507,7 @@ export default function LeadsPage() {
 													variant="ghost"
 													size="icon"
 													className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-													onClick={() => { setViewLead(lead); setIsViewOpen(true); }}
+													onClick={() => handleOpenView(lead)}
 												>
 													<Eye className="h-4 w-4" />
 												</Button>
@@ -783,11 +803,81 @@ export default function LeadsPage() {
 						</div>
 					)}
 
-					<DialogFooter className="gap-2 flex-col sm:flex-row">
+					{loadingFullViewLead && (
+						<div className="text-center text-sm text-muted-foreground py-4 flex items-center justify-center gap-2">
+							<div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+							Loading full details...
+						</div>
+					)}
+
+					{fullViewLead && (
+						<div className="space-y-4 pt-2 border-t mt-2 max-h-[35vh] overflow-y-auto pr-2">
+							{/* Notes */}
+							{fullViewLead.notes?.length > 0 && (
+								<div className="space-y-2">
+									<p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Notes</p>
+									{fullViewLead.notes.map((note: any) => (
+										<div key={note._id} className="bg-muted/30 p-2.5 rounded-lg border border-border/50 text-sm">
+											<p className="whitespace-pre-wrap text-xs">{note.content}</p>
+											<p className="text-[10px] text-muted-foreground mt-1">{new Date(note.createdAt).toLocaleString()}</p>
+										</div>
+									))}
+								</div>
+							)}
+
+							{/* Inquiry History */}
+							{fullViewLead.inquiryHistory?.length > 0 && (
+								<div className="space-y-2">
+									<p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Inquiries</p>
+									{fullViewLead.inquiryHistory.map((inq: any) => (
+										<div key={inq._id} className="bg-muted/30 p-2.5 rounded-lg border border-border/50 text-sm">
+											<Badge variant="outline" className="mb-1 text-[10px] uppercase">{String(inq.type).replaceAll("_", " ")}</Badge>
+											{inq.message && <p className="whitespace-pre-wrap mt-1 text-xs">{inq.message}</p>}
+											<p className="text-[10px] text-muted-foreground mt-1">{new Date(inq.createdAt).toLocaleString()}</p>
+										</div>
+									))}
+								</div>
+							)}
+
+							{/* AI Chats */}
+							{fullViewLead.aiChats?.length > 0 && (
+								<div className="space-y-2">
+									<p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">AI Chats</p>
+									{fullViewLead.aiChats.map((chat: any) => (
+										<div key={chat.id || chat._id} className="bg-muted/30 p-2.5 rounded-lg border border-border/50 text-sm">
+											<Badge variant="outline" className="mb-1 text-[10px] uppercase">{chat.role}</Badge>
+											<p className="whitespace-pre-wrap mt-1 text-xs">{chat.message}</p>
+											<p className="text-[10px] text-muted-foreground mt-1">{new Date(chat.createdAt).toLocaleString()}</p>
+										</div>
+									))}
+								</div>
+							)}
+							
+							{/* Tasks */}
+							{fullViewLead.tasks?.length > 0 && (
+								<div className="space-y-2">
+									<p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Tasks</p>
+									{fullViewLead.tasks.map((task: any) => (
+										<div key={task.id || task._id} className="bg-muted/30 p-2.5 rounded-lg border border-border/50 text-sm flex justify-between items-center">
+											<div>
+												<p className="font-medium text-xs">{task.title}</p>
+												{task.dueDate && <p className="text-[10px] text-muted-foreground mt-0.5">Due: {new Date(task.dueDate).toLocaleDateString()}</p>}
+											</div>
+											<Badge variant={task.status === "completed" ? "default" : "secondary"} className="text-[10px]">
+												{task.status}
+											</Badge>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+					)}
+
+					<DialogFooter className="gap-2 flex-col sm:flex-row mt-4">
 						<Button variant="outline" onClick={() => setIsViewOpen(false)}>Close</Button>
-						<Link href={`/admin/leads/${viewLead?.id || viewLead?._id}`}>
-							<Button className="w-full sm:w-auto" onClick={() => setIsViewOpen(false)}>Open Full Profile →</Button>
-						</Link>
+						<Button asChild className="w-full sm:w-auto" onClick={() => setIsViewOpen(false)}>
+							<Link href={`/admin/leads/${viewLead?.id || viewLead?._id}`}>Open Full Profile →</Link>
+						</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
