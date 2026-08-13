@@ -98,7 +98,8 @@ export default function PropertyDetail(property: Property) {
 	const Longitude = parseFloat(property.Longitude?.toString() || "");
 
 	const handleScheduleTour = () => {
-		if (isLoaded && !isSignedIn) {
+		const isMockSignedIn = document.cookie.includes("mock_signed_in=true");
+		if (isLoaded && !isSignedIn && !isMockSignedIn) {
 			setShowLoginPrompt(true);
 			return;
 		}

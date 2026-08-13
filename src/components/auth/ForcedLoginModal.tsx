@@ -51,6 +51,13 @@ export default function ForcedLoginModal() {
 		const newViews = currentViews + 1;
 		localStorage.setItem(viewsKey, newViews.toString());
 
+		// Check if user is signed in via the custom mock auth
+		const isMockSignedIn = document.cookie.includes("mock_signed_in=true");
+		if (isMockSignedIn) {
+			setIsOpen(false);
+			return;
+		}
+
 		// If user has viewed 2 or more properties, or is on a detail page, trigger modal after brief delay
 		const isDetailPage = pathname.includes("/Florida-Real-Estate-Listings/");
 		if (newViews >= 3 || isDetailPage) {
