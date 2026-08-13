@@ -139,7 +139,7 @@ const PropertyCard = (property: Property & { isSelected?: boolean }) => {
 					</div>
 
 					{/* Centered Stats Block */}
-					<div className="flex-1 flex flex-col justify-center py-4">
+					<div className="flex-1 flex flex-col justify-center pt-6 pb-2">
 						{/* Stats row */}
 						<PropertyCardInfoLabels property={property} />
 
