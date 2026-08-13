@@ -182,13 +182,6 @@ const Navbar = () => {
 										</Button>
 									</Link>
 								</NavigationMenuItem>
-								<NavigationMenuItem>
-									<Link href="/admin/dashboard">
-										<Button variant="outline" className="rounded-lg font-bold cursor-pointer border-[#B89A6A] text-[#B89A6A] hover:bg-[#B89A6A]/10 hover:text-[#B89A6A]">
-											Admin Panel
-										</Button>
-									</Link>
-								</NavigationMenuItem>
 							</SignedOut>
 							<SignedIn>
 								<NavigationMenuItem>
@@ -322,13 +315,6 @@ export const DrawerMenu = ({
 									<button className="w-full text-left relative px-4 py-3 rounded-xl hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 hover:text-black text-gray-800 transition-all duration-200 font-medium text-base cursor-pointer">
 										Sign In
 									</button>
-								</Link>
-							</SheetClose>
-							<SheetClose asChild>
-								<Link
-									href="/admin/dashboard"
-									className="relative block w-full px-4 py-3 rounded-xl text-[#B89A6A] hover:bg-[#B89A6A]/10 hover:text-[#B89A6A] transition-all duration-200 font-bold text-base">
-									<span>Admin Panel</span>
 								</Link>
 							</SheetClose>
 						</SignedOut>
