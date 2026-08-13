@@ -117,6 +117,20 @@ export default function LeadProfilePage() {
 		fetchLead();
 	}, [id]);
 
+	// -------------------- FETCH TASKS --------------------
+	useEffect(() => {
+		if (!id) return;
+		const fetchTasks = async () => {
+			try {
+				const res = await axios.get(`/api/leads/${id}/tasks`);
+				setTasks(res.data);
+			} catch (err) {
+				console.error("Failed to fetch tasks", err);
+			}
+		};
+		fetchTasks();
+	}, [id]);
+
 	// -------------------- HANDLE ADD NOTE --------------------
 	const handleAddNote = async () => {
 		if (!newNote.trim()) return alert("Note cannot be empty");
@@ -288,19 +302,7 @@ export default function LeadProfilePage() {
 			</div>
 		);
 
-	// -------------------- TASKS LOGIC --------------------
-	useEffect(() => {
-		if (!id) return;
-		const fetchTasks = async () => {
-			try {
-				const res = await axios.get(`/api/leads/${id}/tasks`);
-				setTasks(res.data);
-			} catch (err) {
-				console.error("Failed to fetch tasks", err);
-			}
-		};
-		fetchTasks();
-	}, [id]);
+
 
 	const handleAddTask = async () => {
 		if (!newTaskTitle.trim()) return toast.error("Task title required");
