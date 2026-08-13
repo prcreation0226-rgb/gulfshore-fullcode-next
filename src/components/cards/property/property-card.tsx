@@ -132,32 +132,36 @@ const PropertyCard = (property: Property & { isSelected?: boolean }) => {
 					{/* Divider & Arrow Button */}
 					<div className="relative w-full">
 						<div className="h-px w-full bg-gradient-to-r from-transparent via-[#DDD8CE] to-transparent" />
-						<button
-							type="button"
-							onClick={(e) => {
-								e.preventDefault();
-								e.stopPropagation();
-								e.nativeEvent.preventDefault();
-								e.nativeEvent.stopImmediatePropagation();
-								if (carousel) carousel.scrollPrev();
-							}}
-							className="absolute -left-5 top-1/2 -translate-y-1/2 bg-[#d90429] w-7 h-7 rounded-full flex md:hidden items-center justify-center text-white shadow-sm border border-white hover:bg-[#b8032a] transition-colors z-10 cursor-pointer"
-						>
-							<ArrowLeft size={14} strokeWidth={2.5} />
-						</button>
-						<button
-							type="button"
-							onClick={(e) => {
-								e.preventDefault();
-								e.stopPropagation();
-								e.nativeEvent.preventDefault();
-								e.nativeEvent.stopImmediatePropagation();
-								if (carousel) carousel.scrollNext();
-							}}
-							className="absolute -right-5 top-1/2 -translate-y-1/2 bg-[#d90429] w-7 h-7 rounded-full flex md:hidden items-center justify-center text-white shadow-sm border border-white hover:bg-[#b8032a] transition-colors z-10 cursor-pointer"
-						>
-							<ArrowRight size={14} strokeWidth={2.5} />
-						</button>
+						{carousel && (
+							<>
+								<button
+									type="button"
+									onClick={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+										e.nativeEvent.preventDefault();
+										e.nativeEvent.stopImmediatePropagation();
+										if (carousel) carousel.scrollPrev();
+									}}
+									className="absolute -left-5 top-1/2 -translate-y-1/2 bg-[#d90429] w-7 h-7 rounded-full flex md:hidden items-center justify-center text-white shadow-sm border border-white hover:bg-[#b8032a] transition-colors z-10 cursor-pointer"
+								>
+									<ArrowLeft size={14} strokeWidth={2.5} />
+								</button>
+								<button
+									type="button"
+									onClick={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+										e.nativeEvent.preventDefault();
+										e.nativeEvent.stopImmediatePropagation();
+										if (carousel) carousel.scrollNext();
+									}}
+									className="absolute -right-5 top-1/2 -translate-y-1/2 bg-[#d90429] w-7 h-7 rounded-full flex md:hidden items-center justify-center text-white shadow-sm border border-white hover:bg-[#b8032a] transition-colors z-10 cursor-pointer"
+								>
+									<ArrowRight size={14} strokeWidth={2.5} />
+								</button>
+							</>
+						)}
 					</div>
 
 					{/* Centered Stats Block */}
