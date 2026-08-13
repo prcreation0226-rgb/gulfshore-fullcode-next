@@ -2,8 +2,7 @@ import { SignIn } from "@clerk/nextjs";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-export default async function SignInPage({ searchParams }: { searchParams: Promise<{ redirect_url?: string }> }) {
-	const redirectUrl = (await searchParams).redirect_url;
+export default function SignInPage() {
 	
 	return (
 		<div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
@@ -18,7 +17,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
 				routing="path" 
 				path="/signin" 
 				signUpUrl="/signup" 
-				forceRedirectUrl={redirectUrl || "/"} 
+				fallbackRedirectUrl="/" 
 			/>
 		</div>
 	);
