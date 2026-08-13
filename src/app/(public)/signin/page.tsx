@@ -2,7 +2,9 @@ import { SignIn } from "@clerk/nextjs";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-export default function SignInPage() {
+export default async function SignInPage({ searchParams }: { searchParams: Promise<{ redirect_url?: string }> }) {
+	const redirectUrl = (await searchParams).redirect_url;
+	
 	return (
 		<div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
 			{/* Back Button */}
@@ -12,7 +14,12 @@ export default function SignInPage() {
 					<span>Back to Home</span>
 				</Link>
 			</div>
-			<SignIn routing="path" path="/signin" signUpUrl="/signup" />
+			<SignIn 
+				routing="path" 
+				path="/signin" 
+				signUpUrl="/signup" 
+				forceRedirectUrl={redirectUrl || "/"} 
+			/>
 		</div>
 	);
 }

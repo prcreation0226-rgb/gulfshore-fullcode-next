@@ -47,7 +47,8 @@ export default function SignUpForm() {
 	useEffect(() => {
 		const mode = query.get("mode");
 		if (mode === "signin") {
-			router.push("/signin");
+			const redir = query.get("redirect_url");
+			router.push(`/signin${redir ? `?redirect_url=${encodeURIComponent(redir)}` : ""}`);
 		}
 	}, [query, router]);
 
@@ -375,7 +376,7 @@ export default function SignUpForm() {
 								<span>
 									Already have an account?{" "}
 									<a
-										href="/signin"
+										href={`/signin${redirectUrl !== "/" ? `?redirect_url=${encodeURIComponent(redirectUrl)}` : ""}`}
 										className="text-[#d90429] font-semibold underline ml-1 hover:text-[#bf0022]">
 										Sign In
 									</a>
