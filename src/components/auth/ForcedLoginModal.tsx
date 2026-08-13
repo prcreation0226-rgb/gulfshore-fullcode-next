@@ -144,14 +144,14 @@ export default function ForcedLoginModal() {
 								<div className="flex-grow border-t border-gray-200"></div>
 							</div>
 
-							<Link href="/signup" onClick={() => setIsOpen(false)} className="w-full block">
+							<Link href={`/signup${pathname !== "/" ? `?redirect_url=${encodeURIComponent(pathname)}` : ""}`} onClick={() => setIsOpen(false)} className="w-full block">
 								<Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 text-base cursor-pointer">
 									Create Free Account
 									<ArrowRight className="w-5 h-5" />
 								</Button>
 							</Link>
 
-							<Link href="/signin" onClick={() => setIsOpen(false)} className="w-full block">
+							<Link href={`/signin${pathname !== "/" ? `?redirect_url=${encodeURIComponent(pathname)}` : ""}`} onClick={() => setIsOpen(false)} className="w-full block">
 								<button
 									className="w-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-300 font-semibold py-3.5 rounded-xl text-sm cursor-pointer flex items-center justify-center">
 									Already have an account? Sign In
