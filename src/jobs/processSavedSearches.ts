@@ -175,21 +175,22 @@ export async function processSavedSearches() {
 					await sendPropertyAlert({
 						to: lead.email,
 						recipientName: lead.firstName || "Valued Client",
+						leadId: lead.id,
 						subject: `${count} New Property Match${count > 1 ? 'es' : ''} for Your Saved Searches`,
 						alertTitle: "New Homes Matching Your Searches",
 						alertSubtitle: `We found ${count} new propert${count > 1 ? 'ies' : 'y'} that match your saved preferences across all your searches.`,
 						properties: propertiesArray as any,
 					}).catch(err => console.error("Email Error:", err));
 				}
-
-				alertedLeadIds.add(lead.id);
-
-				// Update lastNotifiedAt for all the searches that produced matches
-				await prisma.savedSearch.updateMany({
-					where: { id: { in: searchesToUpdate } },
-					data: { lastNotifiedAt: new Date() },
-				});
 			}
+
+			alertedLeadIds.add(lead.id);
+
+			// Update lastNotifiedAt for all the searches that produced matches
+			await prisma.savedSearch.updateMany({
+				where: { id: { in: searchesToUpdate } },
+				data: { lastNotifiedAt: new Date() },
+			});
 		}
 
 		// ---------------------------------------------------------
@@ -237,6 +238,7 @@ export async function processSavedSearches() {
 						await sendPropertyAlert({
 							to: lead.email,
 							recipientName: lead.firstName || "Valued Client",
+							leadId: lead.id,
 							subject: `Featured New Listing in ${newestProperty.City}`,
 							alertTitle: "A Naples Area Home for You",
 							alertSubtitle: `Here is a brand new listing we think you'll love.`,

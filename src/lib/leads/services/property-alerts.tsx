@@ -171,7 +171,7 @@ import {
     );
   }
   
-  function PropertyCard({ property }: { property: Property }) {
+  function PropertyCard({ property, leadId, recipientName }: { property: Property; leadId?: string; recipientName?: string }) {
     const imgSrc = getImage(property);
     const { bg: statusBg, text: statusText } = statusColor(property.StandardStatus);
     const baths =
@@ -190,7 +190,11 @@ import {
       >
         {/* Hero Image */}
         <Section style={{ margin: 0, padding: 0 }}>
-          <Link href={getPropertiesApiBaseUrl()+UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber ||"")}>
+          <Link href={
+            leadId 
+              ? `${getPropertiesApiBaseUrl()}/api/v2/magic-login?leadId=${encodeURIComponent(leadId)}&redirect_url=${encodeURIComponent(`${getPropertiesApiBaseUrl()}${UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber ||"")}?utm_source=email_alert&n=${encodeURIComponent(recipientName || "")}`)}`
+              : `${getPropertiesApiBaseUrl()}${UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber ||"")}?utm_source=email_alert&n=${encodeURIComponent(recipientName || "")}`
+          }>
             <Img
               src={imgSrc}
               alt={property.FullAddress}
@@ -388,7 +392,11 @@ import {
           <Row>
             <Column align="center">
                 <Button
-                  href={getPropertiesApiBaseUrl()+UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber||"")}
+                  href={
+                    leadId 
+                      ? `${getPropertiesApiBaseUrl()}/api/v2/magic-login?leadId=${encodeURIComponent(leadId)}&redirect_url=${encodeURIComponent(`${getPropertiesApiBaseUrl()}${UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber ||"")}?utm_source=email_alert&n=${encodeURIComponent(recipientName || "")}`)}`
+                      : `${getPropertiesApiBaseUrl()}${UrlMaker(property.City,property.Community ||"",property.FullAddress,property.MLSNumber ||"")}?utm_source=email_alert&n=${encodeURIComponent(recipientName || "")}`
+                  }
                   style={{
                     backgroundColor: MID,
                     color: "#FFFFFF",
@@ -421,6 +429,7 @@ import {
     alertSubtitle?: string;
     properties: Property[] | Property | null;
     unsubscribeUrl?: string;
+    leadId?: string;
   }
   
   export function PropertyAlertEmail({
@@ -429,6 +438,7 @@ import {
     alertSubtitle = "Latest listings selected for your lifestyle",
     properties,
     unsubscribeUrl = "#",
+    leadId,
   }: PropertyAlertEmailProps) {
     const previewText =
       "New property listing curated for you";
@@ -643,12 +653,16 @@ import {
                       <PropertyCard
                         key={prop.id || prop.MLSNumber || prop.FullAddress}
                         property={prop}
+                        leadId={leadId}
+                        recipientName={recipientName}
                       />
                     ))
                   ) : (
                     <PropertyCard
                       key={properties.id || properties.MLSNumber || properties.FullAddress}
                       property={properties}
+                      leadId={leadId}
+                      recipientName={recipientName}
                     />
                   )
                 )}

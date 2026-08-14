@@ -36,9 +36,9 @@ const AlertOverridesSchema = z.object({
   from: z.string().min(1).optional(),
   replyTo: z.string().min(1).optional(),
   subject: z.string().min(1).optional(),
-  alertTitle: z.string().min(1).optional(),
   alertSubtitle: z.string().min(1).optional(),
   unsubscribeUrl: z.string().url().optional(),
+  leadId: z.string().optional(),
 });
 
 type AlertOverrides = z.infer<typeof AlertOverridesSchema>;
@@ -48,9 +48,9 @@ function overridesFromSearchParams(searchParams: URLSearchParams): AlertOverride
   return {
     to: to ? to.split(",").map((e) => e.trim()).filter(Boolean) : undefined,
     recipientName: searchParams.get("recipientName") || undefined,
-    subject: searchParams.get("subject") || undefined,
     alertTitle: searchParams.get("alertTitle") || undefined,
     alertSubtitle: searchParams.get("alertSubtitle") || undefined,
+    leadId: searchParams.get("leadId") || undefined,
   };
 }
 
@@ -89,6 +89,7 @@ async function runPropertyAlertSend(overrides: AlertOverrides = {}) {
       process.env.PROPERTY_ALERT_SUBTITLE ??
       "Exclusive listings selected for your lifestyle",
     unsubscribeUrl: overrides.unsubscribeUrl,
+    leadId: overrides.leadId,
   });
 
   if (!result.success) {
