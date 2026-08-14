@@ -54,7 +54,9 @@ export async function GET(req: NextRequest) {
     });
     
     const signInUrl = new URL(tokenResponse.url);
-    signInUrl.searchParams.set("redirect_url", new URL(redirectUrl, req.url).toString());
+    const fullRedirectUrl = new URL(redirectUrl, req.url).toString();
+    signInUrl.searchParams.set("redirect_url", fullRedirectUrl);
+    signInUrl.searchParams.set("redirectUrl", fullRedirectUrl);
     
     return NextResponse.redirect(signInUrl);
   } catch (error) {
