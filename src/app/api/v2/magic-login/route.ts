@@ -20,32 +20,47 @@ export async function GET(req: NextRequest) {
     const client = await clerkClient();
     let clerkUserId = lead.userId;
 
-    // If the lead doesn't have a Clerk account, create one on the fly
+    // If the lead doesn't have a Clerk account, create one or link existing
     if (!clerkUserId) {
-      const newUser = await client.users.createUser({
+      // Check if user already exists in Clerk
+      const existingUsers = await client.users.getUserList({
         emailAddress: [lead.email],
-        firstName: lead.firstName || undefined,
-        lastName: lead.lastName || undefined,
-        skipPasswordRequirement: true, // Allow passwordless creation
       });
-      clerkUserId = newUser.id;
 
-      // Link the new Clerk user to the Prisma Lead
+      if (existingUsers.data && existingUsers.data.length > 0) {
+        clerkUserId = existingUsers.data[0].id;
+      } else {
+        const newUser = await client.users.createUser({
+          emailAddress: [lead.email],
+          firstName: lead.firstName || undefined,
+          lastName: lead.lastName || undefined,
+          skipPasswordRequirement: true, // Allow passwordless creation
+        });
+        clerkUserId = newUser.id;
+      }
+
+      // Link the Clerk user to the Prisma Lead
       await prisma.lead.update({
         where: { id: lead.id },
         data: { userId: clerkUserId },
       });
 
-      // Also create a Prisma User record to keep data synced
-      await prisma.user.create({
-        data: {
-          clerkId: clerkUserId,
-          email: lead.email,
-          firstName: lead.firstName || "",
-          lastName: lead.lastName || "",
-          name: lead.fullName || lead.firstName || "",
-        }
+      // Also create a Prisma User record to keep data synced (if it doesn't exist)
+      const existingDbUser = await prisma.user.findUnique({
+        where: { clerkId: clerkUserId },
       });
+
+      if (!existingDbUser) {
+        await prisma.user.create({
+          data: {
+            clerkId: clerkUserId,
+            email: lead.email,
+            firstName: lead.firstName || "",
+            lastName: lead.lastName || "",
+            name: lead.fullName || lead.firstName || "",
+          }
+        });
+      }
     }
 
     const tokenResponse = await client.signInTokens.createSignInToken({
