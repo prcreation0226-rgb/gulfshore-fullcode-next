@@ -74,6 +74,7 @@ export function ClerkProvider({ children }: { children: React.ReactNode }) {
 
 	return (
 		<>
+			<script src="https://accounts.google.com/gsi/client" async defer></script>
 			{children}
 			{showModal && (
 				<div style={{
@@ -411,6 +412,50 @@ export function SignUpButton({ children }: { children: React.ReactNode }) {
 }
 
 export function GoogleOneTap() {
+	React.useEffect(() => {
+		const initGoogleOneTap = () => {
+			if (typeof window !== "undefined" && (window as any).google && getCookie("mock_signed_in") !== "true") {
+				(window as any).google.accounts.id.initialize({
+					client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+					callback: async (response: any) => {
+						if (response.credential) {
+							try {
+								const res = await fetch("/api/v2/user/google-auth", {
+									method: "POST",
+									headers: { "Content-Type": "application/json" },
+									body: JSON.stringify({ credential: response.credential })
+								});
+								const data = await res.json();
+								if (data.success) {
+									if (typeof sessionStorage !== "undefined") {
+										sessionStorage.setItem("just_signed_in", "true");
+									}
+									window.location.reload();
+								}
+							} catch (err) {
+								console.error("Error during Google One Tap auth:", err);
+							}
+						}
+					}
+				});
+				(window as any).google.accounts.id.prompt();
+			}
+		};
+
+		// Try immediately in case it's loaded
+		initGoogleOneTap();
+
+		// Also listen for script load if not loaded yet
+		const interval = setInterval(() => {
+			if (typeof window !== "undefined" && (window as any).google) {
+				clearInterval(interval);
+				initGoogleOneTap();
+			}
+		}, 1000);
+
+		return () => clearInterval(interval);
+	}, []);
+
 	return null;
 }
 
@@ -430,19 +475,47 @@ export function SignIn() {
 	const handleGoogleLogin = async () => {
 		setIsLoading(true);
 		setError("");
-		try {
-			// Google login automatically logs in as admin for mock testing convenience
-			setCookie("mock_signed_in", "true");
-			setCookie("mock_user_email", "admin@gulfshore.com");
-			setCookie("mock_user_id", "admin_dummy_123");
-			if (typeof sessionStorage !== "undefined") {
-				sessionStorage.setItem("just_signed_in", "true");
-			}
-			window.location.href = "/";
-		} catch (err) {
-			setError("Failed to sign in with Google.");
+		if (typeof window === "undefined" || !(window as any).google) {
+			setError("Google Auth is not loaded.");
 			setIsLoading(false);
+			return;
 		}
+		const client = (window as any).google.accounts.oauth2.initTokenClient({
+			client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+			scope: "email profile",
+			callback: async (tokenResponse: any) => {
+				if (tokenResponse && tokenResponse.access_token) {
+					try {
+						const res = await fetch("/api/v2/user/google-auth", {
+							method: "POST",
+							headers: { "Content-Type": "application/json" },
+							body: JSON.stringify({ access_token: tokenResponse.access_token })
+						});
+						const data = await res.json();
+						if (data.success) {
+							if (typeof sessionStorage !== "undefined") {
+								sessionStorage.setItem("just_signed_in", "true");
+							}
+							window.location.href = "/";
+						} else {
+							setError(data.error || "Google authentication failed.");
+							setIsLoading(false);
+						}
+					} catch (err) {
+						setError("Error during Google authentication.");
+						setIsLoading(false);
+					}
+				} else {
+					setError("Google authentication was cancelled or failed.");
+					setIsLoading(false);
+				}
+			},
+			error_callback: (err: any) => {
+				setError("Google authentication failed.");
+				setIsLoading(false);
+			}
+		});
+		client.requestAccessToken();
 	};
 
 	const handleContinue = (e: React.FormEvent) => {
@@ -822,14 +895,50 @@ export function useSignIn() {
 		isLoaded: true,
 		signIn: {
 			authenticateWithRedirect: async (params: any) => {
-				console.log("Mock signIn authenticateWithRedirect called:", params);
-				setCookie("mock_signed_in", "true");
-				setCookie("mock_user_email", "admin@gulfshore.com");
-				setCookie("mock_user_id", "admin_dummy_123");
-				if (typeof sessionStorage !== "undefined") {
-					sessionStorage.setItem("just_signed_in", "true");
+				if (params.strategy === "oauth_google") {
+					if (typeof window === "undefined" || !(window as any).google) {
+						console.error("Google Auth is not loaded.");
+						return;
+					}
+					const client = (window as any).google.accounts.oauth2.initTokenClient({
+						client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+						scope: "email profile",
+						callback: async (tokenResponse: any) => {
+							if (tokenResponse && tokenResponse.access_token) {
+								try {
+									const res = await fetch("/api/v2/user/google-auth", {
+										method: "POST",
+										headers: { "Content-Type": "application/json" },
+										body: JSON.stringify({ access_token: tokenResponse.access_token })
+									});
+									const data = await res.json();
+									if (data.success) {
+										if (typeof sessionStorage !== "undefined") {
+											sessionStorage.setItem("just_signed_in", "true");
+										}
+										window.location.href = params.redirectUrlComplete || "/";
+									} else {
+										console.error(data.error || "Google authentication failed.");
+									}
+								} catch (err) {
+									console.error("Error during Google authentication.", err);
+								}
+							} else {
+								console.error("Google authentication was cancelled or failed.");
+							}
+						},
+					});
+					client.requestAccessToken();
+				} else {
+					console.log("Mock signIn authenticateWithRedirect called:", params);
+					setCookie("mock_signed_in", "true");
+					setCookie("mock_user_email", "admin@gulfshore.com");
+					setCookie("mock_user_id", "admin_dummy_123");
+					if (typeof sessionStorage !== "undefined") {
+						sessionStorage.setItem("just_signed_in", "true");
+					}
+					window.location.reload();
 				}
-				window.location.reload();
 			}
 		},
 		setActive: async (params: any) => {
