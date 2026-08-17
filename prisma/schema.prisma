@@ -459,18 +459,19 @@ model City {
 }
 
 model Community {
-  id            Int        @id @default(autoincrement())
-  name          String     @unique
-  slug          String     @unique
-  defaultImage  String?
-  images        Json?
-  description   String?
-  videoUrl      String?
-  propertyCount Int        @default(0)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  cityId        Int
-  city          City       @relation(fields: [cityId], references: [id])
+  id              Int        @id @default(autoincrement())
+  name            String     @unique
+  slug            String     @unique
+  defaultImage    String?
+  images          Json?
+  description     String?
+  videoUrl        String?
+  propertyCount   Int        @default(0)
+  isGolfCommunity Boolean    @default(false)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  cityId          Int
+  city            City       @relation(fields: [cityId], references: [id])
   
   @@index([name])
   @@index([slug])
