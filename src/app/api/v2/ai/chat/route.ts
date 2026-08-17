@@ -206,7 +206,15 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							}
 							// If propertyType is some vague term like "Properties", "Any", "Real Estate", we just ignore it so it doesn't break the search!
 						}
-						if (community) where.Community = { contains: community };
+						if (community) {
+							where.AND = where.AND || [];
+							where.AND.push({
+								OR: [
+									{ Community: { contains: community } },
+									{ Development: { contains: community } }
+								]
+							});
+						}
 						if (subdivision) where.SubdivisionName = { contains: subdivision };
 						if (mlsNumber) where.MLSNumber = mlsNumber;
 						if (zipCode) where.PostalCode = zipCode;
@@ -220,6 +228,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 									{ City: { contains: kw } },
 									{ FullAddress: { contains: kw } },
 									{ Community: { contains: kw } },
+									{ Development: { contains: kw } },
 									{ SubdivisionName: { contains: kw } },
 								]
 							});
