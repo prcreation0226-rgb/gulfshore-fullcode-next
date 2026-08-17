@@ -16,7 +16,11 @@ export default async function BlogSection({
 	const fetchBlogArticles = async () => {
 		try {
 			const whereClause: any = { published: true };
-			if (category) {
+			if (category === "others") {
+				// Show all blogs EXCEPT facebook blogs in the 'others' section
+				whereClause.category = { not: "facebook" };
+			} else if (category) {
+				// Show specific category (like 'facebook')
 				whereClause.category = category;
 			}
 			
