@@ -1,19 +1,32 @@
-import { BookOpen } from "lucide-react";
+import { BookOpen, Facebook } from "lucide-react";
 import BlogArticleCard from "@/components/blogs/blogCard";
 
-export default async function BlogSection() {
+interface BlogSectionProps {
+	category?: string;
+	title?: string;
+	subtitle?: string;
+}
+
+export default async function BlogSection({ 
+	category, 
+	title = "Real Estate Blogs", 
+	subtitle = "Tips, trends, and insights from real estate experts" 
+}: BlogSectionProps = {}) {
 	const fetchBlogArticles = async () => {
 		try {
 			const baseUrl =
 				process.env.NEXT_PUBLIC_SERVER_URL ||
 				process.env.NEXT_PUBLIC_BASE_URL ||
 				"http://localhost:3000";
-			const response = await fetch(
-				`${baseUrl}/api/v2/blogs?published=true&limit=4`,
-				{
-					next: { revalidate: 10 },
-				}
-			);
+				
+			let url = `${baseUrl}/api/v2/blogs?published=true&limit=4`;
+			if (category) {
+				url += `&category=${category}`;
+			}
+			
+			const response = await fetch(url, {
+				next: { revalidate: 10 },
+			});
 			if (!response.ok) return [];
 			const data = await response.json();
 			return Array.isArray(data) ? data : [];
@@ -34,11 +47,11 @@ export default async function BlogSection() {
 			<div className="flex items-center justify-between">
 				<div>
 					<h3 className="text-2xl font-bold text-foreground flex items-center gap-2">
-						<BookOpen className="w-6 h-6 text-primary" />
-						Real Estate Blogs
+						{category === "facebook" ? <Facebook className="w-6 h-6 text-blue-600" /> : <BookOpen className="w-6 h-6 text-primary" />}
+						{title}
 					</h3>
 					<p className="text-muted-foreground mt-1 text-sm">
-						Tips, trends, and insights from real estate experts
+						{subtitle}
 					</p>
 				</div>
 			</div>
