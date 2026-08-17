@@ -52,8 +52,28 @@ Key qualifying questions you should naturally weave into the conversation:
 Always be concise. Do not write long paragraphs. 
 If the user asks for properties matching specific criteria (like address, MLS number, city, beds, baths, price, property type, pool, waterfront, year built), ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
 
-IMPORTANT: When you use the 'searchProperties' tool, the system will AUTOMATICALLY display the exact property cards (with photos, prices, and beds) in the chat window directly from the database. 
-Therefore, you MUST NOT list or type out the properties, prices, or details yourself. Just say something short and polite like "Here are the properties I found for you:" or "I've pulled up some listings that match your criteria below:" and let the system handle the display.
+The property database/tool is the sole source of truth. Never guess or fabricate property information.
+
+For broad property searches:
+- use searchProperties
+- do not manually repeat every property detail
+- allow the UI to render property cards
+
+For questions about a specific property (e.g., HOA fees, pool availability, garage spaces, year built, status):
+- use searchProperties before answering
+- answer only the specific facts requested using the tool data
+- property details returned by the tool may be stated directly in your response text
+- the property card may still be rendered by the UI
+
+If a requested field is null, missing, or unavailable:
+- clearly state that the information is not specified in the database
+- never infer or fabricate it
+
+If multiple properties match a specific address lookup:
+- do not guess or pick the first one
+- state the candidates and request enough identifying information (e.g., Ln, Dr, Ct, or MLS number) to select the correct property
+
+Never rely on prior chat knowledge for property facts when the property database can be queried.
 
 If they provide a specific address (e.g., "5100 Seagrass"), use the address parameter in the tool. ONLY include the street address in the address parameter, DO NOT include city, state, or zip code in the address parameter.
 If the search returns no properties, apologize and say you can set up a custom alert for them.
@@ -100,7 +120,9 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							return [];
 						}
 
-						const where: any = { StandardStatus: "Active" };
+						// For specific property/address/MLS lookups, do not restrict the search to Active listings.
+						const isSpecificLookup = !!(address || mlsNumber);
+						const where: any = isSpecificLookup ? {} : { StandardStatus: "Active" };
 						
 						let finalCity = city;
 						let finalAddress = address;
@@ -126,14 +148,25 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						}
 						
 						if (finalAddress) {
-							const words = finalAddress.replace(/[.,]/g, '').split(' ').filter(Boolean);
-							// To make address matching robust against "Ave" vs "Avenue" or "St", only require the first two words (e.g. '311' and 'Rand')
-							const importantWords = words.slice(0, 2);
-							if (importantWords.length > 0) {
-								where.AND = where.AND || [];
-								importantWords.forEach((w: string) => {
-									where.AND.push({ FullAddress: { contains: w } });
-								});
+							// Exact Match
+							const exactMatchCount = await prisma.property.count({
+								where: {
+									...where,
+									FullAddress: { equals: finalAddress }
+								}
+							});
+							if (exactMatchCount > 0) {
+								where.FullAddress = { equals: finalAddress };
+							} else {
+								const words = finalAddress.replace(/[.,]/g, '').split(' ').filter(Boolean);
+								// House number + Full street (using up to 3 words for fallback matching)
+								const importantWords = words.slice(0, 3);
+								if (importantWords.length > 0) {
+									where.AND = where.AND || [];
+									importantWords.forEach((w: string) => {
+										where.AND.push({ FullAddress: { contains: w } });
+									});
+								}
 							}
 						}
 						if (propertyType) {
@@ -238,10 +271,12 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 								GarageYN: true,
 								LotSizeAcres: true,
 								HOAFee: true,
+								StandardStatus: true,
+								GarageSpaces: true,
 							}
 						});
 
-						return properties.map(p => ({
+						return properties.map((p: any) => ({
 							address: p.FullAddress,
 							price: p.ListPrice ? `$${p.ListPrice.toLocaleString()}` : "Price TBD",
 							beds: p.BedroomsTotal,
@@ -256,7 +291,9 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							garage: p.GarageYN ? "Yes" : "No",
 							lotSizeAcres: p.LotSizeAcres,
 							hoaFee: p.HOAFee,
-							link: UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined)
+							link: UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined),
+							status: p.StandardStatus,
+							garageSpaces: p.GarageSpaces ?? 0,
 						}));
 					},
 				}),
