@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import OpenAI from "openai";
+import { Configuration, OpenAIApi } from "openai";
 
-const openai = new OpenAI({
+const configuration = new Configuration({
 	apiKey: process.env.OPENAI_API_KEY,
 });
+const openai = new OpenAIApi(configuration);
 
 export const maxDuration = 300; // 5 minutes max duration for serverless functions (Vercel)
 
@@ -50,8 +51,8 @@ export async function GET(req: Request) {
 
 			try {
 				// 3. Rewrite using OpenAI
-				const completion = await openai.chat.completions.create({
-					model: "gpt-4o",
+				const completion = await openai.createChatCompletion({
+					model: "gpt-4o-mini", // fallback to gpt-4o-mini to be safer/cheaper
 					messages: [
 						{
 							role: "system",
@@ -65,7 +66,7 @@ export async function GET(req: Request) {
 					temperature: 0.7,
 				});
 
-				const rewrittenContent = completion.choices[0].message.content || "";
+				const rewrittenContent = completion.data.choices?.[0]?.message?.content || "";
 				
 				// Extract H1 title if present
 				let title = "Real Estate Update";
