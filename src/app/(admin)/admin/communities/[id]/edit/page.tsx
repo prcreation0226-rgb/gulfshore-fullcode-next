@@ -24,6 +24,7 @@ export default function EditCommunityPage() {
 	const [formData, setFormData] = useState<any>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [generatingAi, setGeneratingAi] = useState(false);
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -63,6 +64,29 @@ export default function EditCommunityPage() {
 		}
 		
 		return url;
+	};
+
+	const handleGenerateAi = async () => {
+		try {
+			setGeneratingAi(true);
+			const res = await axios.post(`/api/admin/generate-community-ai`, {
+				communityId: formData.id,
+				isGolfCommunity: formData.isGolfCommunity || false
+			});
+			if (res.data.success) {
+				setFormData({
+					...formData,
+					infoText: res.data.community.description,
+					description: res.data.community.description
+				});
+				toast.success("AI Description generated successfully!");
+			}
+		} catch (err) {
+			console.error(err);
+			toast.error("Failed to generate AI description.");
+		} finally {
+			setGeneratingAi(false);
+		}
 	};
 
 	const handleSave = async () => {
@@ -221,25 +245,47 @@ export default function EditCommunityPage() {
 
 					{/* Description */}
 					<Card>
-						<CardHeader>
-							<CardTitle>Content & Description</CardTitle>
-							<CardDescription>
-								Marketing content and community description
-							</CardDescription>
+						<CardHeader className="flex flex-row items-center justify-between">
+							<div>
+								<CardTitle>Content & Description</CardTitle>
+								<CardDescription>
+									Marketing content and community description
+								</CardDescription>
+							</div>
+							<div className="flex items-center gap-4">
+								<div className="flex items-center space-x-2">
+									<input 
+										type="checkbox" 
+										id="isGolfCommunity" 
+										checked={formData.isGolfCommunity || false}
+										onChange={(e) => setFormData({ ...formData, isGolfCommunity: e.target.checked })}
+										className="w-4 h-4"
+									/>
+									<Label htmlFor="isGolfCommunity" className="text-sm">Is Golf Community?</Label>
+								</div>
+								<Button 
+									variant="secondary" 
+									onClick={handleGenerateAi} 
+									disabled={generatingAi}
+								>
+									{generatingAi ? "Generating..." : "Generate AI Description"}
+								</Button>
+							</div>
 						</CardHeader>
 						<CardContent>
-							<Label htmlFor="infoText">Community Description</Label>
+							<Label htmlFor="infoText">Community Description (HTML)</Label>
 							<Textarea
 								id="infoText"
-								rows={4}
-								value={formData.infoText || ""}
+								rows={12}
+								value={formData.infoText || formData.description || ""}
 								onChange={(e) =>
 									setFormData({
 										...formData,
 										infoText: e.target.value,
+										description: e.target.value
 									})
 								}
-								placeholder="Describe the community's key features, attractions, and lifestyle..."
+								placeholder="Describe the community's key features, attractions, and lifestyle... Use HTML tags."
 							/>
 						</CardContent>
 					</Card>

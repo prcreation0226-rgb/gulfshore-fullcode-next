@@ -1,5 +1,6 @@
 import { BookOpen, Facebook } from "lucide-react";
 import BlogArticleCard from "@/components/blogs/blogCard";
+import prisma from "@/lib/prisma";
 
 interface BlogSectionProps {
 	category?: string;
@@ -14,24 +15,23 @@ export default async function BlogSection({
 }: BlogSectionProps = {}) {
 	const fetchBlogArticles = async () => {
 		try {
-			const baseUrl =
-				process.env.NEXT_PUBLIC_SERVER_URL ||
-				process.env.NEXT_PUBLIC_BASE_URL ||
-				"http://localhost:3000";
-				
-			let url = `${baseUrl}/api/v2/blogs?published=true&limit=4`;
-			if (category) {
-				url += `&category=${category}`;
+			const whereClause: any = { published: true };
+			if (category === "others") {
+				// Show all blogs EXCEPT facebook blogs in the 'others' section
+				whereClause.category = { not: "facebook" };
+			} else if (category) {
+				// Show specific category (like 'facebook')
+				whereClause.category = category;
 			}
 			
-			const response = await fetch(url, {
-				next: { revalidate: 10 },
+			const articles = await prisma.blog.findMany({
+				where: whereClause,
+				orderBy: { createdAt: "desc" },
+				take: 4,
 			});
-			if (!response.ok) return [];
-			const data = await response.json();
-			return Array.isArray(data) ? data : [];
+			return articles || [];
 		} catch (error) {
-			console.error("Error fetching blog articles:", error);
+			console.error("Error fetching blog articles from DB:", error);
 			return [];
 		}
 	};
