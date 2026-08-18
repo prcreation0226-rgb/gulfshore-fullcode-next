@@ -24,6 +24,7 @@ export default async function GetSeoData({
 		infoText: "",
 		defaultImage: "",
 	};
+	let dbSeo = { title: "", metaDescription: "", keywords: "" };
 
 	// --- City info ---
 	if (params.city) {
@@ -42,9 +43,20 @@ export default async function GetSeoData({
 		});
 
 		if (cityRecord) {
+			let infoText = cityRecord.description || "";
+			try {
+				if (infoText.startsWith("{")) {
+					const parsed = JSON.parse(infoText);
+					infoText = parsed.infoText || "";
+					dbSeo.title = parsed.title || "";
+					dbSeo.metaDescription = parsed.metaDescription || "";
+					dbSeo.keywords = parsed.keywords || "";
+				}
+			} catch (e) {}
+
 			content = {
 				Images: (cityRecord.images as any) || [],
-				infoText: cityRecord.description || "",
+				infoText: infoText,
 				defaultImage: cityRecord.defaultImage || "",
 			};
 		}
@@ -67,9 +79,20 @@ export default async function GetSeoData({
 		});
 
 		if (communityRecord && communityRecord.description) {
+			let infoText = communityRecord.description;
+			try {
+				if (infoText.startsWith("{")) {
+					const parsed = JSON.parse(infoText);
+					infoText = parsed.infoText || "";
+					dbSeo.title = parsed.title || dbSeo.title;
+					dbSeo.metaDescription = parsed.metaDescription || dbSeo.metaDescription;
+					dbSeo.keywords = parsed.keywords || dbSeo.keywords;
+				}
+			} catch (e) {}
+
 			content = {
 				Images: (communityRecord.images as any) || [],
-				infoText: communityRecord.description || "",
+				infoText: infoText,
 				defaultImage: communityRecord.defaultImage || "",
 			};
 		}
@@ -259,10 +282,10 @@ export default async function GetSeoData({
 	if (params.developmentName) canonicalUrl += `/${params.developmentName}`;
 
 	return {
-		title,
-		description,
+		title: dbSeo.title || title,
+		description: dbSeo.metaDescription || description,
 		heading,
-		keywords,
+		keywords: dbSeo.keywords || keywords,
 		jsonld,
 		total,
 		content: {

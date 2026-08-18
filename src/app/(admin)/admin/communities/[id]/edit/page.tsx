@@ -32,7 +32,24 @@ export default function EditCommunityPage() {
 				const id = params.id;
 				const cname = decodeURIComponent(id).replaceAll(/-/g, " ");
 				const res = await axios.get(`/api/community/${cname}`);
-				setFormData(res.data.data);
+				let loadedData = res.data.data;
+				
+				if (loadedData && loadedData.description) {
+					try {
+						if (loadedData.description.startsWith("{")) {
+							const parsed = JSON.parse(loadedData.description);
+							loadedData = {
+								...loadedData,
+								infoText: parsed.infoText || "",
+								title: parsed.title || "",
+								metaDescription: parsed.metaDescription || "",
+								keywords: parsed.keywords || "",
+							};
+						}
+					} catch (e) {}
+				}
+				
+				setFormData(loadedData);
 			} catch (err) {
 				console.error(err);
 				setError("Failed to load community data.");
@@ -95,8 +112,33 @@ export default function EditCommunityPage() {
 	const handleSave = async () => {
 		try {
 			const id = params.id;
-			const res = await axios.put(`/api/community/${id}`, formData);
-			setFormData(res.data.data);
+			const dataToSave = { ...formData };
+			if (dataToSave.title || dataToSave.metaDescription || dataToSave.keywords || dataToSave.infoText) {
+				dataToSave.description = JSON.stringify({
+					infoText: dataToSave.infoText || "",
+					title: dataToSave.title || "",
+					metaDescription: dataToSave.metaDescription || "",
+					keywords: dataToSave.keywords || ""
+				});
+			}
+			const res = await axios.put(`/api/community/${id}`, dataToSave);
+			
+			let loadedData = res.data.data;
+			if (loadedData && loadedData.description) {
+				try {
+					if (loadedData.description.startsWith("{")) {
+						const parsed = JSON.parse(loadedData.description);
+						loadedData = {
+							...loadedData,
+							infoText: parsed.infoText || "",
+							title: parsed.title || "",
+							metaDescription: parsed.metaDescription || "",
+							keywords: parsed.keywords || "",
+						};
+					}
+				} catch (e) {}
+			}
+			setFormData(loadedData);
 			toast.success("Community updated successfully!");
 		} catch (err) {
 			console.error(err);
@@ -296,8 +338,7 @@ export default function EditCommunityPage() {
 								onChange={(e) =>
 									setFormData({
 										...formData,
-										infoText: e.target.value,
-										description: e.target.value
+										infoText: e.target.value
 									})
 								}
 								placeholder="Describe the community's key features, attractions, and lifestyle... Use HTML tags."
