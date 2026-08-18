@@ -94,7 +94,7 @@ export async function POST(req: Request) {
 					firstName,
 					lastName,
 					email: normalizedEmail,
-					source: "Google_SignIn",
+					source: "Signup",
 					status: "New",
 					lastContactedAt: new Date(),
 				},
