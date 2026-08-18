@@ -146,7 +146,15 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							// If it's a known city OR it has no numbers (people rarely search addresses without house numbers)
 							// we move it to 'keyword' so it searches City, Community, and Address broadly!
 							const knownCities = ["naples", "bonita", "cape coral", "lehigh", "fort myers", "miami", "marco island", "estero", "sanibel", "punta gorda", "labelle", "babcock", "ave maria"];
-							if (!hasNumbers || (knownCities.some(c => addrLower.includes(c)) && addrLower.split(" ").length <= 3)) {
+							
+							// Check if the address contains any of the known cities as whole words or exact terms
+							const matchesKnownCity = knownCities.some(c => {
+								const escaped = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+								const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+								return regex.test(addrLower);
+							});
+
+							if (!hasNumbers || (matchesKnownCity && addrLower.split(" ").length <= 3)) {
 								keyword = keyword ? `${keyword} ${finalAddress}` : finalAddress;
 								finalAddress = undefined;
 							}
