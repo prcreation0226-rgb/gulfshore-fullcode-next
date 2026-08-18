@@ -212,7 +212,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							const pt = propertyType.toLowerCase();
 							
 							// If AI sends generic transaction terms as property type, handle them intelligently
-							const genericTerms = ["buy", "purchase", "sale", "rent", "lease", "any", "properties", "real estate", "listing", "listings"];
+							const genericTerms = ["buy", "purchase", "sale", "rent", "lease", "any", "properties", "real estate", "listing", "listings", "both", "either"];
 							const isGeneric = genericTerms.some(term => pt === term || pt.includes(term));
 							
 							if (isGeneric) {
