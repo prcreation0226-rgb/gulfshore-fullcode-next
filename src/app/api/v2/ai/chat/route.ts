@@ -6,6 +6,7 @@ import UrlMaker from "@/hooks/url-maker";
 import { sendAdminLeadAlertEmail } from "@/lib/email/admin-lead-alert";
 import { requireLead } from "@/lib/api/auth";
 
+
 export const maxDuration = 60; // Allow up to 60 seconds
 
 export async function POST(req: Request) {
