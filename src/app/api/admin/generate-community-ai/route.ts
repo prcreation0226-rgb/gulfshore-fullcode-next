@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 		let systemPrompt = `You are an expert luxury real estate content writer for Gulfshore Group in Southwest Florida.
 Your task is to write highly engaging, SEO-friendly content for ${community.name} located in ${community.city.name}, Florida.
 Output your response as a valid JSON object with the following keys:
-- "infoText": A comprehensive, beautiful HTML description of the community. Use <h2>, <h3>, <p>, <ul>, and <li> tags. Include details about lifestyle, location, and amenities. Do not wrap in markdown code blocks.
+- "infoText": A concise, beautifully formatted HTML description of the community (approx 150-200 words maximum, do not make it too long). Use <h2>, <h3>, <p>, <ul>, and <li> tags. Make sure headings and important features are bolded and properly formatted. Include details about lifestyle, location, and amenities. Do not wrap in markdown code blocks.
 - "title": An SEO-optimized meta title (max 60 characters).
 - "metaDescription": An SEO-optimized meta description (max 160 characters).
 - "keywords": A comma-separated list of highly relevant SEO keywords.`;
