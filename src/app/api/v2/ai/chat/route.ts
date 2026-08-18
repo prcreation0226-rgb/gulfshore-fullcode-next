@@ -40,6 +40,14 @@ export async function POST(req: Request) {
 			});
 		}
 
+		// If guest user, bypass history memory to avoid context/Naples pollution from other guest users
+		let activeMessages = messages;
+		if (lead.email === "guest@gulfshoregroup.com") {
+			// Find the last few user messages to preserve the immediate context of the current search
+			// We take the last 4 messages which is enough for the immediate "Hello -> Buy -> Budget -> Address" flow 
+			activeMessages = messages.slice(-4);
+		}
+
 		// @ts-ignore
 		const result = streamText({
 			model: openai("gpt-4o-mini"),
@@ -82,7 +90,7 @@ If they provide a specific address (e.g., "5100 Seagrass"), use the address para
 If the search returns no properties, apologize and say you can set up a custom alert for them.
 
 If the user wants to schedule a property tour, viewing, or appointment, use the 'scheduleTour' tool. Ask for their name, phone or email, and preferred date before calling the tool. After booking, confirm the appointment and tell them Dimitri will reach out to confirm.`,
-			messages: await convertToModelMessages(messages),
+			messages: await convertToModelMessages(activeMessages),
 			tools: {
 				// @ts-ignore
 				searchProperties: tool({
