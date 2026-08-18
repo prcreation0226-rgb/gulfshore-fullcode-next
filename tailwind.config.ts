@@ -16,6 +16,7 @@ const config: Config = {
   },
   plugins: [
     require("tailwindcss-animate"),
+    require("@tailwindcss/typography"),
     // other plugins
   ],
 };
