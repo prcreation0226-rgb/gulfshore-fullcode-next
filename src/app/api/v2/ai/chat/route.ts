@@ -305,6 +305,8 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						if (garage !== undefined) where.GarageYN = garage;
 						if (spa !== undefined) where.SpaYN = spa;
 
+						console.log("AI searchProperties Final prisma where clause filters:", JSON.stringify(where, null, 2));
+
 						const properties = await prisma.property.findMany({
 							where,
 							take: 10, // limit to 10 so we don't overwhelm the chat but still give good options
