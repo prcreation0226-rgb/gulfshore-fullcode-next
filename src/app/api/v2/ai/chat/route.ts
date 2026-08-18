@@ -44,8 +44,8 @@ export async function POST(req: Request) {
 		let activeMessages = messages;
 		if (lead.email === "guest@gulfshoregroup.com") {
 			// Find the last few user messages to preserve the immediate context of the current search
-			// We take the last 4 messages which is enough for the immediate "Hello -> Buy -> Budget -> Address" flow 
-			activeMessages = messages.slice(-4);
+			// We take the last 10 messages to keep the user's choices (intent, beds, city, budget) active
+			activeMessages = messages.slice(-10);
 		}
 
 		// @ts-ignore
@@ -125,8 +125,26 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 					execute: async (args: any) => {
 						let { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa, minAcres, maxAcres, minYearBuilt, maxYearBuilt, yearBuilt, maxHoaFee, keyword } = args;
 						
+						// Ensure numbers are properly parsed in case the LLM passes them as strings/text (e.g. "2 beds" -> 2)
+						const parseNumeric = (val: any) => {
+							if (val === undefined || val === null) return undefined;
+							const parsed = parseInt(String(val).replace(/[^\d.]/g, ""), 10);
+							return isNaN(parsed) ? undefined : parsed;
+						};
+
+						const parsedBeds = parseNumeric(beds);
+						const parsedBaths = parseNumeric(baths);
+						const parsedMinPrice = parseNumeric(minPrice);
+						const parsedMaxPrice = parseNumeric(maxPrice);
+						const parsedMinAcres = parseNumeric(minAcres);
+						const parsedMaxAcres = parseNumeric(maxAcres);
+						const parsedMinYear = parseNumeric(minYearBuilt);
+						const parsedMaxYear = parseNumeric(maxYearBuilt);
+						const parsedYear = parseNumeric(yearBuilt);
+						const parsedMaxHoa = parseNumeric(maxHoaFee);
+
 						// Prevent returning top 10 most expensive properties by default if no filters are provided
-						const hasFilters = city || address || propertyType || community || subdivision || mlsNumber || zipCode || beds || baths || minPrice || maxPrice || keyword;
+						const hasFilters = city || address || propertyType || community || subdivision || mlsNumber || zipCode || parsedBeds || parsedBaths || parsedMinPrice || parsedMaxPrice || keyword;
 						if (!hasFilters && !hasPool && !waterfront && !gulfAccess && !newConstruction && !garage && !spa) {
 							return [];
 						}
@@ -192,7 +210,17 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						if (propertyType) {
 							const pt = propertyType.toLowerCase();
 							
-							if (pt.includes('condo') || pt.includes('apartment')) {
+							// If AI sends generic transaction terms as property type, handle them intelligently
+							const genericTerms = ["buy", "purchase", "sale", "rent", "lease", "any", "properties", "real estate", "listing", "listings"];
+							const isGeneric = genericTerms.some(term => pt === term || pt.includes(term));
+							
+							if (isGeneric) {
+								if (pt.includes("rent") || pt.includes("lease")) {
+									where.PropertyType = { contains: "Lease" };
+								} else {
+									where.PropertyType = { not: "Residential Lease" };
+								}
+							} else if (pt.includes('condo') || pt.includes('apartment')) {
 								where.AND = where.AND || [];
 								where.AND.push({
 									OR: [
@@ -222,7 +250,6 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 									]
 								});
 							}
-							// If propertyType is some vague term like "Properties", "Any", "Real Estate", we just ignore it so it doesn't break the search!
 						}
 						if (community) {
 							where.AND = where.AND || [];
@@ -251,25 +278,25 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 								]
 							});
 						}
-						if (minPrice || maxPrice) {
+						if (parsedMinPrice || parsedMaxPrice) {
 							where.ListPrice = {};
-							if (minPrice) where.ListPrice.gte = minPrice;
-							if (maxPrice) where.ListPrice.lte = maxPrice;
+							if (parsedMinPrice) where.ListPrice.gte = parsedMinPrice;
+							if (parsedMaxPrice) where.ListPrice.lte = parsedMaxPrice;
 						}
-						if (beds) where.BedroomsTotal = { gte: beds };
-						if (baths) where.BathroomsTotalInteger = { gte: baths };
-						if (minAcres || maxAcres) {
+						if (parsedBeds) where.BedroomsTotal = { gte: parsedBeds };
+						if (parsedBaths) where.BathroomsTotalInteger = { gte: parsedBaths };
+						if (parsedMinAcres || parsedMaxAcres) {
 							where.LotSizeAcres = {};
-							if (minAcres) where.LotSizeAcres.gte = minAcres;
-							if (maxAcres) where.LotSizeAcres.lte = maxAcres;
+							if (parsedMinAcres) where.LotSizeAcres.gte = parsedMinAcres;
+							if (parsedMaxAcres) where.LotSizeAcres.lte = parsedMaxAcres;
 						}
-						if (minYearBuilt || maxYearBuilt || yearBuilt) {
+						if (parsedMinYear || parsedMaxYear || parsedYear) {
 							where.YearBuilt = {};
-							if (minYearBuilt) where.YearBuilt.gte = minYearBuilt;
-							if (maxYearBuilt) where.YearBuilt.lte = maxYearBuilt;
-							if (yearBuilt) where.YearBuilt.equals = yearBuilt;
+							if (parsedMinYear) where.YearBuilt.gte = parsedMinYear;
+							if (parsedMaxYear) where.YearBuilt.lte = parsedMaxYear;
+							if (parsedYear) where.YearBuilt.equals = parsedYear;
 						}
-						if (maxHoaFee) where.HOAFee = { lte: maxHoaFee };
+						if (parsedMaxHoa) where.HOAFee = { lte: parsedMaxHoa };
 						if (hasPool !== undefined) where.PoolPrivateYN = hasPool;
 						if (waterfront !== undefined) where.WaterfrontYN = waterfront;
 						if (gulfAccess !== undefined) where.GulfAccessYN = gulfAccess;
