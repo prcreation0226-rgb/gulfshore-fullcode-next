@@ -194,7 +194,14 @@ const getCookie = (name: string) => {
 	if (typeof document === "undefined") return "false";
 	const value = `; ${document.cookie}`;
 	const parts = value.split(`; ${name}=`);
-	if (parts.length === 2) return parts.pop()?.split(';').shift() || "false";
+	if (parts.length === 2) {
+		const cookieVal = parts.pop()?.split(';').shift() || "false";
+		try {
+			return decodeURIComponent(cookieVal);
+		} catch {
+			return cookieVal;
+		}
+	}
 	return "false";
 };
 
