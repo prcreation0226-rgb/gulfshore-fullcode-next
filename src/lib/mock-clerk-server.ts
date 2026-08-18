@@ -16,7 +16,7 @@ async function getMockEmailServer() {
 	try {
 		const cookieStore = await cookies();
 		const mockEmail = cookieStore.get("mock_user_email");
-		return mockEmail && mockEmail.value !== "false" ? mockEmail.value : "";
+		return mockEmail && mockEmail.value !== "false" ? decodeURIComponent(mockEmail.value) : "";
 	} catch (e) {
 		return "";
 	}
