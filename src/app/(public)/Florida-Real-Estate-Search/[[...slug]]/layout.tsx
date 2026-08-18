@@ -179,7 +179,7 @@ export default async function RootLayout({
 																</h2>
 															</div>
 
-															<div className="prose prose-gray max-w-none prose-p:text-gray-500 prose-headings:text-primary">
+															<div className="prose prose-gray max-w-none lg:max-h-[500px] overflow-y-auto pr-2 prose-p:text-gray-500 prose-headings:text-primary custom-scrollbar">
 																{seoData?.content?.infoText && seoData.content.infoText.trim().length > 0 ? (
 																	<div 
 																		className="text-gray-500 leading-relaxed space-y-4"
