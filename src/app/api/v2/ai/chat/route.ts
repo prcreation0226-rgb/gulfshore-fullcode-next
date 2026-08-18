@@ -158,11 +158,11 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							const exactMatchCount = await prisma.property.count({
 								where: {
 									...where,
-									FullAddress: { equals: finalAddress }
+									FullAddress: { equals: finalAddress, mode: "insensitive" }
 								}
 							});
 							if (exactMatchCount > 0) {
-								where.FullAddress = { equals: finalAddress };
+								where.FullAddress = { equals: finalAddress, mode: "insensitive" };
 							} else {
 								const words = finalAddress.replace(/[.,]/g, '').split(' ').filter(Boolean);
 								// House number + Full street (using up to 3 words for fallback matching)
