@@ -67,16 +67,17 @@ export default async function AreaInfoComponent({
 											</h2>
 										</div>
 
-										<div className="prose prose-gray max-w-none lg:max-h-[480px] overflow-y-auto">
-											<ReadMore className="text-gray-500 leading-relaxed">
-												{seoData?.content?.infoText && seoData.content.infoText.trim().length > 0
-													? seoData.content.infoText
-															.replaceAll("*", "")
-															.replaceAll("###", "•")
-															.replaceAll("##", "•")
-															.replaceAll("#", "")
-													: `${city}, Florida: Your Gateway to Paradise Living\n\nNestled along Florida's pristine Gulf Coast, ${city} represents the epitome of luxury living, combining world-class amenities with natural beauty that captivates residents and visitors alike. This enchanting city has evolved from a small fishing village into one of America's most desirable destinations for those seeking an exceptional quality of life.`}
-											</ReadMore>
+										<div className="prose prose-gray max-w-none lg:max-h-[480px] overflow-y-auto prose-p:text-gray-500 prose-headings:text-primary">
+											{seoData?.content?.infoText && seoData.content.infoText.trim().length > 0 ? (
+												<div 
+													className="text-gray-500 leading-relaxed space-y-4"
+													dangerouslySetInnerHTML={{ __html: seoData.content.infoText }} 
+												/>
+											) : (
+												<ReadMore className="text-gray-500 leading-relaxed">
+													{`${city}, Florida: Your Gateway to Paradise Living\n\nNestled along Florida's pristine Gulf Coast, ${city} represents the epitome of luxury living, combining world-class amenities with natural beauty that captivates residents and visitors alike. This enchanting city has evolved from a small fishing village into one of America's most desirable destinations for those seeking an exceptional quality of life.`}
+												</ReadMore>
+											)}
 										</div>
 									</div>
 								</div>
