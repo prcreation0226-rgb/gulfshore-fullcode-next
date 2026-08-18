@@ -145,12 +145,15 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 
 						// Handle potential typos in city like "Cape Cora"
 						if (finalCity) {
-							if (finalCity.toLowerCase().includes("cape cora")) where.City = { contains: "Cape Coral" };
-							else where.City = { contains: finalCity };
+							if (finalCity.toLowerCase().includes("cape cora")) {
+								where.City = { contains: "Cape Coral", mode: "insensitive" };
+							} else {
+								where.City = { contains: finalCity, mode: "insensitive" };
+							}
 						}
 						
 						if (finalAddress) {
-							// Exact Match
+							// Exact Match (Case-Insensitive)
 							const exactMatchCount = await prisma.property.count({
 								where: {
 									...where,
@@ -166,7 +169,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 								if (importantWords.length > 0) {
 									where.AND = where.AND || [];
 									importantWords.forEach((w: string) => {
-										where.AND.push({ FullAddress: { contains: w } });
+										where.AND.push({ FullAddress: { contains: w, mode: "insensitive" } });
 									});
 								}
 							}
@@ -178,17 +181,17 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 								where.AND = where.AND || [];
 								where.AND.push({
 									OR: [
-										{ PropertySubType: { contains: 'Rise' } },
-										{ PropertySubType: { contains: 'Condo' } },
-										{ PropertyType: { contains: 'Condo' } }
+										{ PropertySubType: { contains: 'Rise', mode: 'insensitive' } },
+										{ PropertySubType: { contains: 'Condo', mode: 'insensitive' } },
+										{ PropertyType: { contains: 'Condo', mode: 'insensitive' } }
 									]
 								});
 							} else if (pt.includes('single family') || pt.includes('home') || pt.includes('house')) {
 								where.AND = where.AND || [];
 								where.AND.push({
 									OR: [
-										{ PropertyType: { contains: 'Single Family' } },
-										{ PropertySubType: { contains: 'Single Family' } }
+										{ PropertyType: { contains: 'Single Family', mode: 'insensitive' } },
+										{ PropertySubType: { contains: 'Single Family', mode: 'insensitive' } }
 									]
 								});
 							} else if (pt.includes('townhouse') || pt.includes('villa') || pt.includes('land') || pt.includes('commercial')) {
@@ -199,8 +202,8 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 											   pt.includes('land') || pt.includes('lot') ? 'Land' : 'Commercial';
 								where.AND.push({
 									OR: [
-										{ PropertyType: { contains: dbType } },
-										{ PropertySubType: { contains: dbType } }
+										{ PropertyType: { contains: dbType, mode: 'insensitive' } },
+										{ PropertySubType: { contains: dbType, mode: 'insensitive' } }
 									]
 								});
 							}
@@ -210,13 +213,13 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							where.AND = where.AND || [];
 							where.AND.push({
 								OR: [
-									{ Community: { contains: community } },
-									{ Development: { contains: community } }
+									{ Community: { contains: community, mode: 'insensitive' } },
+									{ Development: { contains: community, mode: 'insensitive' } }
 								]
 							});
 						}
-						if (subdivision) where.SubdivisionName = { contains: subdivision };
-						if (mlsNumber) where.MLSNumber = mlsNumber;
+						if (subdivision) where.SubdivisionName = { contains: subdivision, mode: 'insensitive' };
+						if (mlsNumber) where.MLSNumber = { contains: mlsNumber.trim(), mode: 'insensitive' };
 						if (zipCode) where.PostalCode = zipCode;
 						
 						// Implement broad keyword search for misspelled or partial words (e.g. 'nap')
@@ -225,11 +228,11 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							where.AND = where.AND || [];
 							where.AND.push({
 								OR: [
-									{ City: { contains: kw } },
-									{ FullAddress: { contains: kw } },
-									{ Community: { contains: kw } },
-									{ Development: { contains: kw } },
-									{ SubdivisionName: { contains: kw } },
+									{ City: { contains: kw, mode: 'insensitive' } },
+									{ FullAddress: { contains: kw, mode: 'insensitive' } },
+									{ Community: { contains: kw, mode: 'insensitive' } },
+									{ Development: { contains: kw, mode: 'insensitive' } },
+									{ SubdivisionName: { contains: kw, mode: 'insensitive' } },
 								]
 							});
 						}
