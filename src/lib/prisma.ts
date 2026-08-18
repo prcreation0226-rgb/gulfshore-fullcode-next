@@ -39,10 +39,10 @@ function createPrismaClient() {
 		user: url.username,
 		password: url.password,
 		database: url.pathname ? url.pathname.slice(1) : "railway",
-		connectTimeout: 30000,
-		connectionLimit: 20,
-		acquireTimeout: 30000,
-		socketTimeout: 60000,
+		connectTimeout: 90000,
+		connectionLimit: 40,
+		acquireTimeout: 90000,
+		socketTimeout: 120000,
 	} as any);
 	return new PrismaClient({ adapter });
 }
