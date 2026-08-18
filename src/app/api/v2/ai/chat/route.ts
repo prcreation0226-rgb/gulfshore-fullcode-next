@@ -192,7 +192,17 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						if (propertyType) {
 							const pt = propertyType.toLowerCase();
 							
-							if (pt.includes('condo') || pt.includes('apartment')) {
+							// If AI sends generic transaction terms as property type, handle them intelligently
+							const genericTerms = ["buy", "purchase", "sale", "rent", "lease", "any", "properties", "real estate", "listing", "listings"];
+							const isGeneric = genericTerms.some(term => pt === term || pt.includes(term));
+							
+							if (isGeneric) {
+								if (pt.includes("rent") || pt.includes("lease")) {
+									where.PropertyType = { contains: "Lease" };
+								} else {
+									where.PropertyType = { not: { contains: "Lease" } };
+								}
+							} else if (pt.includes('condo') || pt.includes('apartment')) {
 								where.AND = where.AND || [];
 								where.AND.push({
 									OR: [
@@ -222,7 +232,6 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 									]
 								});
 							}
-							// If propertyType is some vague term like "Properties", "Any", "Real Estate", we just ignore it so it doesn't break the search!
 						}
 						if (community) {
 							where.AND = where.AND || [];
