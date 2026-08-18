@@ -44,8 +44,8 @@ export async function POST(req: Request) {
 		let activeMessages = messages;
 		if (lead.email === "guest@gulfshoregroup.com") {
 			// Find the last few user messages to preserve the immediate context of the current search
-			// We take the last 4 messages which is enough for the immediate "Hello -> Buy -> Budget -> Address" flow 
-			activeMessages = messages.slice(-4);
+			// We take the last 10 messages to keep the user's choices (intent, beds, city, budget) active
+			activeMessages = messages.slice(-10);
 		}
 
 		// @ts-ignore
