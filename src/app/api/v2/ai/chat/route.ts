@@ -5,6 +5,8 @@ import prisma from "@/lib/prisma";
 import UrlMaker from "@/hooks/url-maker";
 import { sendAdminLeadAlertEmail } from "@/lib/email/admin-lead-alert";
 import { requireLead } from "@/lib/api/auth";
+import { recalculateLeadScore } from "@/lib/leads/services/scoring.service";
+
 
 
 export const maxDuration = 60; // Allow up to 60 seconds
@@ -473,10 +475,12 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 					});
 				}
 
-				// Recalculate score asynchronously after the chat interaction
-				import("@/lib/leads/services/scoring.service").then(({ recalculateLeadScore }) => {
+				// Recalculate score after the chat interaction
+				try {
 					recalculateLeadScore(lead.id);
-				});
+				} catch (err) {
+					console.error("Scoring recalculation error:", err);
+				}
 			},
 		});
 
