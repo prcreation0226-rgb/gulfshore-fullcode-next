@@ -178,12 +178,13 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							}
 						}
 
-						// Handle potential typos in city like "Cape Cora"
+						// Handle potential typos in city like "Cape Cora" and convert to uppercase for database match reliability
 						if (finalCity) {
-							if (finalCity.toLowerCase().includes("cape cora")) {
-								where.City = { contains: "Cape Coral" };
+							const cityUpper = finalCity.toUpperCase();
+							if (cityUpper.includes("CAPE CORA")) {
+								where.City = { contains: "CAPE CORAL" };
 							} else {
-								where.City = { contains: finalCity };
+								where.City = { contains: cityUpper };
 							}
 						}
 						
