@@ -76,10 +76,13 @@ export default function EditCommunityPage() {
 			if (res.data.success) {
 				setFormData({
 					...formData,
-					infoText: res.data.community.description,
-					description: res.data.community.description
+					infoText: res.data.parsedData.infoText,
+					description: res.data.community.description,
+					title: res.data.parsedData.title,
+					metaDescription: res.data.parsedData.metaDescription,
+					keywords: res.data.parsedData.keywords
 				});
-				toast.success("AI Description generated successfully!");
+				toast.success("AI Content generated successfully!");
 			}
 		} catch (err) {
 			console.error(err);
@@ -151,6 +154,39 @@ export default function EditCommunityPage() {
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* LEFT SIDE */}
 				<div className="lg:col-span-2 space-y-6">
+					{/* AI Content Generator */}
+					<Card className="border-primary/50 shadow-sm bg-primary/5">
+						<CardHeader className="flex flex-row items-center justify-between pb-4">
+							<div>
+								<CardTitle className="text-primary flex items-center gap-2">
+									✨ AI Content Generator
+								</CardTitle>
+								<CardDescription>
+									Automatically generate SEO fields and HTML description for this community
+								</CardDescription>
+							</div>
+							<div className="flex items-center gap-4">
+								<div className="flex items-center space-x-2">
+									<input 
+										type="checkbox" 
+										id="isGolfCommunity" 
+										checked={formData.isGolfCommunity || false}
+										onChange={(e) => setFormData({ ...formData, isGolfCommunity: e.target.checked })}
+										className="w-4 h-4 accent-primary"
+									/>
+									<Label htmlFor="isGolfCommunity" className="text-sm font-medium">Is Golf Community?</Label>
+								</div>
+								<Button 
+									onClick={handleGenerateAi} 
+									disabled={generatingAi}
+									className="bg-primary hover:bg-primary/90 text-primary-foreground"
+								>
+									{generatingAi ? "Generating..." : "Generate AI Content"}
+								</Button>
+							</div>
+						</CardHeader>
+					</Card>
+
 					{/* Basic Info */}
 					<Card>
 						<CardHeader>
@@ -245,32 +281,11 @@ export default function EditCommunityPage() {
 
 					{/* Description */}
 					<Card>
-						<CardHeader className="flex flex-row items-center justify-between">
-							<div>
-								<CardTitle>Content & Description</CardTitle>
-								<CardDescription>
-									Marketing content and community description
-								</CardDescription>
-							</div>
-							<div className="flex items-center gap-4">
-								<div className="flex items-center space-x-2">
-									<input 
-										type="checkbox" 
-										id="isGolfCommunity" 
-										checked={formData.isGolfCommunity || false}
-										onChange={(e) => setFormData({ ...formData, isGolfCommunity: e.target.checked })}
-										className="w-4 h-4"
-									/>
-									<Label htmlFor="isGolfCommunity" className="text-sm">Is Golf Community?</Label>
-								</div>
-								<Button 
-									variant="secondary" 
-									onClick={handleGenerateAi} 
-									disabled={generatingAi}
-								>
-									{generatingAi ? "Generating..." : "Generate AI Description"}
-								</Button>
-							</div>
+						<CardHeader>
+							<CardTitle>Content & Description</CardTitle>
+							<CardDescription>
+								Marketing content and community description
+							</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<Label htmlFor="infoText">Community Description (HTML)</Label>

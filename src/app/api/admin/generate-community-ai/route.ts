@@ -30,14 +30,17 @@ export async function POST(req: Request) {
 
 		// Prompt construction
 		let systemPrompt = `You are an expert luxury real estate content writer for Gulfshore Group in Southwest Florida.
-Your task is to write a highly engaging, SEO-friendly, and professional community description for ${community.name} located in ${community.city.name}, Florida.
-Write it in HTML format. Use <h2>, <h3>, <p>, <ul>, and <li> tags. Do NOT wrap it in markdown code blocks.
-Include details about the lifestyle, location benefits, nearby attractions, and why someone would want to live there.`;
+Your task is to write highly engaging, SEO-friendly content for ${community.name} located in ${community.city.name}, Florida.
+Output your response as a valid JSON object with the following keys:
+- "infoText": A comprehensive, beautiful HTML description of the community. Use <h2>, <h3>, <p>, <ul>, and <li> tags. Include details about lifestyle, location, and amenities. Do not wrap in markdown code blocks.
+- "title": An SEO-optimized meta title (max 60 characters).
+- "metaDescription": An SEO-optimized meta description (max 160 characters).
+- "keywords": A comma-separated list of highly relevant SEO keywords.`;
 
 		if (isGolfCommunity) {
-			systemPrompt += `\n\nCRITICAL INSTRUCTION: This is a Golf Community. You must include details typical for this golf course (such as membership options, initiation fees, course designer, and club amenities) that you might find on naplesgolfguy.com or similar local directories. Be specific about the golf lifestyle in ${community.name}.`;
+			systemPrompt += `\n\nCRITICAL INSTRUCTION: This is a Golf Community. In the "infoText", you must include details typical for this golf course (such as membership options, initiation fees, course designer, and club amenities) that you might find on naplesgolfguy.com or similar local directories. Be specific about the golf lifestyle in ${community.name}.`;
 		} else {
-			systemPrompt += `\n\nThis is a beautiful non-golf community. Focus on the natural beauty, waterfront access (if applicable), community amenities, and neighborhood charm.`;
+			systemPrompt += `\n\nThis is a beautiful non-golf community. Focus on the natural beauty, waterfront access (if applicable), community amenities, and neighborhood charm in the "infoText".`;
 		}
 
 		const completion = await openai.createChatCompletion({
@@ -49,23 +52,38 @@ Include details about the lifestyle, location benefits, nearby attractions, and 
 				},
 				{
 					role: "user",
-					content: `Please write a comprehensive, beautiful HTML description for the community of ${community.name} in ${community.city.name}, FL.`
+					content: `Please generate the SEO data and HTML description for the community of ${community.name} in ${community.city.name}, FL.`
 				}
 			],
 			temperature: 0.7,
 		});
 
-		const rawHtml = completion.data.choices?.[0]?.message?.content || "";
+		const rawContent = completion.data.choices?.[0]?.message?.content || "{}";
 		// Clean up markdown wrapping if the AI accidentally adds it
-		const cleanHtml = rawHtml.replace(/^```html/i, "").replace(/```$/i, "").trim();
+		const cleanJsonStr = rawContent.replace(/^```json/i, "").replace(/```$/i, "").trim();
+		
+		let parsedData;
+		try {
+			parsedData = JSON.parse(cleanJsonStr);
+		} catch (e) {
+			console.error("Failed to parse JSON from AI:", cleanJsonStr);
+			return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
+		}
 
-		// Save the generated HTML to the community
-		const updatedCommunity = await prisma.community.update({
-			where: { id: community.id },
-			data: { description: cleanHtml }
+		const descriptionPayload = JSON.stringify({
+			infoText: parsedData.infoText || "",
+			title: parsedData.title || "",
+			metaDescription: parsedData.metaDescription || "",
+			keywords: parsedData.keywords || ""
 		});
 
-		return NextResponse.json({ success: true, community: updatedCommunity });
+		// Save the generated JSON to the community description
+		const updatedCommunity = await prisma.community.update({
+			where: { id: community.id },
+			data: { description: descriptionPayload }
+		});
+
+		return NextResponse.json({ success: true, community: updatedCommunity, parsedData });
 	} catch (error: any) {
 		console.error("Error generating community AI description:", error);
 		return NextResponse.json({ error: "Failed to generate AI description", details: error.message }, { status: 500 });

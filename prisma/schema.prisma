@@ -446,7 +446,7 @@ model City {
   slug         String      @unique
   defaultImage String?
   images       Json?
-  description  String?
+  description  String?     @db.Text
   isFeatured   Boolean     @default(false)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
@@ -464,7 +464,7 @@ model Community {
   slug            String     @unique
   defaultImage    String?
   images          Json?
-  description     String?
+  description     String?    @db.Text
   videoUrl        String?
   propertyCount   Int        @default(0)
   isGolfCommunity Boolean    @default(false)
