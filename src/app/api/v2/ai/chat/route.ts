@@ -6,6 +6,7 @@ import UrlMaker from "@/hooks/url-maker";
 import { sendAdminLeadAlertEmail } from "@/lib/email/admin-lead-alert";
 import { requireLead } from "@/lib/api/auth";
 
+
 export const maxDuration = 60; // Allow up to 60 seconds
 
 export async function POST(req: Request) {
@@ -39,8 +40,18 @@ export async function POST(req: Request) {
 			});
 		}
 
+		// If guest user, bypass history memory to avoid context/Naples pollution from other guest users
+		let activeMessages = messages;
+		if (lead.email === "guest@gulfshoregroup.com") {
+			// Find the last few user messages to preserve the immediate context of the current search
+			// We take the last 4 messages which is enough for the immediate "Hello -> Buy -> Budget -> Address" flow 
+			activeMessages = messages.slice(-4);
+		}
+
+		// @ts-ignore
 		const result = streamText({
 			model: openai("gpt-4o-mini"),
+			// @ts-ignore
 			maxSteps: 5,
 			system: `You are an expert AI Real Estate Concierge for Gulfshore Group, working on behalf of Dimitri Schwarz. 
 Your goal is to politely and professionally assist website visitors, answer their real estate questions, and qualify them as leads.
@@ -79,7 +90,7 @@ If they provide a specific address (e.g., "5100 Seagrass"), use the address para
 If the search returns no properties, apologize and say you can set up a custom alert for them.
 
 If the user wants to schedule a property tour, viewing, or appointment, use the 'scheduleTour' tool. Ask for their name, phone or email, and preferred date before calling the tool. After booking, confirm the appointment and tell them Dimitri will reach out to confirm.`,
-			messages: await convertToModelMessages(messages),
+			messages: await convertToModelMessages(activeMessages),
 			tools: {
 				// @ts-ignore
 				searchProperties: tool({
@@ -143,20 +154,23 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 
 						// Handle potential typos in city like "Cape Cora"
 						if (finalCity) {
-							if (finalCity.toLowerCase().includes("cape cora")) where.City = { contains: "Cape Coral" };
-							else where.City = { contains: finalCity };
+							if (finalCity.toLowerCase().includes("cape cora")) {
+								where.City = { contains: "Cape Coral", mode: "insensitive" };
+							} else {
+								where.City = { contains: finalCity, mode: "insensitive" };
+							}
 						}
 						
 						if (finalAddress) {
-							// Exact Match
+							// Exact Match (Case-Insensitive using contains)
 							const exactMatchCount = await prisma.property.count({
 								where: {
 									...where,
-									FullAddress: { equals: finalAddress }
+									FullAddress: { contains: finalAddress, mode: "insensitive" }
 								}
 							});
 							if (exactMatchCount > 0) {
-								where.FullAddress = { equals: finalAddress };
+								where.FullAddress = { contains: finalAddress, mode: "insensitive" };
 							} else {
 								const words = finalAddress.replace(/[.,]/g, '').split(' ').filter(Boolean);
 								// House number + Full street (using up to 3 words for fallback matching)
@@ -164,7 +178,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 								if (importantWords.length > 0) {
 									where.AND = where.AND || [];
 									importantWords.forEach((w: string) => {
-										where.AND.push({ FullAddress: { contains: w } });
+										where.AND.push({ FullAddress: { contains: w, mode: "insensitive" } });
 									});
 								}
 							}
@@ -176,17 +190,17 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 								where.AND = where.AND || [];
 								where.AND.push({
 									OR: [
-										{ PropertySubType: { contains: 'Rise' } },
-										{ PropertySubType: { contains: 'Condo' } },
-										{ PropertyType: { contains: 'Condo' } }
+										{ PropertySubType: { contains: 'Rise', mode: 'insensitive' } },
+										{ PropertySubType: { contains: 'Condo', mode: 'insensitive' } },
+										{ PropertyType: { contains: 'Condo', mode: 'insensitive' } }
 									]
 								});
 							} else if (pt.includes('single family') || pt.includes('home') || pt.includes('house')) {
 								where.AND = where.AND || [];
 								where.AND.push({
 									OR: [
-										{ PropertyType: { contains: 'Single Family' } },
-										{ PropertySubType: { contains: 'Single Family' } }
+										{ PropertyType: { contains: 'Single Family', mode: 'insensitive' } },
+										{ PropertySubType: { contains: 'Single Family', mode: 'insensitive' } }
 									]
 								});
 							} else if (pt.includes('townhouse') || pt.includes('villa') || pt.includes('land') || pt.includes('commercial')) {
@@ -197,16 +211,24 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 											   pt.includes('land') || pt.includes('lot') ? 'Land' : 'Commercial';
 								where.AND.push({
 									OR: [
-										{ PropertyType: { contains: dbType } },
-										{ PropertySubType: { contains: dbType } }
+										{ PropertyType: { contains: dbType, mode: 'insensitive' } },
+										{ PropertySubType: { contains: dbType, mode: 'insensitive' } }
 									]
 								});
 							}
 							// If propertyType is some vague term like "Properties", "Any", "Real Estate", we just ignore it so it doesn't break the search!
 						}
-						if (community) where.Community = { contains: community };
-						if (subdivision) where.SubdivisionName = { contains: subdivision };
-						if (mlsNumber) where.MLSNumber = mlsNumber;
+						if (community) {
+							where.AND = where.AND || [];
+							where.AND.push({
+								OR: [
+									{ Community: { contains: community, mode: 'insensitive' } },
+									{ Development: { contains: community, mode: 'insensitive' } }
+								]
+							});
+						}
+						if (subdivision) where.SubdivisionName = { contains: subdivision, mode: 'insensitive' };
+						if (mlsNumber) where.MLSNumber = { contains: mlsNumber.trim(), mode: 'insensitive' };
 						if (zipCode) where.PostalCode = zipCode;
 						
 						// Implement broad keyword search for misspelled or partial words (e.g. 'nap')
@@ -215,10 +237,11 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							where.AND = where.AND || [];
 							where.AND.push({
 								OR: [
-									{ City: { contains: kw } },
-									{ FullAddress: { contains: kw } },
-									{ Community: { contains: kw } },
-									{ SubdivisionName: { contains: kw } },
+									{ City: { contains: kw, mode: 'insensitive' } },
+									{ FullAddress: { contains: kw, mode: 'insensitive' } },
+									{ Community: { contains: kw, mode: 'insensitive' } },
+									{ Development: { contains: kw, mode: 'insensitive' } },
+									{ SubdivisionName: { contains: kw, mode: 'insensitive' } },
 								]
 							});
 						}
