@@ -218,7 +218,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 								if (pt.includes("rent") || pt.includes("lease")) {
 									where.PropertyType = { contains: "Lease" };
 								} else {
-									where.PropertyType = { not: { contains: "Lease" } };
+									where.PropertyType = { not: "Residential Lease" };
 								}
 							} else if (pt.includes('condo') || pt.includes('apartment')) {
 								where.AND = where.AND || [];
