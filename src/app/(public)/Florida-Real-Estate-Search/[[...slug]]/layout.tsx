@@ -179,18 +179,19 @@ export default async function RootLayout({
 																</h2>
 															</div>
 
-															<div className="prose prose-gray max-w-none">
-																<ReadMore className="text-gray-500 leading-relaxed">
-																	{seoData?.content?.infoText && seoData.content.infoText.trim().length > 0
-																		? seoData.content.infoText
-																				.replaceAll("*", "")
-																				.replaceAll("###", "•")
-																				.replaceAll("##", "•")
-																				.replaceAll("#", "")
-																		: (seoData?.community || filtersParams.developmentName)
+															<div className="prose prose-gray max-w-none prose-p:text-gray-500 prose-headings:text-primary">
+																{seoData?.content?.infoText && seoData.content.infoText.trim().length > 0 ? (
+																	<div 
+																		className="text-gray-500 leading-relaxed space-y-4"
+																		dangerouslySetInnerHTML={{ __html: seoData.content.infoText }} 
+																	/>
+																) : (
+																	<ReadMore className="text-gray-500 leading-relaxed">
+																		{(seoData?.community || filtersParams.developmentName)
 																			? `Welcome to ${seoData?.community || capitalizeWords(filtersParams.developmentName || "")} in ${capitalizeWords(filtersParams.city || "Naples")}, Florida. An exceptional community offering a premier lifestyle with access to world-class amenities and the natural beauty of Southwest Florida's Gulf Coast.`
 																			: `${capitalizeWords(filtersParams.city || "Naples")}, Florida: Your Gateway to Paradise Living\n\nNestled along Florida's pristine Gulf Coast, ${capitalizeWords(filtersParams.city || "Naples")} represents the epitome of luxury living, combining world-class amenities with natural beauty that captivates residents and visitors alike. This enchanting city has evolved from a small fishing village into one of America's most desirable destinations for those seeking an exceptional quality of life.`}
-																</ReadMore>
+																	</ReadMore>
+																)}
 															</div>
 														</div>
 													</div>
