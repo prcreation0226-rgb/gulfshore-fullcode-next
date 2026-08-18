@@ -170,25 +170,23 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						}
 						
 						if (finalAddress) {
-							// Exact Match (using contains)
-							const exactMatchCount = await prisma.property.count({
-								where: {
-									...where,
-									FullAddress: { contains: finalAddress }
+							const words = finalAddress.trim().split(' ').filter(Boolean);
+							const houseNumber = words[0];
+							const streetName = words.slice(1, 3).join(" ");
+
+							if (houseNumber && /^\d+/.test(houseNumber)) {
+								// Match starting with the house number, which is very fast in MySQL
+								where.FullAddress = { startsWith: houseNumber };
+								if (streetName) {
+									const streetNameClean = streetName.replace(/(ave|ln|dr|rd|ct|st|pl|ter|cir)/gi, "").trim();
+									if (streetNameClean) {
+										where.AND = where.AND || [];
+										where.AND.push({ FullAddress: { contains: streetNameClean } });
+									}
 								}
-							});
-							if (exactMatchCount > 0) {
-								where.FullAddress = { contains: finalAddress };
 							} else {
-								const words = finalAddress.replace(/[.,]/g, '').split(' ').filter(Boolean);
-								// House number + Full street (using up to 3 words for fallback matching)
-								const importantWords = words.slice(0, 3);
-								if (importantWords.length > 0) {
-									where.AND = where.AND || [];
-									importantWords.forEach((w: string) => {
-										where.AND.push({ FullAddress: { contains: w } });
-									});
-								}
+								// Fallback standard contains lookup
+								where.FullAddress = { contains: finalAddress };
 							}
 						}
 						if (propertyType) {
