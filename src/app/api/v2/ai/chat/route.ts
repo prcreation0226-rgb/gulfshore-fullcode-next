@@ -451,10 +451,12 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 				// If the AI used a tool, we might want to append that context
 				if (toolResults && toolResults.length > 0) {
 					const result = toolResults[0] as any;
+					// Save the arguments passed to the tool to debug parameters payload
+					const toolArgs = toolCalls && toolCalls.length > 0 ? JSON.stringify(toolCalls[0].args) : "{}";
 					if (result && result.result && Array.isArray(result.result) && result.result.length > 0) {
-						finalMessage += `\n\n[Displayed ${result.result.length} properties]`;
+						finalMessage += `\n\n[Displayed ${result.result.length} properties] [Args: ${toolArgs}]`;
 					} else {
-						finalMessage += `\n\n[Searched for properties but found none]`;
+						finalMessage += `\n\n[Searched for properties but found none] [Args: ${toolArgs}]`;
 					}
 				}
 
