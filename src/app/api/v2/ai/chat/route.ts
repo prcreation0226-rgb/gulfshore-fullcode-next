@@ -201,7 +201,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 								// Match starting with the house number, which is very fast in MySQL
 								where.FullAddress = { startsWith: houseNumber };
 								if (streetName) {
-									const streetNameClean = streetName.replace(/(ave|ln|dr|rd|ct|st|pl|ter|cir)/gi, "").trim();
+									const streetNameClean = streetName.replace(/\b(ave|ln|dr|rd|ct|st|pl|ter|cir)\b/gi, "").trim();
 									if (streetNameClean) {
 										where.AND = where.AND || [];
 										where.AND.push({ FullAddress: { contains: streetNameClean } });
@@ -309,6 +309,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						if (garage !== undefined) where.GarageYN = garage;
 						if (spa !== undefined) where.SpaYN = spa;
 
+						console.log("AI searchProperties Connecting to database URL host:", process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).hostname : "fallback (hayabusa)");
 						console.log("AI searchProperties Final prisma where clause filters:", JSON.stringify(where, null, 2));
 
 						const properties = await prisma.property.findMany({
