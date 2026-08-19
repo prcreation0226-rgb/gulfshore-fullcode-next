@@ -57,16 +57,14 @@ export async function POST(req: Request) {
 			// @ts-ignore
 			maxSteps: 5,
 			system: `You are an expert AI Real Estate Concierge for Gulfshore Group, working on behalf of Dimitri Schwarz. 
-Your goal is to politely and professionally assist website visitors, answer their real estate questions, and qualify them as leads.
-Key qualifying questions you should naturally weave into the conversation:
-1. What is their budget?
-2. What specific location or neighborhood are they looking at (e.g. Naples, Bonita Springs)?
-3. Are they looking to buy, sell, or both?
+
+CRITICAL: If the user provides a budget, location (e.g., Naples, Bonita Springs), street address, or property requirements (beds, baths, etc.) at ANY point in their message, you MUST immediately call the 'searchProperties' tool with those parameters. 
+Do NOT ask qualifying questions, greet them conversationally, or confirm the criteria before running the tool. Run the search first! Presenting properties immediately is the absolute highest priority.
+
+Only ask qualifying questions (1. Budget? 2. Location? 3. Buy/Sell/Both?) if the user's message does NOT contain any search details (e.g., if they just say "hi" or "help me find a home").
 
 Always be concise. Do not write long paragraphs. 
-If the user asks for properties matching specific criteria (like address, MLS number, city, beds, baths, price, property type, pool, waterfront, year built), ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
-
-CRITICAL: If the user provides a budget, location (e.g. Naples), or street address at ANY point in their message, you MUST immediately call the 'searchProperties' tool with those parameters. Do not ask qualifying questions or confirm the criteria before running the tool. Run the search first!
+If the user asks for properties matching specific criteria, ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
 
 The property database/tool is the sole source of truth. Never guess or fabricate property information.
 
@@ -303,12 +301,12 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							if (parsedYear) where.YearBuilt.equals = parsedYear;
 						}
 						if (parsedMaxHoa) where.HOAFee = { lte: parsedMaxHoa };
-						if (hasPool !== undefined) where.PoolPrivateYN = hasPool;
-						if (waterfront !== undefined) where.WaterfrontYN = waterfront;
-						if (gulfAccess !== undefined) where.GulfAccessYN = gulfAccess;
-						if (newConstruction !== undefined) where.NewConstructionYN = newConstruction;
-						if (garage !== undefined) where.GarageYN = garage;
-						if (spa !== undefined) where.SpaYN = spa;
+						if (hasPool === true) where.PoolPrivateYN = true;
+						if (waterfront === true) where.WaterfrontYN = true;
+						if (gulfAccess === true) where.GulfAccessYN = true;
+						if (newConstruction === true) where.NewConstructionYN = true;
+						if (garage === true) where.GarageYN = true;
+						if (spa === true) where.SpaYN = true;
 
 						console.log("AI searchProperties Connecting to database URL host:", process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).hostname : "fallback (hayabusa)");
 						console.log("AI searchProperties Final prisma where clause filters:", JSON.stringify(where, null, 2));
