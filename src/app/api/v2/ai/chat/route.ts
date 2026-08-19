@@ -8,8 +8,6 @@ import { requireLead } from "@/lib/api/auth";
 import { recalculateLeadScore } from "@/lib/leads/services/scoring.service";
 
 
-
-
 export const maxDuration = 60; // Allow up to 60 seconds
 
 export async function POST(req: Request) {
