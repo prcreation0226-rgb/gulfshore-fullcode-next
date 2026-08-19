@@ -110,19 +110,6 @@ async function ExploreCommunity({
 			</div>
 			
 			<div className="w-11/12 max-w-[1600px] mx-auto py-12">
-			{/* Custom Marketing Content Area (Loopnet/Zillow style) */}
-			{communityData && communityData.description && (
-				<div className="bg-white border-y border-gray-200 py-12 mt-4">
-					<div className="container mx-auto px-4 max-w-4xl text-center">
-						<h2 className="text-3xl font-serif text-primary mb-6">About {formattedCommunity}</h2>
-						<div 
-							className="prose prose-lg mx-auto text-gray-700" 
-							dangerouslySetInnerHTML={{ __html: communityData.description }} 
-						/>
-					</div>
-				</div>
-			)}
-
 			<Suspense>
 				<div className="container mx-auto px-4 py-8">
 					<CommunityListingsTabs

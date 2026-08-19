@@ -371,6 +371,7 @@ export default function EditCommunityPage() {
 							<UploadImg
 								formData={formData}
 								setFormData={setFormData}
+								seoFileName={formData.slug ? `${formData.slug}-naples-fl-community-entrance` : undefined}
 							/>
 							<p className="text-xs text-muted-foreground">
 								Recommended: 1200x600px, JPG or PNG format

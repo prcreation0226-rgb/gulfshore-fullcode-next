@@ -30,17 +30,25 @@ export async function POST(req: Request) {
 
 		// Prompt construction
 		let systemPrompt = `You are an expert luxury real estate content writer for Gulfshore Group in Southwest Florida.
-Your task is to write highly engaging, SEO-friendly content for ${community.name} located in ${community.city.name}, Florida.
+Your task is to write a highly detailed, comprehensive, and SEO-friendly article (minimum 1200 words) for ${community.name} located in ${community.city.name}, Florida.
+
+You must deeply cover the following 5 points in your description:
+1. What the community/business is about (History, architecture, overarching vibe)
+2. Who it is for (Target demographic, lifestyle appeal)
+3. Main activities/services (Recreation, dining, events)
+4. Key benefits (Location advantages, luxury living, security)
+5. Specific details/examples (Notable neighborhoods, famous nearby attractions, precise distances to key Naples/SWFL landmarks)
+
 Output your response as a valid JSON object with the following keys:
-- "infoText": A concise, beautifully formatted HTML description of the community (approx 150-200 words maximum, do not make it too long). Use <h2>, <h3>, <p>, <ul>, and <li> tags. Make sure headings and important features are bolded and properly formatted. Include details about lifestyle, location, and amenities. Do not wrap in markdown code blocks.
+- "infoText": A beautifully formatted HTML description of the community based on the above requirements (aim for at least 1200 words). Use <h2>, <h3>, <p>, <ul>, and <li> tags extensively for readability. Make sure headings and important features are bolded. Do not wrap in markdown code blocks. Do not add <html> or <body> tags, just the inner content.
 - "title": An SEO-optimized meta title (max 60 characters).
 - "metaDescription": An SEO-optimized meta description (max 160 characters).
 - "keywords": A comma-separated list of highly relevant SEO keywords.`;
 
 		if (isGolfCommunity) {
-			systemPrompt += `\n\nCRITICAL INSTRUCTION: This is a Golf Community. In the "infoText", you must include details typical for this golf course (such as membership options, initiation fees, course designer, and club amenities) that you might find on naplesgolfguy.com or similar local directories. Be specific about the golf lifestyle in ${community.name}.`;
+			systemPrompt += `\n\nCRITICAL INSTRUCTION: This is a Golf Community. In the "infoText", you must include extensive details typical for this golf course (such as membership options, initiation fees, course designer, and club amenities) that you might find on local directories. Be specific about the golf lifestyle in ${community.name}.`;
 		} else {
-			systemPrompt += `\n\nThis is a beautiful non-golf community. Focus on the natural beauty, waterfront access (if applicable), community amenities, and neighborhood charm in the "infoText".`;
+			systemPrompt += `\n\nThis is a beautiful non-golf community. Focus deeply on the natural beauty, waterfront access (if applicable), community amenities, and neighborhood charm in the "infoText".`;
 		}
 
 		const completion = await openai.createChatCompletion({

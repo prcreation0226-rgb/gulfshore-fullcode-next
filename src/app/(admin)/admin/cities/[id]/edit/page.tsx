@@ -33,14 +33,30 @@ export default function EditCityPage() {
 	const [formData, setFormData] = useState<any>();
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [generatingAi, setGeneratingAi] = useState(false);
 	useEffect(() => {
 		const fetchData = async () => {
 			const id = params.id;
 			try {
-				const city = await axios.get(`/api/cities/${id}`);
-
-				setFormData(city.data.data);
-				console.log(city.data.data);
+				const res = await axios.get(`/api/cities/${id}`);
+				let loadedData = res.data.data;
+				
+				if (loadedData && loadedData.description) {
+					try {
+						if (loadedData.description.startsWith("{")) {
+							const parsed = JSON.parse(loadedData.description);
+							loadedData = {
+								...loadedData,
+								infoText: parsed.infoText || "",
+								title: parsed.title || "",
+								metaDescription: parsed.metaDescription || "",
+								keywords: parsed.keywords || "",
+							};
+						}
+					} catch (e) {}
+				}
+				
+				setFormData(loadedData);
 			} catch (error) {
 				setError("Failed to load city data.");
 			} finally {
@@ -51,11 +67,61 @@ export default function EditCityPage() {
 		fetchData();
 	}, []);
 
+	const handleGenerateAi = async () => {
+		try {
+			setGeneratingAi(true);
+			const res = await axios.post(`/api/admin/generate-city-ai`, {
+				cityId: formData.id
+			});
+			if (res.data.success) {
+				setFormData({
+					...formData,
+					infoText: res.data.parsedData.infoText,
+					description: res.data.city.description,
+					title: res.data.parsedData.title,
+					metaDescription: res.data.parsedData.metaDescription,
+					keywords: res.data.parsedData.keywords
+				});
+				toast.success("AI Content generated successfully!");
+			}
+		} catch (err) {
+			console.error(err);
+			toast.error("Failed to generate AI description.");
+		} finally {
+			setGeneratingAi(false);
+		}
+	};
+
 	const handleSave = async () => {
 		try {
 			const id = params.id;
-			const res = await axios.put(`/api/cities/${id}`, formData);
-			setFormData(res.data.data);
+			const dataToSave = { ...formData };
+			if (dataToSave.title || dataToSave.metaDescription || dataToSave.keywords || dataToSave.infoText) {
+				dataToSave.description = JSON.stringify({
+					infoText: dataToSave.infoText || "",
+					title: dataToSave.title || "",
+					metaDescription: dataToSave.metaDescription || "",
+					keywords: dataToSave.keywords || ""
+				});
+			}
+			const res = await axios.put(`/api/cities/${id}`, dataToSave);
+			
+			let loadedData = res.data.data;
+			if (loadedData && loadedData.description) {
+				try {
+					if (loadedData.description.startsWith("{")) {
+						const parsed = JSON.parse(loadedData.description);
+						loadedData = {
+							...loadedData,
+							infoText: parsed.infoText || "",
+							title: parsed.title || "",
+							metaDescription: parsed.metaDescription || "",
+							keywords: parsed.keywords || "",
+						};
+					}
+				} catch (e) {}
+			}
+			setFormData(loadedData);
 			toast.success("City updated successfully!");
 		} catch (error) {
 			setError("Failed to upload city data.");
@@ -112,6 +178,29 @@ export default function EditCityPage() {
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* Main Content */}
 				<div className="lg:col-span-2 space-y-6">
+					{/* AI Content Generator */}
+					<Card className="border-primary/50 shadow-sm bg-primary/5">
+						<CardHeader className="flex flex-row items-center justify-between pb-4">
+							<div>
+								<CardTitle className="text-primary flex items-center gap-2">
+									✨ AI Content Generator
+								</CardTitle>
+								<CardDescription>
+									Automatically generate SEO fields and HTML description for this city
+								</CardDescription>
+							</div>
+							<div className="flex items-center gap-4">
+								<Button 
+									onClick={handleGenerateAi} 
+									disabled={generatingAi}
+									className="bg-primary hover:bg-primary/90 text-primary-foreground"
+								>
+									{generatingAi ? "Generating..." : "Generate AI Content"}
+								</Button>
+							</div>
+						</CardHeader>
+					</Card>
+
 					{/* Basic Information */}
 					<Card>
 						<CardHeader>
@@ -291,6 +380,7 @@ export default function EditCityPage() {
 							<UploadImg
 								formData={formData}
 								setFormData={setFormData}
+								seoFileName={formData.slug ? `${formData.slug}-naples-fl-city-entrance` : undefined}
 							/>
 							<p className="text-xs text-muted-foreground">
 								Recommended: 1200x600px, JPG or PNG format
