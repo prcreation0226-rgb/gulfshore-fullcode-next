@@ -46,7 +46,7 @@ Output your response as a valid JSON object with the following keys:
 - "keywords": A comma-separated list of highly relevant SEO keywords.`;
 
 		if (isGolfCommunity) {
-			systemPrompt += `\n\nCRITICAL INSTRUCTION: This is a Golf Community. In the "infoText", you must include extensive details typical for this golf course (such as membership options, initiation fees, course designer, and club amenities) that you might find on local directories. Be specific about the golf lifestyle in ${community.name}.`;
+			systemPrompt += `\n\nCRITICAL INSTRUCTION: This is a Golf Community. In the "infoText", you must include extensive details typical for this golf course (such as WHAT golf courses it has, HOW MANY golf courses there are, HOW MANY HOLES each course has, membership options, initiation fees, course designer, and club amenities) that you might find on local directories. Be specific about the golf lifestyle in ${community.name}.`;
 		} else {
 			systemPrompt += `\n\nThis is a beautiful non-golf community. Focus deeply on the natural beauty, waterfront access (if applicable), community amenities, and neighborhood charm in the "infoText".`;
 		}
