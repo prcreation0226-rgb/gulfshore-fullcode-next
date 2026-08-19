@@ -96,7 +96,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 				// @ts-ignore
 				searchProperties: tool({
 					description: "Search the real estate database for active properties matching the user's criteria. Use this whenever the user asks to see homes, properties, or listings.",
-					parameters: z.object({
+					inputSchema: z.object({
 						city: z.string().optional().describe("City name, e.g., Naples, Bonita Springs, Cape Coral"),
 						address: z.string().optional().describe("ONLY the street address (e.g. '622 Sw 52nd St'). DO NOT include city, state, or zip code."),
 						propertyType: z.string().optional().describe("Type of property (e.g., 'Single Family', 'Condo', 'Townhouse')"),
@@ -361,7 +361,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 				// @ts-ignore
 				scheduleTour: tool({
 					description: "Schedule a property tour or viewing appointment. Use this when the user wants to see a property, book a showing, or meet with an agent. Always ask for their name and contact info first.",
-					parameters: z.object({
+					inputSchema: z.object({
 						name: z.string().describe("The visitor's full name"),
 						email: z.string().optional().describe("The visitor's email address"),
 						phone: z.string().optional().describe("The visitor's phone number"),
