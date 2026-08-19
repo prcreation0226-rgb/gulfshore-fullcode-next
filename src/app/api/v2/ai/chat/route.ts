@@ -8,7 +8,6 @@ import { requireLead } from "@/lib/api/auth";
 import { recalculateLeadScore } from "@/lib/leads/services/scoring.service";
 
 
-
 export const maxDuration = 60; // Allow up to 60 seconds
 
 export async function POST(req: Request) {
@@ -20,18 +19,18 @@ export async function POST(req: Request) {
 		const lastUserMessage = messages[messages.length - 1];
 		if (lastUserMessage && lastUserMessage.role === "user") {
 			let messageText = "";
-			
+
 			if (typeof lastUserMessage.content === "string") {
 				messageText = lastUserMessage.content;
 			} else if (Array.isArray(lastUserMessage.content)) {
 				// Sometimes content is an array of parts
 				messageText = lastUserMessage.content.map((p: any) => p.text || "").join("");
 			}
-			
+
 			if (!messageText && lastUserMessage.parts && Array.isArray(lastUserMessage.parts)) {
 				messageText = lastUserMessage.parts.map((p: any) => p.text || "").join("");
 			}
-			
+
 			await prisma.aIChatHistory.create({
 				data: {
 					leadId: lead.id,
@@ -56,16 +55,14 @@ export async function POST(req: Request) {
 			// @ts-ignore
 			maxSteps: 5,
 			system: `You are an expert AI Real Estate Concierge for Gulfshore Group, working on behalf of Dimitri Schwarz. 
-Your goal is to politely and professionally assist website visitors, answer their real estate questions, and qualify them as leads.
-Key qualifying questions you should naturally weave into the conversation:
-1. What is their budget?
-2. What specific location or neighborhood are they looking at (e.g. Naples, Bonita Springs)?
-3. Are they looking to buy, sell, or both?
+
+CRITICAL: If the user provides a budget, location (e.g., Naples, Bonita Springs), street address, or property requirements (beds, baths, etc.) at ANY point in their message, you MUST immediately call the 'searchProperties' tool with those parameters. 
+Do NOT ask qualifying questions, greet them conversationally, or confirm the criteria before running the tool. Run the search first! Presenting properties immediately is the absolute highest priority.
+
+Only ask qualifying questions (1. Budget? 2. Location? 3. Buy/Sell/Both?) if the user's message does NOT contain any search details (e.g., if they just say "hi" or "help me find a home").
 
 Always be concise. Do not write long paragraphs. 
-If the user asks for properties matching specific criteria (like address, MLS number, city, beds, baths, price, property type, pool, waterfront, year built), ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
-
-CRITICAL: If the user provides a budget, location (e.g. Naples), or street address at ANY point in their message, you MUST immediately call the 'searchProperties' tool with those parameters. Do not ask qualifying questions or confirm the criteria before running the tool. Run the search first!
+If the user asks for properties matching specific criteria, ALWAYS use the 'searchProperties' tool to fetch real, live data from the database. Do NOT make up properties.
 
 The property database/tool is the sole source of truth. Never guess or fabricate property information.
 
@@ -99,17 +96,17 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 				// @ts-ignore
 				searchProperties: tool({
 					description: "Search the real estate database for active properties matching the user's criteria. Use this whenever the user asks to see homes, properties, or listings.",
-					parameters: z.object({
+					inputSchema: z.object({
 						city: z.string().optional().describe("City name, e.g., Naples, Bonita Springs, Cape Coral"),
 						address: z.string().optional().describe("ONLY the street address (e.g. '622 Sw 52nd St'). DO NOT include city, state, or zip code."),
 						propertyType: z.string().optional().describe("Type of property (e.g., 'Single Family', 'Condo', 'Townhouse')"),
 						community: z.string().optional().describe("Name of the community or subdivision"),
 						subdivision: z.string().optional().describe("Name of the subdivision"),
 						mlsNumber: z.string().optional().describe("MLS Number of the listing"),
-						minPrice: z.number().optional().describe("Minimum price in dollars"),
-						maxPrice: z.number().optional().describe("Maximum price in dollars"),
-						beds: z.number().optional().describe("Minimum number of bedrooms"),
-						baths: z.number().optional().describe("Minimum number of bathrooms"),
+						minPrice: z.coerce.number().optional().describe("Minimum price in dollars"),
+						maxPrice: z.coerce.number().optional().describe("Maximum price in dollars"),
+						beds: z.coerce.number().optional().describe("Minimum number of bedrooms"),
+						baths: z.coerce.number().optional().describe("Minimum number of bathrooms"),
 						hasPool: z.boolean().optional().describe("Whether the property must have a private pool"),
 						waterfront: z.boolean().optional().describe("Whether the property must be waterfront"),
 						gulfAccess: z.boolean().optional().describe("Whether the property must have gulf access"),
@@ -117,18 +114,18 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						zipCode: z.string().optional().describe("Postal/Zip code"),
 						garage: z.boolean().optional().describe("Whether the property must have a garage"),
 						spa: z.boolean().optional().describe("Whether the property must have a spa"),
-						minAcres: z.number().optional().describe("Minimum lot size in acres"),
-						maxAcres: z.number().optional().describe("Maximum lot size in acres"),
-						minYearBuilt: z.number().optional().describe("Minimum year built"),
-						maxYearBuilt: z.number().optional().describe("Maximum year built"),
-						yearBuilt: z.number().optional().describe("Exact year built (e.g. 2025)"),
-						maxHoaFee: z.number().optional().describe("Maximum HOA fee per month"),
+						minAcres: z.coerce.number().optional().describe("Minimum lot size in acres"),
+						maxAcres: z.coerce.number().optional().describe("Maximum lot size in acres"),
+						minYearBuilt: z.coerce.number().optional().describe("Minimum year built"),
+						maxYearBuilt: z.coerce.number().optional().describe("Maximum year built"),
+						yearBuilt: z.coerce.number().optional().describe("Exact year built (e.g. 2025)"),
+						maxHoaFee: z.coerce.number().optional().describe("Maximum HOA fee per month"),
 						keyword: z.string().optional().describe("A general keyword to search for (e.g. 'nap', 'lehigh'). Use this if the user's request is vague, misspelled, or just a partial word."),
 					}),
 					// @ts-ignore
 					execute: async (args: any) => {
 						let { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa, minAcres, maxAcres, minYearBuilt, maxYearBuilt, yearBuilt, maxHoaFee, keyword } = args;
-						
+
 						// Ensure numbers are properly parsed in case the LLM passes them as strings/text (e.g. "2 beds" -> 2)
 						const parseNumeric = (val: any) => {
 							if (val === undefined || val === null) return undefined;
@@ -156,7 +153,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						// For specific property/address/MLS lookups, do not restrict the search to Active listings.
 						const isSpecificLookup = !!(address || mlsNumber);
 						const where: any = isSpecificLookup ? {} : { StandardStatus: "Active" };
-						
+
 						let finalCity = city;
 						let finalAddress = address;
 
@@ -164,11 +161,11 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						if (finalAddress) {
 							const addrLower = finalAddress.toLowerCase();
 							const hasNumbers = /\d/.test(addrLower);
-							
+
 							// If it's a known city OR it has no numbers (people rarely search addresses without house numbers)
 							// we move it to 'keyword' so it searches City, Community, and Address broadly!
 							const knownCities = ["naples", "bonita", "cape coral", "lehigh", "fort myers", "miami", "marco island", "estero", "sanibel", "punta gorda", "labelle", "babcock", "ave maria"];
-							
+
 							// Check if the address contains any of the known cities as whole words or exact terms
 							const matchesKnownCity = knownCities.some(c => {
 								const escaped = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -191,7 +188,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 								where.City = { contains: cityUpper };
 							}
 						}
-						
+
 						if (finalAddress) {
 							const words = finalAddress.trim().split(' ').filter(Boolean);
 							const houseNumber = words[0];
@@ -201,7 +198,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 								// Match starting with the house number, which is very fast in MySQL
 								where.FullAddress = { startsWith: houseNumber };
 								if (streetName) {
-									const streetNameClean = streetName.replace(/(ave|ln|dr|rd|ct|st|pl|ter|cir)/gi, "").trim();
+									const streetNameClean = streetName.replace(/\b(ave|ln|dr|rd|ct|st|pl|ter|cir)\b/gi, "").trim();
 									if (streetNameClean) {
 										where.AND = where.AND || [];
 										where.AND.push({ FullAddress: { contains: streetNameClean } });
@@ -214,11 +211,11 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						}
 						if (propertyType) {
 							const pt = propertyType.toLowerCase();
-							
+
 							// If AI sends generic transaction terms as property type, handle them intelligently
 							const genericTerms = ["buy", "purchase", "sale", "rent", "lease", "any", "properties", "real estate", "listing", "listings", "both", "either"];
 							const isGeneric = genericTerms.some(term => pt === term || pt.includes(term));
-							
+
 							if (isGeneric) {
 								if (pt.includes("rent") || pt.includes("lease")) {
 									where.PropertyType = { contains: "Lease" };
@@ -245,9 +242,9 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							} else if (pt.includes('townhouse') || pt.includes('villa') || pt.includes('land') || pt.includes('commercial')) {
 								where.AND = where.AND || [];
 								// for exact matches that are common
-								const dbType = pt.includes('townhouse') ? 'Townhouse' : 
-											   pt.includes('villa') ? 'Villa' : 
-											   pt.includes('land') || pt.includes('lot') ? 'Land' : 'Commercial';
+								const dbType = pt.includes('townhouse') ? 'Townhouse' :
+									pt.includes('villa') ? 'Villa' :
+										pt.includes('land') || pt.includes('lot') ? 'Land' : 'Commercial';
 								where.AND.push({
 									OR: [
 										{ PropertyType: { contains: dbType } },
@@ -268,7 +265,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						if (subdivision) where.SubdivisionName = { contains: subdivision };
 						if (mlsNumber) where.MLSNumber = { contains: mlsNumber.trim() };
 						if (zipCode) where.PostalCode = zipCode;
-						
+
 						// Implement broad keyword search for misspelled or partial words (e.g. 'nap')
 						if (keyword) {
 							const kw = keyword.trim();
@@ -302,13 +299,14 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							if (parsedYear) where.YearBuilt.equals = parsedYear;
 						}
 						if (parsedMaxHoa) where.HOAFee = { lte: parsedMaxHoa };
-						if (hasPool !== undefined) where.PoolPrivateYN = hasPool;
-						if (waterfront !== undefined) where.WaterfrontYN = waterfront;
-						if (gulfAccess !== undefined) where.GulfAccessYN = gulfAccess;
-						if (newConstruction !== undefined) where.NewConstructionYN = newConstruction;
-						if (garage !== undefined) where.GarageYN = garage;
-						if (spa !== undefined) where.SpaYN = spa;
+						if (hasPool === true) where.PoolPrivateYN = true;
+						if (waterfront === true) where.WaterfrontYN = true;
+						if (gulfAccess === true) where.GulfAccessYN = true;
+						if (newConstruction === true) where.NewConstructionYN = true;
+						if (garage === true) where.GarageYN = true;
+						if (spa === true) where.SpaYN = true;
 
+						console.log("AI searchProperties Connecting to database URL host:", process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).hostname : "fallback (hayabusa)");
 						console.log("AI searchProperties Final prisma where clause filters:", JSON.stringify(where, null, 2));
 
 						const properties = await prisma.property.findMany({
@@ -363,7 +361,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 				// @ts-ignore
 				scheduleTour: tool({
 					description: "Schedule a property tour or viewing appointment. Use this when the user wants to see a property, book a showing, or meet with an agent. Always ask for their name and contact info first.",
-					parameters: z.object({
+					inputSchema: z.object({
 						name: z.string().describe("The visitor's full name"),
 						email: z.string().optional().describe("The visitor's email address"),
 						phone: z.string().optional().describe("The visitor's phone number"),
@@ -451,7 +449,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 			onFinish: async ({ text, toolCalls, toolResults }: any) => {
 				// Save the AI's response to the DB
 				let finalMessage = text;
-				
+
 				// If the AI used a tool, we might want to append that context
 				if (toolResults && toolResults.length > 0) {
 					const result = toolResults[0] as any;
