@@ -9,6 +9,7 @@ import { recalculateLeadScore } from "@/lib/leads/services/scoring.service";
 
 
 
+
 export const maxDuration = 60; // Allow up to 60 seconds
 
 export async function POST(req: Request) {
@@ -20,18 +21,18 @@ export async function POST(req: Request) {
 		const lastUserMessage = messages[messages.length - 1];
 		if (lastUserMessage && lastUserMessage.role === "user") {
 			let messageText = "";
-			
+
 			if (typeof lastUserMessage.content === "string") {
 				messageText = lastUserMessage.content;
 			} else if (Array.isArray(lastUserMessage.content)) {
 				// Sometimes content is an array of parts
 				messageText = lastUserMessage.content.map((p: any) => p.text || "").join("");
 			}
-			
+
 			if (!messageText && lastUserMessage.parts && Array.isArray(lastUserMessage.parts)) {
 				messageText = lastUserMessage.parts.map((p: any) => p.text || "").join("");
 			}
-			
+
 			await prisma.aIChatHistory.create({
 				data: {
 					leadId: lead.id,
@@ -128,7 +129,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 					// @ts-ignore
 					execute: async (args: any) => {
 						let { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa, minAcres, maxAcres, minYearBuilt, maxYearBuilt, yearBuilt, maxHoaFee, keyword } = args;
-						
+
 						// Ensure numbers are properly parsed in case the LLM passes them as strings/text (e.g. "2 beds" -> 2)
 						const parseNumeric = (val: any) => {
 							if (val === undefined || val === null) return undefined;
@@ -156,7 +157,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						// For specific property/address/MLS lookups, do not restrict the search to Active listings.
 						const isSpecificLookup = !!(address || mlsNumber);
 						const where: any = isSpecificLookup ? {} : { StandardStatus: "Active" };
-						
+
 						let finalCity = city;
 						let finalAddress = address;
 
@@ -164,11 +165,11 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						if (finalAddress) {
 							const addrLower = finalAddress.toLowerCase();
 							const hasNumbers = /\d/.test(addrLower);
-							
+
 							// If it's a known city OR it has no numbers (people rarely search addresses without house numbers)
 							// we move it to 'keyword' so it searches City, Community, and Address broadly!
 							const knownCities = ["naples", "bonita", "cape coral", "lehigh", "fort myers", "miami", "marco island", "estero", "sanibel", "punta gorda", "labelle", "babcock", "ave maria"];
-							
+
 							// Check if the address contains any of the known cities as whole words or exact terms
 							const matchesKnownCity = knownCities.some(c => {
 								const escaped = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -191,7 +192,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 								where.City = { contains: cityUpper };
 							}
 						}
-						
+
 						if (finalAddress) {
 							const words = finalAddress.trim().split(' ').filter(Boolean);
 							const houseNumber = words[0];
@@ -214,11 +215,11 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						}
 						if (propertyType) {
 							const pt = propertyType.toLowerCase();
-							
+
 							// If AI sends generic transaction terms as property type, handle them intelligently
 							const genericTerms = ["buy", "purchase", "sale", "rent", "lease", "any", "properties", "real estate", "listing", "listings", "both", "either"];
 							const isGeneric = genericTerms.some(term => pt === term || pt.includes(term));
-							
+
 							if (isGeneric) {
 								if (pt.includes("rent") || pt.includes("lease")) {
 									where.PropertyType = { contains: "Lease" };
@@ -245,9 +246,9 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 							} else if (pt.includes('townhouse') || pt.includes('villa') || pt.includes('land') || pt.includes('commercial')) {
 								where.AND = where.AND || [];
 								// for exact matches that are common
-								const dbType = pt.includes('townhouse') ? 'Townhouse' : 
-											   pt.includes('villa') ? 'Villa' : 
-											   pt.includes('land') || pt.includes('lot') ? 'Land' : 'Commercial';
+								const dbType = pt.includes('townhouse') ? 'Townhouse' :
+									pt.includes('villa') ? 'Villa' :
+										pt.includes('land') || pt.includes('lot') ? 'Land' : 'Commercial';
 								where.AND.push({
 									OR: [
 										{ PropertyType: { contains: dbType } },
@@ -268,7 +269,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 						if (subdivision) where.SubdivisionName = { contains: subdivision };
 						if (mlsNumber) where.MLSNumber = { contains: mlsNumber.trim() };
 						if (zipCode) where.PostalCode = zipCode;
-						
+
 						// Implement broad keyword search for misspelled or partial words (e.g. 'nap')
 						if (keyword) {
 							const kw = keyword.trim();
@@ -452,7 +453,7 @@ If the user wants to schedule a property tour, viewing, or appointment, use the 
 			onFinish: async ({ text, toolCalls, toolResults }: any) => {
 				// Save the AI's response to the DB
 				let finalMessage = text;
-				
+
 				// If the AI used a tool, we might want to append that context
 				if (toolResults && toolResults.length > 0) {
 					const result = toolResults[0] as any;
