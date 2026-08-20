@@ -25,6 +25,7 @@ export default function EditCommunityPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [generatingAi, setGeneratingAi] = useState(false);
+	const [isSaving, setIsSaving] = useState(false);
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -134,6 +135,7 @@ export default function EditCommunityPage() {
 
 	const handleSave = async () => {
 		try {
+			setIsSaving(true);
 			const id = params.id;
 			const dataToSave = { ...formData };
 			if (dataToSave.title || dataToSave.metaDescription || dataToSave.keywords || dataToSave.infoText) {
@@ -166,6 +168,8 @@ export default function EditCommunityPage() {
 		} catch (err) {
 			console.error(err);
 			setError("Failed to upload community data.");
+		} finally {
+			setIsSaving(false);
 		}
 	};
 
@@ -210,9 +214,9 @@ export default function EditCommunityPage() {
 						</p>
 					</div>
 				</div>
-				<Button onClick={handleSave}>
+				<Button onClick={handleSave} disabled={isSaving}>
 					<Save className="h-4 w-4 mr-2" />
-					Save Changes
+					{isSaving ? "Saving..." : "Save Changes"}
 				</Button>
 			</div>
 

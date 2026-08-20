@@ -1,4 +1,5 @@
 "use server";
+export const dynamic = "force-dynamic";
 import React, { Suspense } from "react";
 import prisma from "@/lib/prisma";
 import AreaInfoComponent from "../../areaInfoComponent";

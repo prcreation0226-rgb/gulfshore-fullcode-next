@@ -19,10 +19,12 @@ export default async function GetSeoData({
 		: "";
 
 	const where: any = { StandardStatus: "Active" };
-	let content: { Images: string[]; infoText: string; defaultImage: string } = {
+	let content: { Images: string[]; infoText: string; defaultImage: string; golfCourses?: any; isGolfCommunity?: boolean } = {
 		Images: [],
 		infoText: "",
 		defaultImage: "",
+		golfCourses: null,
+		isGolfCommunity: false,
 	};
 	let dbSeo = { title: "", metaDescription: "", keywords: "" };
 
@@ -73,30 +75,30 @@ export default async function GetSeoData({
 		const communityRecord = await prisma.community.findFirst({
 			where: {
 				name: {
-					equals: devName,
+					equals: devName.toUpperCase(),
 				},
 			},
 		});
 
-		if (communityRecord && communityRecord.description) {
-			let infoText = communityRecord.description;
-			try {
-				if (infoText.startsWith("{")) {
-					const parsed = JSON.parse(infoText);
-					infoText = parsed.infoText || "";
-					dbSeo.title = parsed.title || dbSeo.title;
-					dbSeo.metaDescription = parsed.metaDescription || dbSeo.metaDescription;
-					dbSeo.keywords = parsed.keywords || dbSeo.keywords;
-				}
-			} catch (e) {}
+		if (communityRecord) {
+			content.golfCourses = communityRecord.golfCourses || null;
+			content.isGolfCommunity = communityRecord.isGolfCommunity || false;
+			content.Images = (communityRecord.images as any) || [];
+			content.defaultImage = communityRecord.defaultImage || "";
 
-			content = {
-				Images: (communityRecord.images as any) || [],
-				infoText: infoText,
-				defaultImage: communityRecord.defaultImage || "",
-				golfCourses: communityRecord.golfCourses || null,
-				isGolfCommunity: communityRecord.isGolfCommunity || false,
-			};
+			if (communityRecord.description) {
+				let infoText = communityRecord.description;
+				try {
+					if (infoText.startsWith("{")) {
+						const parsed = JSON.parse(infoText);
+						infoText = parsed.infoText || "";
+						dbSeo.title = parsed.title || dbSeo.title;
+						dbSeo.metaDescription = parsed.metaDescription || dbSeo.metaDescription;
+						dbSeo.keywords = parsed.keywords || dbSeo.keywords;
+					}
+				} catch (e) {}
+				content.infoText = infoText;
+			}
 		}
 	}
 

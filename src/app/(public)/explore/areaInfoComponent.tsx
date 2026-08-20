@@ -74,7 +74,10 @@ export default async function AreaInfoComponent({
 					</div>
 
 					{/* Golf Courses Section */}
-					{seoData?.content?.isGolfCommunity && seoData?.content?.golfCourses && seoData.content.golfCourses.length > 0 && (
+					<pre className="p-4 bg-gray-100 text-xs mt-10">
+						DEBUG GOLF COURSES: {JSON.stringify(seoData?.content?.golfCourses, null, 2)}
+					</pre>
+					{seoData?.content?.golfCourses && seoData.content.golfCourses.length > 0 && (
 						<div className="mt-16 pt-12 border-t border-gray-100">
 							<h2 className="text-3xl font-serif text-primary mb-8">
 								Golf Courses at {seoData?.community || community || city}
