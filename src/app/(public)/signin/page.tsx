@@ -2,6 +2,8 @@ import { SignIn } from "@clerk/nextjs";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default async function SignInPage({ searchParams }: { searchParams: Promise<{ redirect_url?: string }> }) {
 	const resolvedParams = await searchParams;
 	const redirectUrl = resolvedParams.redirect_url || "/";
