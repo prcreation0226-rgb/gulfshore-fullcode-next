@@ -1,6 +1,7 @@
 import ReadMore from "@/components/property/readmore";
 import GetSeoData from "@/hooks/getSeoData";
 import Image from "next/image";
+import GolfCourseCard from "@/components/community/GolfCourseCard";
 
 export default async function AreaInfoComponent({
 	city,
@@ -31,59 +32,60 @@ export default async function AreaInfoComponent({
 	return (
 		<div>
 			<section>
-				<div>
-					<div>
-						<div className="w-full overflow-hidden items-center grid grid-col-1 gap-4 ">
-							{/* Image Section */}
-							<div className="w-full relative overflow-hidden">
-								<div className="relative overflow-hidden lg:h-full">
-									<Image
-										className="w-full h-full max-h-screen rounded-2xl overflow-hidden object-cover"
-										width={800}
-										height={800}
-										loading="lazy"
-										alt={`${city} Real Estate For Sale`}
-										src={seoData?.content?.defaultImage || "/map-bg.webp"}
+				<div className="bg-white rounded-3xl shadow-sm border border-gray-100 py-16 px-6 lg:px-12 mt-4 mb-12 max-w-[1600px] mx-auto w-11/12">
+					<div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+						{/* Left Image (Sticky) */}
+						<div className="lg:sticky lg:top-32 relative group">
+							{seoData?.content?.defaultImage ? (
+								<div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
+									<img 
+										src={seoData.content.defaultImage} 
+										alt={`${seoData?.community || community || city} entrance`}
+										className="w-full h-auto object-cover aspect-[4/3] transition-transform duration-700 group-hover:scale-105"
 									/>
-									<div className="absolute h-full bottom-0 left-0 right-0 text-center bg-linear-to-tr to-gray-800/60 via-black/50 from-black">
-										<div className="flex flex-col items-center justify-center h-full">
-											<span className="text-xl px-5 pb-6 lg:text-3xl font-bold text-white inline-flex items-center leading-tight">
-												<div className="w-1 h-8 bg-accent rounded-full mr-2"></div>
-												{seoData?.community || community || city} FL
-											</span>
-										</div>
+									<div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+									<div className="absolute bottom-6 left-6 text-white font-serif text-2xl drop-shadow-md">
+										{seoData?.community || community || city} FL
 									</div>
 								</div>
-							</div>
-
-							{/* Content Section */}
-							<div className="p-6 sm:p-8 lg:p-10">
-								<div className="flex flex-col h-full justify-center">
-									<div className="space-y-4">
-										<div className="flex items-center space-x-2">
-											<div className="w-1 h-8 bg-accent rounded-full"></div>
-											<h2 className="text-2xl lg:text-4xl font-bold text-primary leading-tight">
-												{seoData?.community || community || city} FL
-											</h2>
-										</div>
-
-										<div className="prose prose-gray max-w-none lg:max-h-[480px] overflow-y-auto prose-p:text-gray-500 prose-headings:text-primary">
-											{seoData?.content?.infoText && seoData.content.infoText.trim().length > 0 ? (
-												<div 
-													className="text-gray-500 leading-relaxed space-y-4"
-													dangerouslySetInnerHTML={{ __html: seoData.content.infoText }} 
-												/>
-											) : (
-												<ReadMore className="text-gray-500 leading-relaxed">
-													{`${city}, Florida: Your Gateway to Paradise Living\n\nNestled along Florida's pristine Gulf Coast, ${city} represents the epitome of luxury living, combining world-class amenities with natural beauty that captivates residents and visitors alike. This enchanting city has evolved from a small fishing village into one of America's most desirable destinations for those seeking an exceptional quality of life.`}
-												</ReadMore>
-											)}
-										</div>
-									</div>
+							) : (
+								<div className="w-full aspect-[4/3] bg-gray-50 rounded-2xl flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200">
+									<span className="text-lg">No Image Available</span>
 								</div>
-							</div>
+							)}
+						</div>
+
+						{/* Right Content */}
+						<div className="prose prose-lg max-w-none text-gray-700">
+							<h2 className="text-4xl font-serif text-primary mb-8 border-b border-gray-200 pb-4">
+								About {seoData?.community || community || city}
+							</h2>
+							{seoData?.content?.infoText && seoData.content.infoText.trim().length > 0 ? (
+								<div 
+									className="text-gray-500 leading-relaxed space-y-4"
+									dangerouslySetInnerHTML={{ __html: seoData.content.infoText }} 
+								/>
+							) : (
+								<ReadMore className="text-gray-500 leading-relaxed">
+									{`${city}, Florida: Your Gateway to Paradise Living\n\nNestled along Florida's pristine Gulf Coast, ${city} represents the epitome of luxury living, combining world-class amenities with natural beauty that captivates residents and visitors alike. This enchanting city has evolved from a small fishing village into one of America's most desirable destinations for those seeking an exceptional quality of life.`}
+								</ReadMore>
+							)}
 						</div>
 					</div>
+
+					{/* Golf Courses Section */}
+					{seoData?.content?.golfCourses && seoData.content.golfCourses.length > 0 && (
+						<div className="mt-16 pt-12 border-t border-gray-100">
+							<h2 className="text-3xl font-serif text-primary mb-8">
+								Golf Courses at {seoData?.community || community || city}
+							</h2>
+							<div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+								{seoData.content.golfCourses.map((course: any, idx: number) => (
+									<GolfCourseCard key={idx} course={course} />
+								))}
+							</div>
+						</div>
+					)}
 				</div>
 			</section>
 		</div>

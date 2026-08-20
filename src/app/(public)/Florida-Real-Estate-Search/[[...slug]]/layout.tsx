@@ -16,7 +16,7 @@ import Script from "next/script";
 import CityLinksSection from "@/components/search/links-section/cityLinksSection";
 import capitalizeWords from "@/hooks/capitalize-letter";
 import MarketReportSection from "@/components/search/marketReportSection";
-
+import GolfCourseCard from "@/components/community/GolfCourseCard";
 type Props = {
 	params: Promise<{ slug?: string[] }>;
 };
@@ -200,6 +200,22 @@ export default async function RootLayout({
 										</div>
 									</div>
 								</section>
+
+								{/* Golf Courses Section */}
+								{seoData?.content?.golfCourses && seoData.content.golfCourses.length > 0 && (
+									<section className="mt-8 container mx-auto lg:px-8 px-4 sm:px-6">
+										<div className="w-full mx-auto pt-12 border-t border-gray-200">
+											<h2 className={`text-3xl font-serif text-primary mb-8 ${seoData.content.golfCourses.length === 1 ? 'text-center' : ''}`}>
+												Golf Courses at {seoData?.community || filtersParams.community || filtersParams.city}
+											</h2>
+											<div className={`grid grid-cols-1 ${seoData.content.golfCourses.length === 1 ? 'max-w-2xl mx-auto' : 'xl:grid-cols-2'} gap-8`}>
+												{seoData.content.golfCourses.map((course: any, idx: number) => (
+													<GolfCourseCard key={idx} course={course} />
+												))}
+											</div>
+										</div>
+									</section>
+								)}
 
 								<div className="w-11/12 max-w-[1600px] mt-20 mb-8 mx-auto px-4">
 									<span className="font-semibold text-sm">

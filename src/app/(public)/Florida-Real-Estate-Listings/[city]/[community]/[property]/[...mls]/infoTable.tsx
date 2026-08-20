@@ -342,13 +342,25 @@ export default function PropertyDetailsTable({
 												?.NABOR_MasterHOAFeeFrequency
 										}
 									/>
+									<InfoRow
+										label="Condo Fee"
+										value={(property.raw as any)?.CondoFee}
+										formatter={formatCurrency}
+									/>
+									<InfoRow
+										label="Condo Fee Frequency"
+										value={
+											(property.raw as any)?.CondoFeeFrequency
+										}
+									/>
 									{/* Calculate and show Total Annual HOA Fee */}
 									{(() => {
 										const hoaFee = getAnnualFee((property.raw as any)?.NABOR_HOAFee, (property.raw as any)?.NABOR_HOAFeeFrequency);
 										const masterHoaFee = getAnnualFee((property.raw as any)?.NABOR_MasterHOAFee, (property.raw as any)?.NABOR_MasterHOAFeeFrequency);
 										const standardHoa = getAnnualFee((property.raw as any)?.AssociationFee, (property.raw as any)?.AssociationFeeFrequency);
+										const condoFee = getAnnualFee((property.raw as any)?.CondoFee, (property.raw as any)?.CondoFeeFrequency);
 										
-										const totalAnnual = hoaFee + masterHoaFee + standardHoa;
+										const totalAnnual = hoaFee + masterHoaFee + standardHoa + condoFee;
 										if (totalAnnual > 0) {
 											return (
 												<InfoRow

@@ -17,6 +17,7 @@ interface UploadImgProps {
 	>;
 	label?: string;
 	maxFiles?: number;
+	seoFileName?: string;
 }
 
 export default function UploadImg({
@@ -24,6 +25,7 @@ export default function UploadImg({
 	setFormData,
 	label = "Upload Images",
 	maxFiles = 10,
+	seoFileName,
 }: UploadImgProps) {
 	const handleUploadSuccess = (result: any) => {
 		const uploadedUrl = result?.info?.secure_url;
@@ -76,6 +78,7 @@ export default function UploadImg({
 					sources: ["local", "url", "google_drive"],
 					multiple: true,
 					maxFiles,
+					...(seoFileName ? { public_id: seoFileName } : {})
 				}}
 				onSuccess={handleUploadSuccess}>
 				{({ open }) => (
