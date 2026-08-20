@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, Video } from "lucide-react";
+import { ArrowLeft, Save, Video, Plus, Trash } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -81,6 +81,29 @@ export default function EditCommunityPage() {
 		}
 		
 		return url;
+	};
+
+	const addGolfCourse = () => {
+		const courses = formData.golfCourses || [];
+		setFormData({
+			...formData,
+			golfCourses: [
+				...courses,
+				{ name: "", opened: "", architect: "", par: "", holes: "", yards: "", rating: "", slope: "" }
+			]
+		});
+	};
+
+	const removeGolfCourse = (index: number) => {
+		const courses = [...(formData.golfCourses || [])];
+		courses.splice(index, 1);
+		setFormData({ ...formData, golfCourses: courses });
+	};
+
+	const updateGolfCourse = (index: number, field: string, value: string) => {
+		const courses = [...(formData.golfCourses || [])];
+		courses[index] = { ...courses[index], [field]: value };
+		setFormData({ ...formData, golfCourses: courses });
 	};
 
 	const handleGenerateAi = async () => {
@@ -345,6 +368,113 @@ export default function EditCommunityPage() {
 							/>
 						</CardContent>
 					</Card>
+
+					{/* Golf Courses (Only if isGolfCommunity) */}
+					{formData.isGolfCommunity && (
+						<Card className="border-green-500/20 shadow-sm">
+							<CardHeader className="flex flex-row items-center justify-between">
+								<div>
+									<CardTitle className="text-green-700">Golf Courses</CardTitle>
+									<CardDescription>
+										Manage the specific golf courses within this community
+									</CardDescription>
+								</div>
+								<Button onClick={addGolfCourse} type="button" size="sm" className="bg-green-600 hover:bg-green-700">
+									<Plus className="w-4 h-4 mr-1" /> Add Course
+								</Button>
+							</CardHeader>
+							<CardContent className="space-y-6">
+								{(!formData.golfCourses || formData.golfCourses.length === 0) ? (
+									<p className="text-sm text-muted-foreground italic">No golf courses added yet. Click "Add Course" above.</p>
+								) : (
+									formData.golfCourses.map((course: any, idx: number) => (
+										<div key={idx} className="p-4 border rounded-lg bg-gray-50/50 space-y-4 relative">
+											<Button 
+												variant="ghost" 
+												size="icon" 
+												className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-100"
+												onClick={() => removeGolfCourse(idx)}
+											>
+												<Trash className="w-4 h-4" />
+											</Button>
+											
+											<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+												<div>
+													<Label>Course Name</Label>
+													<Input 
+														value={course.name || ""} 
+														onChange={(e) => updateGolfCourse(idx, "name", e.target.value)} 
+														placeholder="e.g. South Course" 
+													/>
+												</div>
+												<div>
+													<Label>Architect / Designer</Label>
+													<Input 
+														value={course.architect || ""} 
+														onChange={(e) => updateGolfCourse(idx, "architect", e.target.value)} 
+														placeholder="e.g. Tom Fazio" 
+													/>
+												</div>
+											</div>
+											
+											<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+												<div>
+													<Label>Holes</Label>
+													<Input 
+														value={course.holes || ""} 
+														onChange={(e) => updateGolfCourse(idx, "holes", e.target.value)} 
+														placeholder="e.g. 18" 
+													/>
+												</div>
+												<div>
+													<Label>Par</Label>
+													<Input 
+														value={course.par || ""} 
+														onChange={(e) => updateGolfCourse(idx, "par", e.target.value)} 
+														placeholder="e.g. 72" 
+													/>
+												</div>
+												<div>
+													<Label>Year Opened</Label>
+													<Input 
+														value={course.opened || ""} 
+														onChange={(e) => updateGolfCourse(idx, "opened", e.target.value)} 
+														placeholder="e.g. 2002" 
+													/>
+												</div>
+												<div>
+													<Label>Yards</Label>
+													<Input 
+														value={course.yards || ""} 
+														onChange={(e) => updateGolfCourse(idx, "yards", e.target.value)} 
+														placeholder="e.g. 7,100" 
+													/>
+												</div>
+											</div>
+											<div className="grid grid-cols-2 gap-4">
+												<div>
+													<Label>Rating</Label>
+													<Input 
+														value={course.rating || ""} 
+														onChange={(e) => updateGolfCourse(idx, "rating", e.target.value)} 
+														placeholder="e.g. 74.5" 
+													/>
+												</div>
+												<div>
+													<Label>Slope</Label>
+													<Input 
+														value={course.slope || ""} 
+														onChange={(e) => updateGolfCourse(idx, "slope", e.target.value)} 
+														placeholder="e.g. 138" 
+													/>
+												</div>
+											</div>
+										</div>
+									))
+								)}
+							</CardContent>
+						</Card>
+					)}
 				</div>
 
 				{/* RIGHT SIDE */}

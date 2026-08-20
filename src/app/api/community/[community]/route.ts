@@ -79,6 +79,8 @@ export async function PUT(
 		if (body.description) prismaBody.description = body.description;
 		if (body.propertyCount !== undefined) prismaBody.propertyCount = body.propertyCount;
 		if (body.videoUrl !== undefined) prismaBody.videoUrl = body.videoUrl;
+		if (body.isGolfCommunity !== undefined) prismaBody.isGolfCommunity = body.isGolfCommunity;
+		if (body.golfCourses !== undefined) prismaBody.golfCourses = body.golfCourses;
 
 		// Find community first
 		const existingComm = await prisma.community.findFirst({

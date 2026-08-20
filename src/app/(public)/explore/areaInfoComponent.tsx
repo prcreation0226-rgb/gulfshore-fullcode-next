@@ -1,6 +1,7 @@
 import ReadMore from "@/components/property/readmore";
 import GetSeoData from "@/hooks/getSeoData";
 import Image from "next/image";
+import GolfCourseCard from "@/components/community/GolfCourseCard";
 
 export default async function AreaInfoComponent({
 	city,
@@ -71,6 +72,20 @@ export default async function AreaInfoComponent({
 							)}
 						</div>
 					</div>
+
+					{/* Golf Courses Section */}
+					{seoData?.content?.isGolfCommunity && seoData?.content?.golfCourses && seoData.content.golfCourses.length > 0 && (
+						<div className="mt-16 pt-12 border-t border-gray-100">
+							<h2 className="text-3xl font-serif text-primary mb-8">
+								Golf Courses at {seoData?.community || community || city}
+							</h2>
+							<div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+								{seoData.content.golfCourses.map((course: any, idx: number) => (
+									<GolfCourseCard key={idx} course={course} />
+								))}
+							</div>
+						</div>
+					)}
 				</div>
 			</section>
 		</div>

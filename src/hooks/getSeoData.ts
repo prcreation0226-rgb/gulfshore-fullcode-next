@@ -94,6 +94,8 @@ export default async function GetSeoData({
 				Images: (communityRecord.images as any) || [],
 				infoText: infoText,
 				defaultImage: communityRecord.defaultImage || "",
+				golfCourses: communityRecord.golfCourses || null,
+				isGolfCommunity: communityRecord.isGolfCommunity || false,
 			};
 		}
 	}
@@ -296,6 +298,8 @@ export default async function GetSeoData({
 					community ? ` – ${community}` : ""
 				} real estate listings. Explore beautiful ${typeSegment}${bedBath}${featuresSegment} with Gulfshore Group.`,
 			defaultImage: content?.defaultImage || "",
+			golfCourses: (content as any)?.golfCourses || null,
+			isGolfCommunity: (content as any)?.isGolfCommunity || false,
 		},
 		city,
 		community,
