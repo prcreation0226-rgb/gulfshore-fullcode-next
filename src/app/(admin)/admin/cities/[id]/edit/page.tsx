@@ -367,7 +367,7 @@ export default function EditCityPage() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
-							{formData.Images.length && (
+							{formData.Images?.length > 0 && (
 								<div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
 									<img
 										src={formData.defaultImage || formData.Images[0]}

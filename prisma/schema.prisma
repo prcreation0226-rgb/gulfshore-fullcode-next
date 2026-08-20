@@ -468,6 +468,7 @@ model Community {
   videoUrl        String?
   propertyCount   Int        @default(0)
   isGolfCommunity Boolean    @default(false)
+  golfCourses     Json?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   cityId          Int
