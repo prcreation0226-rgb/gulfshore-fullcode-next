@@ -46,7 +46,7 @@ Output your response as a valid JSON object with the following keys:
 - "keywords": A comma-separated list of highly relevant SEO keywords.`;
 
 		if (isGolfCommunity) {
-			systemPrompt += `\n\nCRITICAL INSTRUCTION: This is a Golf Community. In the "infoText", you must include extensive details typical for this golf course (such as WHAT golf courses it has, HOW MANY golf courses there are, HOW MANY HOLES each course has, membership options, initiation fees, course designer, and club amenities) that you might find on local directories. Be specific about the golf lifestyle in ${community.name}.`;
+			systemPrompt += `\n\nCRITICAL INSTRUCTION: This is a Golf Community. In the "infoText", you MUST explicitly list the specific names of the golf courses it has. For EACH course, you MUST state exactly how many holes it has (e.g., 18-hole, 36-hole), the course architect/designer (e.g., Tom Fazio), the par rating, and the year it opened (if available). Format these specific golf course details prominently, such as using a dedicated HTML <ul> or a table so it stands out. Additionally, include membership options, initiation fees, and club amenities. Be highly specific about the golf offerings in ${community.name}.`;
 		} else {
 			systemPrompt += `\n\nThis is a beautiful non-golf community. Focus deeply on the natural beauty, waterfront access (if applicable), community amenities, and neighborhood charm in the "infoText".`;
 		}
