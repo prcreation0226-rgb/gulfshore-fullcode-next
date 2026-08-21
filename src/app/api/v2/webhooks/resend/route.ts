@@ -25,36 +25,62 @@ function getPropertyImageUrl(p: any): string {
 	return "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80";
 }
 
-// 100% Robust Helper to extract ONLY the user's fresh message (never erase user text)
+// 100% Robust Helper to extract ONLY the user's fresh message (stops at thread headers)
 const cleanEmailBody = (rawBody: string): string => {
 	if (!rawBody || typeof rawBody !== "string") return "";
 
 	let text = rawBody;
 
-	// 1. If HTML, extract text before the quote section ("On ... wrote:" or "gmail_quote")
-	const quoteCutoffMatch = text.match(/(?:<div[^>]*class=["'][^"']*gmail_quote[^"']*["']|On\s+[\s\S]*?wrote\s*:|-----Original Message-----)/i);
-	if (quoteCutoffMatch && quoteCutoffMatch.index !== undefined && quoteCutoffMatch.index > 0) {
-		text = text.substring(0, quoteCutoffMatch.index);
-	}
-
-	// 2. Strip HTML tags
+	// 1. Strip HTML thread cutoff blocks first
 	text = text
 		.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
 		.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
 		.replace(/<br\s*\/?>/gi, "\n")
 		.replace(/<\/p>/gi, "\n\n")
-		.replace(/<[^>]+>/g, " ");
+		.replace(/<div[^>]*class=["'][^"']*gmail_quote[^"']*["'][\s\S]*/gi, "") // Cut off gmail_quote div entirely
+		.replace(/<blockquote[\s\S]*/gi, ""); // Cut off blockquote entirely
 
-	// 3. Clean up whitespace
-	const lines = text.split("\n")
-		.map(l => l.trim())
-		.filter(l => l.length > 0 && !l.startsWith(">"));
+	// Strip remaining HTML tags
+	text = text.replace(/<[^>]+>/g, " ");
 
-	let result = lines.join(" ").replace(/\s+/g, " ").trim();
+	// 2. Process line by line and stop at the very first email thread header marker
+	const rawLines = text.split("\n");
+	const cleanLines: string[] = [];
 
-	// 4. FALLBACK: If stripping resulted in empty string, use rawBody with HTML stripped!
+	for (const rawLine of rawLines) {
+		const line = rawLine.trim();
+
+		if (!line) continue;
+
+		const lower = line.toLowerCase();
+
+		// Check for email thread header boundaries
+		if (
+			lower.startsWith(">") ||
+			lower.includes("-----original message-----") ||
+			(lower.startsWith("on ") && lower.includes("wrote:")) ||
+			(lower.startsWith("on ") && lower.includes("at ") && lower.includes("wrote")) ||
+			lower.startsWith("from:") ||
+			lower.startsWith("sent:") ||
+			lower.startsWith("to:") ||
+			lower.startsWith("subject:") ||
+			lower.includes("gulfshore group") ||
+			lower.includes("dimitri schwarz") ||
+			lower.includes("active homes matching")
+		) {
+			// Hit previous email thread content! Stop processing lines immediately.
+			break;
+		}
+
+		cleanLines.push(line);
+	}
+
+	let result = cleanLines.join(" ").replace(/\s+/g, " ").trim();
+
+	// Fallback if parsing returned empty string
 	if (!result) {
-		result = rawBody.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+		const rawStripped = rawBody.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+		result = rawStripped;
 	}
 
 	return result;
@@ -346,9 +372,9 @@ export async function POST(req: Request) {
 		const hasRe = /^re:\s*/i.test(rawSub);
 		const replySubject = hasRe ? rawSub : `Re: ${rawSub}`;
 
-		// Extract ONLY the latest fresh user message from the email
+		// Extract ONLY the latest fresh user message from the email (stripping previous email quotes)
 		const latestUserText = cleanEmailBody(textBody);
-		const fullTextLower = (latestUserText || textBody).toLowerCase().trim();
+		const fullTextLower = latestUserText.toLowerCase().trim();
 
 		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Reply Subject: "${replySubject}" | Latest Fresh Text: "${latestUserText}"`);
 
@@ -376,20 +402,14 @@ export async function POST(req: Request) {
 			}
 		});
 
-		// 3. Extract Search Parameters (Location, Price, Beds, Baths, Pool)
-		let searchParams = extractSearchParamsFromUserText(latestUserText);
-		if (!searchParams.location) {
-			const fallbackParams = extractSearchParamsFromUserText(textBody);
-			if (fallbackParams.location) {
-				searchParams.location = fallbackParams.location;
-			}
-		}
+		// 3. Extract Search Parameters Strictly from fresh user message
+		const searchParams = extractSearchParamsFromUserText(latestUserText);
 
 		const isSellIntent = fullTextLower.includes("sell") || fullTextLower.includes("selling") || fullTextLower.includes("valuation") || fullTextLower.includes("cma");
 		const isBuyIntent = fullTextLower.includes("buy") || fullTextLower.includes("buying") || fullTextLower.includes("property") || fullTextLower.includes("properties") || fullTextLower.includes("home") || fullTextLower.includes("listing") || searchParams.location !== undefined;
 
 		// 4. RULE: GREETING ONLY IF STRICTLY JUST "hi", "hello", "hey" WITHOUT ANY BUY/SELL INTENT
-		const isPureGreeting = !isSellIntent && !isBuyIntent && !searchParams.location && (fullTextLower === "hi" || fullTextLower === "hello" || fullTextLower === "hey" || fullTextLower === "help");
+		const isPureGreeting = !isSellIntent && !isBuyIntent && !searchParams.location && (fullTextLower === "hi" || fullTextLower === "hello" || fullTextLower === "hey" || fullTextLower === "help" || fullTextLower.length < 6);
 
 		let plainTextSummary = "";
 		let htmlContent = "";
@@ -586,9 +606,9 @@ ${baseUrl}`;
 			sendHeaders["References"] = formattedMsgId;
 		}
 
-		// 7. Send the luxury email card response back via Resend inside the SAME thread
+		// 7. Send the luxury email card response back via Resend inside the SAME thread WITH GUARANTEED RETRY FALLBACKS
 		try {
-			const sendResult = await resend.emails.send({
+			let sendResult = await resend.emails.send({
 				from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
 				to: cleanFromEmail,
 				subject: replySubject,
@@ -596,7 +616,33 @@ ${baseUrl}`;
 				html: htmlContent,
 				headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
 			});
-			console.log("[Resend Email Sent Result]:", JSON.stringify(sendResult));
+			console.log("[Resend Email Sent Primary Result]:", JSON.stringify(sendResult));
+
+			if (sendResult.error) {
+				console.error("[Resend Primary Email Error]:", sendResult.error);
+				// RETRY FALLBACK 1: Send WITHOUT headers if threading headers caused rejection
+				sendResult = await resend.emails.send({
+					from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
+					to: cleanFromEmail,
+					subject: replySubject,
+					text: plainTextSummary,
+					html: htmlContent,
+				});
+				console.log("[Resend Retry Without Headers Result]:", JSON.stringify(sendResult));
+
+				if (sendResult.error) {
+					console.error("[Resend Retry Error]:", sendResult.error);
+					// RETRY FALLBACK 2: Send using onboarding domain if custom sender domain failed
+					sendResult = await resend.emails.send({
+						from: "Gulfshore Group <onboarding@resend.dev>",
+						to: cleanFromEmail,
+						subject: replySubject,
+						text: plainTextSummary,
+						html: htmlContent,
+					});
+					console.log("[Resend Final Fallback Result]:", JSON.stringify(sendResult));
+				}
+			}
 		} catch (sendErr) {
 			console.error("[Resend Email Send Exception]:", sendErr);
 		}
