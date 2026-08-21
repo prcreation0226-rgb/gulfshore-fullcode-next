@@ -148,12 +148,14 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: "Missing sender email address" }, { status: 400 });
 		}
 
-		// Use exact rawSubject to guarantee Gmail matches subject character-for-character with existing thread
-		const replySubject = (rawSubject || "Real Estate Inquiry").trim();
+		// Clean Subject line for Gmail threading: Ensure a single "Re: " prefix
+		const rawSub = (rawSubject || "Real Estate Inquiry").trim();
+		const hasRe = /^re:\s*/i.test(rawSub);
+		const replySubject = hasRe ? rawSub : `Re: ${rawSub}`;
 
 		// Extract ONLY the latest user message from the email (completely strip old thread history)
 		const latestUserText = cleanEmailBody(textBody);
-		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Exact Thread Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
+		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Reply Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
 
 		// 1. Find or create lead by email
 		let lead = await prisma.lead.findUnique({
@@ -289,9 +291,9 @@ ${baseUrl}`;
 		// 7. Generate styled HTML version of email for Gmail/Outlook clients
 		const htmlContent = formatTextToHtml(finalEmailText);
 
-		// 8. Build email thread headers so Gmail stacks replies in the SAME thread
+		// 8. Build email thread headers so Gmail stacks replies in the SAME thread (Only if valid RFC Message-ID containing @)
 		const sendHeaders: Record<string, string> = {};
-		if (messageId) {
+		if (messageId && messageId.includes("@")) {
 			const formattedMsgId = messageId.startsWith("<") && messageId.endsWith(">") ? messageId : `<${messageId}>`;
 			sendHeaders["In-Reply-To"] = formattedMsgId;
 			sendHeaders["References"] = formattedMsgId;
