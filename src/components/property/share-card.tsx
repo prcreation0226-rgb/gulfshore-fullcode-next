@@ -72,7 +72,7 @@ export default function SocialShare({
 				<h3 className="py-2 font-medium lg:text-2xl text-lg">
 					Share this property on :
 				</h3>
-				<div className="flex gap-4 items-center">
+				<div className="flex flex-wrap gap-3 sm:gap-4 items-center">
 					<FacebookShareButton url={propertyUrlLink}>
 						<FacebookIcon className="text-blue-600 w-10 hover:scale-110 transition-transform" />
 					</FacebookShareButton>
