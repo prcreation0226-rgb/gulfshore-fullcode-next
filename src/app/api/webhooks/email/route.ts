@@ -508,6 +508,22 @@ ${baseUrl}`;
 				headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
 			});
 			console.log("[Resend Email Sent Result]:", JSON.stringify(sendResult));
+			
+			if (sendResult?.data?.id) {
+				try {
+					await prisma.communicationLog.create({
+						data: {
+							type: "Email",
+							to: cleanFromEmail,
+							subject: replySubject,
+							status: "sent",
+							providerId: sendResult.data.id,
+						},
+					});
+				} catch (logErr) {
+					console.error("Failed to log AI auto reply:", logErr);
+				}
+			}
 		} catch (sendErr) {
 			console.error("[Resend Email Send Exception]:", sendErr);
 		}
