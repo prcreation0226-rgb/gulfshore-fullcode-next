@@ -1,549 +1,315 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { openai } from "@ai-sdk/openai";
-import { generateText, tool } from "ai";
-import { z } from "zod";
 import { Resend } from "resend";
 import UrlMaker from "@/hooks/url-maker";
 import { sendAdminLeadAlertEmail } from "@/lib/email/admin-lead-alert";
 import { recalculateLeadScore } from "@/lib/leads/services/scoring.service";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend client
+const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy");
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gulfshore-fullcode-next-production.up.railway.app";
+
+// Helper to normalize location strings (strip state codes, filler words, etc.)
+const cleanLocation = (val: any): string | undefined => {
+	if (!val || typeof val !== "string") return undefined;
+	const cleaned = val
+		.replace(/,\s*fl\b/gi, "")
+		.replace(/,\s*florida\b/gi, "")
+		.replace(/\bfl\b/gi, "")
+		.replace(/\bflorida\b/gi, "")
+		.replace(/\blocation\b/gi, "")
+		.replace(/\barea\b/gi, "")
+		.replace(/\bcity\b/gi, "")
+		.replace(/[,;]/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+	return cleaned || undefined;
+};
+
+// Helper to extract ONLY the new email message (completely strip quoted reply history)
+const cleanEmailBody = (rawBody: string): string => {
+	if (!rawBody || typeof rawBody !== "string") return "";
+
+	// 1. Strip HTML tags and normalize spaces
+	let text = rawBody
+		.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+		.replace(/<br\s*\/?>/gi, "\n")
+		.replace(/<\/p>/gi, "\n\n")
+		.replace(/<[^>]+>/g, " ");
+
+	// 2. Cut off everything starting from "On <Date> ... wrote:", "From:", "Sent:" or old AI text
+	const cutOffPatterns = [
+		/\bOn\s+[\s\S]*?wrote:/i,
+		/\bOn\s+[\s\S]*?wrote\s*:/i,
+		/-----Original Message-----/i,
+		/-----Forwarded Message-----/i,
+		/\bFrom:\s+[^\n]+<[^\n]+>/i,
+		/\bSent:\s+[^\n]+/i,
+		/It seems there was a misunderstanding/i,
+		/It seems like your message/i,
+		/It seems there's been a misunderstanding/i,
+		/How can I assist you today/i,
+	];
+
+	for (const pattern of cutOffPatterns) {
+		const match = text.match(pattern);
+		if (match && match.index !== undefined) {
+			text = text.substring(0, match.index);
+		}
+	}
+
+	// 3. Filter out lines starting with '>' (quoted reply indicators)
+	const lines = text.split("\n").filter((line) => !line.trim().startsWith(">"));
+	const result = lines.join(" ").replace(/\s+/g, " ").trim();
+
+	return result || rawBody.replace(/<[^>]+>/g, "").trim();
+};
+
+// Format plain text with URLs into styled HTML email for Gmail/Outlook
+function formatTextToHtml(plainText: string): string {
+	const escaped = plainText
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;");
+
+	// Convert markdown links [text](url) to HTML <a href="url">text</a>
+	const withMarkdownLinks = escaped.replace(
+		/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+		'<a href="$2" target="_blank" style="color: #dc2626; font-weight: bold; text-decoration: underline;">$1</a>'
+	);
+
+	// Convert raw HTTP/HTTPS URLs into clickable links if not inside a tag
+	const withRawLinks = withMarkdownLinks.replace(
+		/(?<!href=")(https?:\/\/[^\s<]+)/g,
+		'<a href="$1" target="_blank" style="color: #dc2626; font-weight: bold; text-decoration: underline;">$1</a>'
+	);
+
+	// Convert paragraphs
+	const formattedParagraphs = withRawLinks
+		.split("\n\n")
+		.map((p) => `<p style="margin-bottom: 14px; line-height: 1.6;">${p.replace(/\n/g, "<br/>")}</p>`)
+		.join("");
+
+	return `
+		<div style="font-family: Arial, Helvetica, sans-serif; font-size: 15px; color: #1f2937; max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
+			<div style="border-bottom: 2px solid #dc2626; padding-bottom: 12px; margin-bottom: 20px;">
+				<h2 style="color: #dc2626; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">GULFSHORE GROUP</h2>
+				<p style="color: #6b7280; font-size: 12px; margin: 4px 0 0 0; font-weight: 500;">Real Estate Concierge | Dimitri Schwarz</p>
+			</div>
+			<div style="font-size: 14px; color: #374151;">
+				${formattedParagraphs}
+			</div>
+			<div style="border-top: 1px solid #e5e7eb; margin-top: 24px; padding-top: 14px; font-size: 12px; color: #9ca3af; text-align: center;">
+				<p style="margin: 0;">© ${new Date().getFullYear()} Gulfshore Group Real Estate. All rights reserved.</p>
+				<p style="margin: 4px 0 0 0;"><a href="${baseUrl}" style="color: #dc2626; text-decoration: none;">www.gulfshoregroup.com</a></p>
+			</div>
+		</div>
+	`;
+}
 
 export async function POST(req: Request) {
 	try {
-		const payload = await req.json();
-		console.log("[Email Webhook payload received]:", JSON.stringify(payload, null, 2));
+		const body = await req.json();
+		console.log("[Resend Webhook Payload Received]:", JSON.stringify(body));
 
-		const data = payload.data || payload;
-		const fromEmail = data.from || data.sender || data.From;
-		const subject = data.subject || data.Subject || "No Subject";
-		let textBody = data.text || data.html || data.TextBody || data.HtmlBody || "";
+		// Support Resend SVIX inbound payload structure (body.data or root body)
+		const payloadData = body.data || body;
 
-		// If this is a standard Resend webhook, fetch it using email_id if text is missing
-		if (!textBody && data.email_id) {
-			console.log(`[Email Webhook] Text is missing. Fetching full INBOUND email by ID: ${data.email_id}...`);
-			try {
-				let emailResponse;
-				if ((resend.emails as any).receiving) {
-					emailResponse = await (resend.emails as any).receiving.get(data.email_id);
-				} else {
-					const res = await fetch(`https://api.resend.com/emails/${data.email_id}/receiving`, {
-						headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}` }
-					});
-					emailResponse = { data: await res.json() };
-				}
-				
-				if (emailResponse && emailResponse.data) {
-					textBody = emailResponse.data.text || emailResponse.data.html || "";
-				}
-			} catch (err) {
-				console.error("[Email Webhook] Error fetching inbound email body:", err);
+		const fromEmail = payloadData.From || payloadData.from || payloadData.email || body.From || body.from || body.headers?.from;
+		const textBody = payloadData.TextBody || payloadData.text || payloadData.html || body.TextBody || body.text || body.html || "";
+		const rawSubject = payloadData.Subject || payloadData.subject || body.Subject || body.subject || "Real Estate Inquiry";
+
+		// Robust Extraction of Message-ID for email threading (In-Reply-To / References)
+		let messageId: string | undefined = undefined;
+
+		if (payloadData.headers) {
+			if (Array.isArray(payloadData.headers)) {
+				const found = payloadData.headers.find((h: any) => h.name?.toLowerCase() === "message-id");
+				if (found) messageId = found.value;
+			} else if (typeof payloadData.headers === "object") {
+				messageId = payloadData.headers["message-id"] || payloadData.headers["Message-ID"] || payloadData.headers["message_id"] || payloadData.headers["Message-Id"];
 			}
 		}
 
-		// Extract just the new reply, remove the quoted history
-		const cleanTextBody = textBody
-			.split(/On\s+.*?\s+wrote:/i)[0] // Remove Gmail style quotes
-			.split(/-----Original Message-----/i)[0] // Remove Outlook style quotes
-			.split(/_{5,}/)[0] // Remove Yahoo style quotes
-			.split(/From:\s+/i)[0] // Remove iOS style quotes
-			.replace(/^>.*$/gm, "") // Remove remaining > quote lines
-			.trim();
-
-		console.log(`[Email Webhook Parsed Data] From: ${fromEmail}, Subject: ${subject}, Text length: ${cleanTextBody?.length}`);
-
-		if (!fromEmail || !cleanTextBody) {
-			console.error("[Email Webhook Error] Missing fields. Parsed as:", { fromEmail, subject, text: cleanTextBody ? 'Present' : 'Missing' });
-			return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+		if (!messageId) {
+			messageId = payloadData.email_id || payloadData.id || body.email_id || body.id;
 		}
 
-		// Clean the email address if it comes in format "Name <email@domain.com>"
-		const match = fromEmail.match(/<([^>]+)>/);
-		const cleanEmail = match ? match[1] : fromEmail.trim();
-		console.log(`[Email Webhook] Clean email: ${cleanEmail}`);
+		// Extract clean email address if passed like "User Name <user@example.com>"
+		let cleanFromEmail = fromEmail || "";
+		const emailMatch = cleanFromEmail.match(/<([^>]+)>/);
+		if (emailMatch && emailMatch[1]) {
+			cleanFromEmail = emailMatch[1].trim();
+		} else {
+			cleanFromEmail = cleanFromEmail.trim();
+		}
 
-		// Find or create the lead by email
+		if (!cleanFromEmail) {
+			return NextResponse.json({ error: "Missing sender email address" }, { status: 400 });
+		}
+
+		// Keep exact rawSubject string so Gmail matches character-for-character with the original thread
+		const replySubject = (rawSubject || "Real Estate Inquiry").trim();
+
+		// Extract ONLY the latest user message from the email (completely strip old thread history)
+		const latestUserText = cleanEmailBody(textBody);
+		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Thread Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
+
+		// 1. Find or create lead by email
 		let lead = await prisma.lead.findUnique({
-			where: { email: cleanEmail },
+			where: { email: cleanFromEmail }
 		});
 
 		if (!lead) {
 			lead = await prisma.lead.create({
 				data: {
-					email: cleanEmail,
-					firstName: "New",
-					lastName: "Lead",
-					fullName: "New Lead",
+					email: cleanFromEmail,
 					source: "Other",
-					status: "New",
-				},
+				}
 			});
 		}
 
-		// 1. Save User's Email to AI Chat History
+		// 2. Save ONLY the new user message to AIChatHistory
 		await prisma.aIChatHistory.create({
 			data: {
 				leadId: lead.id,
 				channel: "email",
 				role: "user",
-				message: `Subject: ${subject}\n\n${cleanTextBody}`,
+				message: `Subject: ${replySubject}\n\n${latestUserText || textBody}`,
 			}
 		});
 
-		// 2. Fetch past context for the AI
-		const pastChats = await prisma.aIChatHistory.findMany({
-			where: { leadId: lead.id },
-			orderBy: { createdAt: 'asc' },
-			take: 20
-		});
+		// 3. Detect Location / City from Subject & Clean Email Content
+		const fullSearchStr = `${rawSubject} ${latestUserText}`.toLowerCase();
 
-		// Clean up past chats to filter out debug logs/metadata stored in DB messages
-		const formattedHistory = pastChats.map(chat => {
-			let cleanMsg = chat.message;
-			if (chat.role === "ai") {
-				// Strip debug tool arguments and tags appended by onFinish
-				cleanMsg = cleanMsg.split(/\n\n\[Displayed \d+ properties\]/i)[0].split(/\n\n\[Searched for properties but found none\]/i)[0];
+		const knownCities = ["naples", "sanibel", "bonita springs", "bonita", "cape coral", "fort myers", "ft myers", "ft. myers", "estero", "marco island", "punta gorda", "lehigh", "miami", "ave maria"];
+		let matchedCity: string | undefined = undefined;
+
+		for (const city of knownCities) {
+			if (fullSearchStr.includes(city)) {
+				matchedCity = (city === "bonita") ? "BONITA SPRINGS" : (city.includes("ft") && city.includes("myers")) ? "FORT MYERS" : city.toUpperCase();
+				break;
 			}
-			return {
-				role: chat.role === "ai" ? ("assistant" as const) : ("user" as const),
-				content: cleanMsg
-			};
+		}
+
+		// 4. Query Database for Active Properties (always default to NAPLES if no specific city was mentioned)
+		const targetCity = matchedCity || "NAPLES";
+		console.log(`[Resend Webhook DB Query] Fetching active properties for city: ${targetCity}`);
+
+		const properties = await prisma.property.findMany({
+			where: {
+				City: { contains: targetCity },
+				StandardStatus: "Active"
+			},
+			take: 6,
+			orderBy: { ListPrice: 'desc' },
+			select: {
+				FullAddress: true,
+				ListPrice: true,
+				BedroomsTotal: true,
+				BathroomsTotalInteger: true,
+				LivingArea: true,
+				PropertyType: true,
+				City: true,
+				Community: true,
+				MLSNumber: true,
+				PoolPrivateYN: true,
+				WaterfrontYN: true,
+				GulfAccessYN: true,
+			}
 		});
 
-		// 3. Generate AI Response using tools (similar to ai/chat route.ts but structured for email)
-		// @ts-ignore
-		const { text: aiResponse } = await generateText({
-			model: openai("gpt-4o-mini"),
-			// @ts-ignore
-			maxSteps: 5,
-			system: `You are an expert AI Real Estate Concierge for Gulfshore Group, working on behalf of Dimitri Schwarz. 
-You are replying to an email from a client. Keep your tone highly professional, concise, and helpful. 
-Do not use emojis excessively. Format your response exactly like a professional email body (no need for a Subject line, just the email text).
+		console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties in ${targetCity}`);
 
-EMAIL DELIVERY INSTRUCTIONS:
-- Since you are replying via EMAIL, there is no browser/widget user interface to render property cards. 
-- If you find properties or schedule a tour, you MUST write down the details (address, price, beds, baths, and the link to view the details) of the listings directly inside the text of your email response.
-- Do not say "allow the UI to render cards" or similar website-specific instructions. List the homes clearly.
+		let propertyContext = "";
+		if (properties.length > 0) {
+			propertyContext = properties.map((p: any, i: number) => {
+				const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
+				const fullUrl = `${baseUrl}${relativeUrl}`;
+				return `${i + 1}. ${p.FullAddress}
+Price: $${p.ListPrice ? p.ListPrice.toLocaleString() : "Price TBD"}
+Beds: ${p.BedroomsTotal ?? 0} | Baths: ${p.BathroomsTotalInteger ?? 0} | Living Area: ${p.LivingArea ? `${p.LivingArea.toLocaleString()} SqFt` : "N/A"}
+Pool: ${p.PoolPrivateYN ? "Yes" : "No"} | Waterfront: ${p.WaterfrontYN ? "Yes" : "No"}${p.GulfAccessYN ? " | Gulf Access: Yes" : ""}
+Listing Link: ${fullUrl}`;
+			}).join("\n\n");
+		}
 
-BUYER VS. SELLER INTENT DETECTION:
-1. BUYER INTENT:
-- If the user is looking to buy, rent, or view available homes:
-- You MUST immediately call the 'searchProperties' tool with all parameters extracted (city, address, price, beds, baths, pool, propertyType).
-- CRITICAL: If the user provides ONLY a location (e.g. "i want properties in Sanibel"), YOU MUST IMMEDIATELY CALL 'searchProperties' WITH THAT CITY!
-- DO NOT ask for budget, bedrooms, bathrooms, or criteria BEFORE running the tool! Run the search FIRST and write the property listings in your response.
+		// 5. Construct 100% Guaranteed Property Email Response
+		let finalEmailText = "";
 
-2. SELLER & PROPERTY LOOKUP:
-- If a user wants to SELL a home or check their listings, call the 'checkSellerProperties' tool with their email.
-- Provide the seller details and list the link to list properties (/sell) in the email.
+		if (properties.length > 0) {
+			finalEmailText = `Hello,
 
-Sign off with:
+Thank you for reaching out to Gulfshore Group! Here are top active property listings currently available in ${targetCity}:
+
+${propertyContext}
+
+Dimitri Schwarz and our team are available for private viewings and full buyer representation. If you are also looking to sell your current home or get a free market valuation, please visit ${baseUrl}/sell.
+
+Please let us know if you would like to schedule a showing or need further details on any of these homes.
+
 Best regards,
-Gulfshore Group AI Concierge
-on behalf of Dimitri Schwarz`,
-			messages: formattedHistory,
-			tools: {
-				checkSellerProperties: tool({
-					description: "Look up a seller's existing property listings or home valuation requests by their email address, and provide an option/link to add a new property for sale on /sell.",
-					inputSchema: z.object({
-						email: z.string().describe("The seller's email address to search"),
-					}),
-					execute: async (args) => {
-						const { email } = args;
-						if (!email || !email.includes("@")) {
-							return {
-								found: false,
-								email: email || "",
-								message: "Please provide a valid email address.",
-								addPropertyUrl: "/sell"
-							};
-						}
+Dimitri Schwarz & AI Team
+Gulfshore Group Real Estate
+${baseUrl}`;
+		} else {
+			finalEmailText = `Hello,
 
-						const cleanEmailAddress = email.toLowerCase().trim();
-						const matchedLead = await prisma.lead.findUnique({
-							where: { email: cleanEmailAddress },
-							include: {
-								inquiryHistory: {
-									orderBy: { createdAt: "desc" }
-								}
-							}
-						});
+Thank you for contacting Gulfshore Group Real Estate.
 
-						if (!matchedLead || !matchedLead.inquiryHistory || matchedLead.inquiryHistory.length === 0) {
-							return {
-								found: false,
-								email: cleanEmailAddress,
-								message: `No existing property listings or valuation requests were found for ${cleanEmailAddress}.`,
-								addPropertyUrl: "/sell"
-							};
-						}
+We specialize in luxury real estate across Southwest Florida, including Naples, Sanibel, Bonita Springs, Cape Coral, Fort Myers, and Estero.
 
-						const properties = matchedLead.inquiryHistory.map((inq: any) => {
-							let addr = "Property Valuation / Listing Request";
-							if (inq.message) {
-								const match = inq.message.match(/Property Address:\s*([^\n]+)/i) ||
-									inq.message.match(/Property:\s*([^\n]+)/i) ||
-									inq.message.match(/Address:\s*([^\n]+)/i);
-								if (match && match[1]) {
-									addr = match[1].trim();
-								}
-							}
-							return {
-								id: inq.id,
-								type: inq.type,
-								address: addr,
-								createdAt: inq.createdAt
-							};
-						});
+Please visit our website at ${baseUrl} to browse all active listings, or let us know your preferred location, budget, and property criteria so we can send you custom matches.
 
-						return {
-							found: true,
-							email: cleanEmailAddress,
-							leadName: matchedLead.fullName || `${matchedLead.firstName || ""} ${matchedLead.lastName || ""}`.trim(),
-							properties,
-							addPropertyUrl: "/sell"
-						};
-					},
-				}),
-				searchProperties: tool({
-					description: "Search the real estate database for active properties matching the user's criteria.",
-					inputSchema: z.object({
-						city: z.string().optional().describe("City name only (e.g., Sanibel, Naples, Bonita Springs, Cape Coral)."),
-						address: z.string().optional().describe("ONLY the street address (e.g. '622 Sw 52nd St')."),
-						propertyType: z.string().optional().describe("Type of property (e.g., 'Single Family', 'Condo', 'Townhouse')"),
-						community: z.string().optional().describe("Name of the community or subdivision"),
-						subdivision: z.string().optional().describe("Name of the subdivision"),
-						mlsNumber: z.string().optional().describe("MLS Number of the listing"),
-						minPrice: z.coerce.number().optional().describe("Minimum price in dollars"),
-						maxPrice: z.coerce.number().optional().describe("Maximum price in dollars"),
-						beds: z.coerce.number().optional().describe("Minimum number of bedrooms"),
-						baths: z.coerce.number().optional().describe("Minimum number of bathrooms"),
-						hasPool: z.boolean().optional().describe("Whether the property must have a private pool"),
-						waterfront: z.boolean().optional().describe("Whether the property must be waterfront"),
-						gulfAccess: z.boolean().optional().describe("Whether the property must have gulf access"),
-						newConstruction: z.boolean().optional().describe("Whether the property is new construction"),
-						zipCode: z.string().optional().describe("Postal/Zip code"),
-						garage: z.boolean().optional().describe("Whether the property must have a garage"),
-						spa: z.boolean().optional().describe("Whether the property must have a spa"),
-					}),
-					execute: async (args) => {
-						let { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa } = args;
+Best regards,
+Dimitri Schwarz & AI Team
+Gulfshore Group Real Estate
+${baseUrl}`;
+		}
 
-						const parseNumeric = (val: any) => {
-							if (val === undefined || val === null) return undefined;
-							const parsed = parseInt(String(val).replace(/[^\d.]/g, ""), 10);
-							return isNaN(parsed) ? undefined : parsed;
-						};
+		console.log(`[Resend Webhook Success] Generated deterministic email response length: ${finalEmailText.length} characters.`);
 
-						const parsedBeds = parseNumeric(beds);
-						const parsedBaths = parseNumeric(baths);
-						const parsedMinPrice = parseNumeric(minPrice);
-						const parsedMaxPrice = parseNumeric(maxPrice);
-
-						const hasFilters = city || address || propertyType || community || subdivision || mlsNumber || zipCode || parsedBeds || parsedBaths || parsedMinPrice || parsedMaxPrice;
-						if (!hasFilters && !hasPool && !waterfront && !gulfAccess && !newConstruction && !garage && !spa) {
-							return [];
-						}
-
-						const isSpecificLookup = !!(address || mlsNumber);
-						const where: any = isSpecificLookup ? {} : { StandardStatus: "Active" };
-
-						const cleanLocation = (val: any): string | undefined => {
-							if (!val || typeof val !== "string") return undefined;
-							const cleaned = val
-								.replace(/,\s*fl\b/gi, "")
-								.replace(/,\s*florida\b/gi, "")
-								.replace(/\bfl\b/gi, "")
-								.replace(/\bflorida\b/gi, "")
-								.replace(/\blocation\b/gi, "")
-								.replace(/\barea\b/gi, "")
-								.replace(/\bcity\b/gi, "")
-								.replace(/[,;]/g, " ")
-								.replace(/\s+/g, " ")
-								.trim();
-							return cleaned || undefined;
-						};
-
-						let finalCity = cleanLocation(city);
-						let finalAddress = address ? address.trim() : undefined;
-
-						if (finalAddress) {
-							const addrLower = finalAddress.toLowerCase();
-							const hasNumbers = /\d/.test(addrLower);
-							const knownCities = ["naples", "bonita", "cape coral", "lehigh", "fort myers", "miami", "marco island", "estero", "sanibel", "punta gorda", "labelle", "babcock", "ave maria"];
-							const matchesKnownCity = knownCities.some(c => {
-								const escaped = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-								const regex = new RegExp(`\\b${escaped}\\b`, 'i');
-								return regex.test(addrLower);
-							});
-
-							if (!hasNumbers || (matchesKnownCity && addrLower.split(" ").length <= 3)) {
-								finalAddress = undefined;
-							}
-						}
-
-						if (finalCity) {
-							const cityUpper = finalCity.toUpperCase();
-							if (cityUpper.includes("CAPE CORA")) {
-								where.City = { contains: "CAPE CORAL" };
-							} else if (cityUpper.includes("FT MYERS") || cityUpper.includes("FT. MYERS")) {
-								where.City = { contains: "FORT MYERS" };
-							} else {
-								where.City = { contains: cityUpper };
-							}
-						}
-
-						if (finalAddress) {
-							const words = finalAddress.trim().split(' ').filter(Boolean);
-							const houseNumber = words[0];
-							const streetName = words.slice(1, 3).join(" ");
-
-							if (houseNumber && /^\d+/.test(houseNumber)) {
-								where.FullAddress = { startsWith: houseNumber };
-								if (streetName) {
-									const streetNameClean = streetName.replace(/\b(ave|ln|dr|rd|ct|st|pl|ter|cir)\b/gi, "").trim();
-									if (streetNameClean) {
-										where.AND = where.AND || [];
-										where.AND.push({ FullAddress: { contains: streetNameClean } });
-									}
-								}
-							} else {
-								where.FullAddress = { contains: finalAddress };
-							}
-						}
-
-						if (propertyType) {
-							const pt = propertyType.toLowerCase();
-							const genericTerms = ["buy", "purchase", "sale", "rent", "lease", "any", "properties", "real estate", "listing", "listings"];
-							const isGeneric = genericTerms.some(term => pt === term || pt.includes(term));
-
-							if (isGeneric) {
-								if (pt.includes("rent") || pt.includes("lease")) {
-									where.PropertyType = { contains: "Lease" };
-								} else {
-									where.PropertyType = { not: "Residential Lease" };
-								}
-							} else if (pt.includes('condo') || pt.includes('apartment')) {
-								where.AND = where.AND || [];
-								where.AND.push({
-									OR: [
-										{ PropertySubType: { contains: 'Rise' } },
-										{ PropertySubType: { contains: 'Condo' } },
-										{ PropertyType: { contains: 'Condo' } }
-									]
-								});
-							} else if (pt.includes('single family') || pt.includes('home') || pt.includes('house')) {
-								where.AND = where.AND || [];
-								where.AND.push({
-									OR: [
-										{ PropertyType: { contains: 'Single Family' } },
-										{ PropertySubType: { contains: 'Single Family' } }
-									]
-								});
-							}
-						}
-
-						if (community) {
-							where.AND = where.AND || [];
-							where.AND.push({
-								OR: [
-									{ Community: { contains: community } },
-									{ Development: { contains: community } }
-								]
-							});
-						}
-
-						if (subdivision) where.SubdivisionName = { contains: subdivision };
-						if (mlsNumber) where.MLSNumber = { contains: mlsNumber.trim() };
-						if (zipCode) where.PostalCode = zipCode;
-
-						if (parsedMinPrice || parsedMaxPrice) {
-							where.ListPrice = {};
-							if (parsedMinPrice) where.ListPrice.gte = parsedMinPrice;
-							if (parsedMaxPrice) where.ListPrice.lte = parsedMaxPrice;
-						}
-						if (parsedBeds) where.BedroomsTotal = { gte: parsedBeds };
-						if (parsedBaths) where.BathroomsTotalInteger = { gte: parsedBaths };
-						if (hasPool === true) where.PoolPrivateYN = true;
-						if (waterfront === true) where.WaterfrontYN = true;
-						if (gulfAccess === true) where.GulfAccessYN = true;
-						if (newConstruction === true) where.NewConstructionYN = true;
-						if (garage === true) where.GarageYN = true;
-						if (spa === true) where.SpaYN = true;
-
-						const selectFields = {
-							id: true,
-							FullAddress: true,
-							ListPrice: true,
-							BedroomsTotal: true,
-							BathroomsTotalInteger: true,
-							PoolPrivateYN: true,
-							LivingArea: true,
-							PropertyType: true,
-							City: true,
-							Community: true,
-							MLSNumber: true,
-							YearBuilt: true,
-							Description: true,
-							WaterfrontYN: true,
-							GulfAccessYN: true,
-							GarageYN: true,
-							HOAFee: true,
-							StandardStatus: true,
-						};
-
-						let properties = await prisma.property.findMany({
-							where,
-							take: 5, // Keep listing short for emails
-							orderBy: { ListPrice: 'desc' },
-							select: selectFields
-						});
-
-						if (properties.length === 0 && where.ListPrice) {
-							const fallbackWhere = { ...where };
-							delete fallbackWhere.ListPrice;
-
-							const fallbackProperties = await prisma.property.findMany({
-								where: fallbackWhere,
-								take: 5,
-								orderBy: { ListPrice: 'asc' },
-								select: selectFields
-							});
-
-							if (fallbackProperties.length > 0) {
-								properties = fallbackProperties;
-							}
-						}
-
-						const hostUrl = process.env.NEXT_PUBLIC_SERVER_URL || "https://gulfshoregroup.com";
-						return properties.map((p: any) => ({
-							address: p.FullAddress,
-							price: p.ListPrice ? `$${p.ListPrice.toLocaleString()}` : "Price TBD",
-							beds: p.BedroomsTotal,
-							baths: p.BathroomsTotalInteger,
-							pool: p.PoolPrivateYN ? "Yes" : "No",
-							sqft: p.LivingArea,
-							type: p.PropertyType,
-							yearBuilt: p.YearBuilt,
-							description: p.Description ? `${p.Description.substring(0, 100)}...` : "",
-							waterfront: p.WaterfrontYN ? "Yes" : "No",
-							gulfAccess: p.GulfAccessYN ? "Yes" : "No",
-							link: `${hostUrl}${UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined)}`,
-							status: p.StandardStatus,
-						}));
-					},
-				}),
-				scheduleTour: tool({
-					description: "Schedule a property tour or viewing appointment. Use this when the user wants to see a property or meet with an agent.",
-					inputSchema: z.object({
-						name: z.string().describe("The visitor's full name"),
-						email: z.string().optional().describe("The visitor's email address"),
-						phone: z.string().optional().describe("The visitor's phone number"),
-						preferredDate: z.string().optional().describe("Preferred date for the tour"),
-						propertyAddress: z.string().optional().describe("The address of the property"),
-						message: z.string().optional().describe("Any additional notes"),
-					}),
-					execute: async (args) => {
-						const { name, email, phone, preferredDate, propertyAddress, message } = args;
-						try {
-							const leadEmail = email || `${phone?.replace(/[^0-9]/g, "") || Date.now()}@chatbot-lead.com`;
-							let matchedLead = await prisma.lead.findFirst({
-								where: {
-									OR: [
-										...(email ? [{ email }] : []),
-										...(phone ? [{ phone }] : []),
-									],
-								},
-							});
-
-							if (!matchedLead) {
-								const nameParts = name.split(" ");
-								matchedLead = await prisma.lead.create({
-									data: {
-										firstName: nameParts[0] || name,
-										lastName: nameParts.slice(1).join(" ") || undefined,
-										fullName: name,
-										email: leadEmail,
-										phone: phone || undefined,
-										source: "Tour_Request",
-										score: 50,
-										scoreLabel: "Hot",
-									},
-								});
-							}
-
-							await prisma.inquiry.create({
-								data: {
-									leadId: matchedLead.id,
-									type: "Tour_Request",
-									message: [
-										`Tour Request from Inbound Email AI`,
-										`Name: ${name}`,
-										email ? `Email: ${email}` : null,
-										phone ? `Phone: ${phone}` : null,
-										preferredDate ? `Preferred Date: ${preferredDate}` : null,
-										propertyAddress ? `Property: ${propertyAddress}` : null,
-										message ? `Notes: ${message}` : null,
-									].filter(Boolean).join("\n"),
-								},
-							});
-
-							try {
-								await sendAdminLeadAlertEmail({
-									action: "inquiry",
-									leadName: name,
-									leadEmail: leadEmail,
-									timestamp: new Date(),
-									message: `🏠 Tour Request via Inbound Email AI\n\nName: ${name}\n${email ? `Email: ${email}\n` : ""}${phone ? `Phone: ${phone}\n` : ""}${preferredDate ? `Preferred Date: ${preferredDate}\n` : ""}${propertyAddress ? `Property: ${propertyAddress}\n` : ""}${message ? `Notes: ${message}` : ""}`,
-								});
-							} catch (emailErr) {
-								console.error("Failed to send admin alert:", emailErr);
-							}
-
-							return {
-								success: true,
-								message: `Tour request booked successfully! Dimitri Schwarz will confirm. Preferred date: ${preferredDate || "Not specified"}.`,
-							};
-						} catch (err: any) {
-							console.error("Schedule Tour Error:", err);
-							return {
-								success: false,
-								message: "I apologize, there was an issue booking your tour. Please call Dimitri directly at 239.992.9119.",
-							};
-						}
-					},
-				}),
-			}
-		});
-
-		// 4. Send the Email back to the user via Resend
-		await resend.emails.send({
-			from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
-			to: cleanEmail,
-			subject: `Re: ${subject}`,
-			text: aiResponse,
-		});
-
-		// 5. Save AI's Reply to AI Chat History
+		// 6. Save response to AIChatHistory
 		await prisma.aIChatHistory.create({
 			data: {
 				leadId: lead.id,
 				channel: "email",
 				role: "ai",
-				message: aiResponse,
+				message: finalEmailText,
 			}
 		});
 
 		// Recalculate lead score
 		try {
 			recalculateLeadScore(lead.id);
-		} catch (err) {
-			console.error("Scoring recalculation error:", err);
+		} catch (scoreErr) {
+			console.error("Scoring error:", scoreErr);
 		}
 
-		return NextResponse.json({ success: true });
-	} catch (error) {
-		console.error("[EmailWebhookError]", error);
-		return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+		// 7. Generate styled HTML version of email for Gmail/Outlook clients
+		const htmlContent = formatTextToHtml(finalEmailText);
+
+		// 8. Build email thread headers so Gmail stacks replies in the SAME thread
+		const sendHeaders: Record<string, string> = {};
+		if (messageId) {
+			const formattedMsgId = messageId.startsWith("<") && messageId.endsWith(">") ? messageId : `<${messageId}>`;
+			sendHeaders["In-Reply-To"] = formattedMsgId;
+			sendHeaders["References"] = formattedMsgId;
+		}
+
+		// 9. Send the email reply back via Resend inside the SAME thread
+		await resend.emails.send({
+			from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
+			to: cleanFromEmail,
+			subject: replySubject,
+			text: finalEmailText,
+			html: htmlContent,
+			headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
+		});
+
+		return NextResponse.json({ success: true, leadId: lead.id });
+	} catch (error: any) {
+		console.error("Resend Webhook Error:", error);
+		return NextResponse.json({ error: error.message || "Webhook failed" }, { status: 500 });
 	}
 }
