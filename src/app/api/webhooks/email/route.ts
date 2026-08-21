@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { Resend } from "resend";
 import UrlMaker from "@/hooks/url-maker";
-import { sendAdminLeadAlertEmail } from "@/lib/email/admin-lead-alert";
 import { recalculateLeadScore } from "@/lib/leads/services/scoring.service";
 
 // Initialize Resend client
@@ -64,8 +63,7 @@ const cleanEmailBody = (rawBody: string): string => {
 			lower.startsWith("sent:") ||
 			lower.startsWith("to:") ||
 			lower.startsWith("subject:") ||
-			lower.includes("gulfshore group") ||
-			lower.includes("dimitri schwarz") ||
+			lower.includes("gulfshore group <") ||
 			lower.includes("active homes matching")
 		) {
 			// Hit previous email thread content! Stop processing lines immediately.
@@ -103,7 +101,7 @@ function extractSearchParamsFromUserText(text: string): ExtractedSearch {
 
 	const clean = text.toLowerCase().trim();
 
-	// 1. Location / City extraction
+	// 1. Location / City extraction from known list
 	const knownCities = [
 		{ key: "sanibel", name: "Sanibel" },
 		{ key: "bonita springs", name: "Bonita Springs" },
@@ -125,6 +123,17 @@ function extractSearchParamsFromUserText(text: string): ExtractedSearch {
 		if (clean.includes(item.key)) {
 			result.location = item.name;
 			break;
+		}
+	}
+
+	// Dynamic fallback location regex (e.g. "location sanibel", "in sanibel")
+	if (!result.location) {
+		const locMatch = clean.match(/(?:location|in|at|near)\s+([a-z\s]+)/i);
+		if (locMatch && locMatch[1]) {
+			const candidate = locMatch[1].trim().split(" ")[0];
+			if (candidate.length > 2) {
+				result.location = candidate.charAt(0).toUpperCase() + candidate.slice(1);
+			}
 		}
 	}
 
@@ -406,10 +415,10 @@ export async function POST(req: Request) {
 		const searchParams = extractSearchParamsFromUserText(latestUserText);
 
 		const isSellIntent = fullTextLower.includes("sell") || fullTextLower.includes("selling") || fullTextLower.includes("valuation") || fullTextLower.includes("cma");
-		const isBuyIntent = fullTextLower.includes("buy") || fullTextLower.includes("buying") || fullTextLower.includes("property") || fullTextLower.includes("properties") || fullTextLower.includes("home") || fullTextLower.includes("listing") || searchParams.location !== undefined;
+		const isBuyIntent = fullTextLower.includes("buy") || fullTextLower.includes("buying") || fullTextLower.includes("property") || fullTextLower.includes("properties") || fullTextLower.includes("home") || fullTextLower.includes("listing") || fullTextLower.includes("want") || fullTextLower.includes("looking") || searchParams.location !== undefined;
 
-		// 4. RULE: GREETING ONLY IF STRICTLY JUST "hi", "hello", "hey" WITHOUT ANY BUY/SELL INTENT
-		const isPureGreeting = !isSellIntent && !isBuyIntent && !searchParams.location && (fullTextLower === "hi" || fullTextLower === "hello" || fullTextLower === "hey" || fullTextLower === "help" || fullTextLower.length < 6);
+		// 4. RULE: GREETING ONLY IF STRICTLY JUST "hi", "hello", "hey" WITHOUT ANY BUY/SELL INTENT OR LOCATION
+		const isPureGreeting = !isSellIntent && !isBuyIntent && !searchParams.location && (fullTextLower === "hi" || fullTextLower === "hello" || fullTextLower === "hey" || fullTextLower === "help");
 
 		let plainTextSummary = "";
 		let htmlContent = "";
