@@ -25,54 +25,35 @@ function getPropertyImageUrl(p: any): string {
 	return "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80";
 }
 
-// Robust Helper to extract ONLY the user's latest fresh email message (completely strip quoted thread history)
+// 100% Robust Helper to extract ONLY the user's fresh message (strip Gmail, Outlook, Apple Mail thread quotes)
 const cleanEmailBody = (rawBody: string): string => {
 	if (!rawBody || typeof rawBody !== "string") return "";
 
-	// 1. Aggressively strip Gmail/Outlook quote containers before HTML tag removal
-	let cleanedRaw = rawBody
-		.replace(/<div\s+class=["']gmail_quote["']>[\s\S]*$/gi, "")
-		.replace(/<blockquote[\s\S]*$/gi, "");
+	// 1. Strip HTML quote wrappers (gmail_quote, blockquote, appendonsend)
+	let text = rawBody
+		.replace(/<blockquote[\s\S]*$/gi, "")
+		.replace(/<div\s+class=["'][^"']*gmail_quote[^"']*["']>[\s\S]*$/gi, "")
+		.replace(/<div\s+id=["']appendonsend["']>[\s\S]*$/gi, "");
 
-	// 2. Cut off at "On <date> ... wrote:" header anywhere in the string
-	const quoteMatch = cleanedRaw.match(/\bOn\s+[\s\S]*?wrote\s*:/i);
-	if (quoteMatch && quoteMatch.index !== undefined) {
-		cleanedRaw = cleanedRaw.substring(0, quoteMatch.index);
+	// 2. Plain text cutoff markers ("On <Date> ... wrote:", "-----Original Message-----", "From: ...")
+	const cutOffRegex = /\b(On\s+[\s\S]*?wrote\s*:|-----Original Message-----|From:\s+[^\n]+<[^\n]+>|Sent:\s+[^\n]+)/i;
+	const match = text.match(cutOffRegex);
+	if (match && match.index !== undefined) {
+		text = text.substring(0, match.index);
 	}
 
-	const origMatch = cleanedRaw.match(/-----Original Message-----/i);
-	if (origMatch && origMatch.index !== undefined) {
-		cleanedRaw = cleanedRaw.substring(0, origMatch.index);
-	}
-
-	// 3. Strip HTML tags and convert <br>/<p> to line breaks
-	let text = cleanedRaw
+	// 3. Strip remaining HTML tags
+	text = text
 		.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+		.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
 		.replace(/<br\s*\/?>/gi, "\n")
 		.replace(/<\/p>/gi, "\n\n")
-		.replace(/<[^>]+>/g, "");
+		.replace(/<[^>]+>/g, " ");
 
-	const lines = text.split("\n");
-	const userLines: string[] = [];
+	// 4. Remove quote lines starting with '>'
+	const lines = text.split("\n").filter(line => !line.trim().startsWith(">"));
+	const result = lines.join(" ").replace(/\s+/g, " ").trim();
 
-	for (const line of lines) {
-		const trimmed = line.trim();
-		if (
-			/^On\s+.*wrote:/i.test(trimmed) ||
-			/^On\s+.*wrote\s*:/i.test(trimmed) ||
-			/^-----Original Message-----/i.test(trimmed) ||
-			/^From:\s+.*<.*>/i.test(trimmed) ||
-			/^Sent:\s+/i.test(trimmed)
-		) {
-			break;
-		}
-		if (trimmed.startsWith(">")) {
-			continue;
-		}
-		userLines.push(line);
-	}
-
-	const result = userLines.join(" ").replace(/\s+/g, " ").trim();
 	return result || rawBody.replace(/<[^>]+>/g, "").trim();
 };
 
@@ -85,14 +66,14 @@ interface ExtractedSearch {
 	waterfrontOnly?: boolean;
 }
 
-// Extract search parameters strictly from the user's fresh message (ignoring subject lines with old city names)
+// Extract search parameters strictly from the user's fresh email message
 function extractSearchParamsFromUserText(text: string): ExtractedSearch {
 	const result: ExtractedSearch = {};
 	if (!text || typeof text !== "string") return result;
 
 	const clean = text.toLowerCase().trim();
 
-	// 1. City extraction (Strictly from user body text)
+	// 1. City extraction
 	const knownCities = [
 		{ key: "sanibel", name: "SANIBEL" },
 		{ key: "bonita springs", name: "BONITA SPRINGS" },
