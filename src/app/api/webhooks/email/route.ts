@@ -25,12 +25,28 @@ function getPropertyImageUrl(p: any): string {
 	return "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80";
 }
 
-// Robust Helper to extract ONLY the user's latest email message (strip quoted thread history)
+// Robust Helper to extract ONLY the user's latest fresh email message (completely strip quoted thread history)
 const cleanEmailBody = (rawBody: string): string => {
 	if (!rawBody || typeof rawBody !== "string") return "";
 
-	// 1. Strip HTML tags and convert <br>/<p> to line breaks
-	let text = rawBody
+	// 1. Aggressively strip Gmail/Outlook quote containers before HTML tag removal
+	let cleanedRaw = rawBody
+		.replace(/<div\s+class=["']gmail_quote["']>[\s\S]*$/gi, "")
+		.replace(/<blockquote[\s\S]*$/gi, "");
+
+	// 2. Cut off at "On <date> ... wrote:" header anywhere in the string
+	const quoteMatch = cleanedRaw.match(/\bOn\s+[\s\S]*?wrote\s*:/i);
+	if (quoteMatch && quoteMatch.index !== undefined) {
+		cleanedRaw = cleanedRaw.substring(0, quoteMatch.index);
+	}
+
+	const origMatch = cleanedRaw.match(/-----Original Message-----/i);
+	if (origMatch && origMatch.index !== undefined) {
+		cleanedRaw = cleanedRaw.substring(0, origMatch.index);
+	}
+
+	// 3. Strip HTML tags and convert <br>/<p> to line breaks
+	let text = cleanedRaw
 		.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
 		.replace(/<br\s*\/?>/gi, "\n")
 		.replace(/<\/p>/gi, "\n\n")
@@ -41,7 +57,6 @@ const cleanEmailBody = (rawBody: string): string => {
 
 	for (const line of lines) {
 		const trimmed = line.trim();
-		// Stop as soon as we reach thread quote headers
 		if (
 			/^On\s+.*wrote:/i.test(trimmed) ||
 			/^On\s+.*wrote\s*:/i.test(trimmed) ||
@@ -51,7 +66,6 @@ const cleanEmailBody = (rawBody: string): string => {
 		) {
 			break;
 		}
-		// Skip blockquote lines starting with '>'
 		if (trimmed.startsWith(">")) {
 			continue;
 		}
@@ -225,9 +239,9 @@ export async function POST(req: Request) {
 		const hasRe = /^re:\s*/i.test(rawSub);
 		const replySubject = hasRe ? rawSub : `Re: ${rawSub}`;
 
-		// Extract ONLY the latest user message from the email (completely strip old thread history)
+		// Extract ONLY the latest fresh user message from the email (completely strip old thread history)
 		const latestUserText = cleanEmailBody(textBody);
-		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Reply Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
+		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Reply Subject: "${replySubject}" | Latest Fresh Text: "${latestUserText}" | Msg ID: "${messageId}"`);
 
 		// 1. Find or create lead by email
 		let lead = await prisma.lead.findUnique({
@@ -253,25 +267,34 @@ export async function POST(req: Request) {
 			}
 		});
 
-		// 3. Detect Location / City & Intent (Buy, Sell, Both) from Subject & Email Content
-		const fullSearchStr = `${rawSubject} ${latestUserText}`.toLowerCase();
+		// 3. Detect Location / City from ONLY the user's fresh message
+		const freshTextLower = latestUserText.toLowerCase();
+		const knownCities = [
+			"sanibel", "bonita springs", "bonita", "cape coral", "fort myers", 
+			"ft myers", "ft. myers", "estero", "marco island", "punta gorda", 
+			"lehigh", "miami", "ave maria", "naples"
+		];
 
-		const knownCities = ["naples", "sanibel", "bonita springs", "bonita", "cape coral", "fort myers", "ft myers", "ft. myers", "estero", "marco island", "punta gorda", "lehigh", "miami", "ave maria"];
-		let matchedCity: string | undefined = undefined;
+		let bestMatch: { city: string; index: number } | undefined = undefined;
 
 		for (const city of knownCities) {
-			if (fullSearchStr.includes(city)) {
-				matchedCity = (city === "bonita") ? "BONITA SPRINGS" : (city.includes("ft") && city.includes("myers")) ? "FORT MYERS" : city.toUpperCase();
-				break;
+			const idx = freshTextLower.indexOf(city);
+			if (idx !== -1) {
+				const normalizedCityName = (city === "bonita") ? "BONITA SPRINGS" : (city.includes("ft") && city.includes("myers")) ? "FORT MYERS" : city.toUpperCase();
+				if (!bestMatch || idx < bestMatch.index) {
+					bestMatch = { city: normalizedCityName, index: idx };
+				}
 			}
 		}
 
-		const isSellIntent = fullSearchStr.includes("sell") || fullSearchStr.includes("selling") || fullSearchStr.includes("valuation") || fullSearchStr.includes("cma");
-		const isBuyIntent = fullSearchStr.includes("buy") || fullSearchStr.includes("buying") || fullSearchStr.includes("property") || fullSearchStr.includes("properties") || fullSearchStr.includes("home") || fullSearchStr.includes("listing") || matchedCity !== undefined;
+		let matchedCity: string | undefined = bestMatch ? bestMatch.city : undefined;
 
-		// 4. Query Database for Active Properties (always default to NAPLES if no specific city was mentioned)
+		const isSellIntent = freshTextLower.includes("sell") || freshTextLower.includes("selling") || freshTextLower.includes("valuation") || freshTextLower.includes("cma");
+		const isBuyIntent = freshTextLower.includes("buy") || freshTextLower.includes("buying") || freshTextLower.includes("property") || freshTextLower.includes("properties") || freshTextLower.includes("home") || freshTextLower.includes("listing") || matchedCity !== undefined;
+
+		// 4. Query Database for Active Properties in the detected city (default to NAPLES if no city in user message)
 		const targetCity = matchedCity || "NAPLES";
-		console.log(`[Resend Webhook DB Query] Fetching active properties for city: ${targetCity}`);
+		console.log(`[Resend Webhook DB Query] City detected from fresh message: "${targetCity}". Fetching active properties...`);
 
 		const properties = await prisma.property.findMany({
 			where: {
@@ -354,7 +377,7 @@ ${baseUrl}`;
 			);
 		}
 
-		console.log(`[Resend Webhook Success] Generated luxury email card HTML response.`);
+		console.log(`[Resend Webhook Success] Generated luxury email card HTML response for ${targetCity}.`);
 
 		// 6. Save response to AIChatHistory
 		await prisma.aIChatHistory.create({
