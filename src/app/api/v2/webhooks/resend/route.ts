@@ -370,18 +370,9 @@ ${baseUrl}`;
 		}
 
 		// 9. Send the email reply back via Resend inside the SAME thread
-<<<<<<< HEAD
-		const result = await resend.emails.send({
-			from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
-			to: cleanFromEmail,
-			subject: replySubject,
-			text: finalEmailText,
-			html: htmlContent,
-			headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
-		});
-=======
+		let result: any;
 		try {
-			const sendResult = await resend.emails.send({
+			result = await resend.emails.send({
 				from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
 				to: cleanFromEmail,
 				subject: replySubject,
@@ -389,13 +380,12 @@ ${baseUrl}`;
 				html: htmlContent,
 				headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
 			});
-			console.log("[Resend Email Sent Result]:", JSON.stringify(sendResult));
+			console.log("[Resend Email Sent Result]:", JSON.stringify(result));
 		} catch (sendErr) {
 			console.error("[Resend Email Send Exception]:", sendErr);
 		}
->>>>>>> 1f41bca07d8e3f077d43320f4190d560d1538ca2
 
-		if (result.data?.id) {
+		if (result?.data?.id) {
 			try {
 				await prisma.communicationLog.create({
 					data: {
