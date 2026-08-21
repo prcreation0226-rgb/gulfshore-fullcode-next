@@ -193,85 +193,65 @@ export async function POST(req: Request) {
 		}
 
 		const isSellIntent = fullSearchStr.includes("sell") || fullSearchStr.includes("selling") || fullSearchStr.includes("valuation") || fullSearchStr.includes("cma");
-		const isBuyIntent = fullSearchStr.includes("buy") || fullSearchStr.includes("buying") || fullSearchStr.includes("property") || fullSearchStr.includes("properties") || fullSearchStr.includes("home") || fullSearchStr.includes("listing") || matchedCity !== undefined;
+		const isBuyIntent = fullSearchStr.includes("buy") || fullSearchStr.includes("buying") || fullSearchStr.includes("property") || fullSearchStr.includes("properties") || fullSearchStr.includes("home") || fullSearchStr.includes("listing");
 
-		// 4. Query Database for Active Properties (always default to NAPLES if no specific city was mentioned)
-		const targetCity = matchedCity || "NAPLES";
-		console.log(`[Resend Webhook DB Query] Fetching active properties for city: ${targetCity}`);
+		let finalEmailText = "";
 
-		const properties = await prisma.property.findMany({
-			where: {
-				City: { contains: targetCity },
-				StandardStatus: "Active"
-			},
-			take: 6,
-			orderBy: { ListPrice: 'desc' },
-			select: {
-				FullAddress: true,
-				ListPrice: true,
-				BedroomsTotal: true,
-				BathroomsTotalInteger: true,
-				LivingArea: true,
-				PropertyType: true,
-				City: true,
-				Community: true,
-				MLSNumber: true,
-				PoolPrivateYN: true,
-				WaterfrontYN: true,
-				GulfAccessYN: true,
-			}
-		});
+		// 4. Require explicit location before dumping properties, otherwise ask the user which city they want!
+		if (matchedCity) {
+			console.log(`[Resend Webhook DB Query] Location detected: ${matchedCity}. Fetching active properties...`);
 
-		console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties in ${targetCity}`);
+			const properties = await prisma.property.findMany({
+				where: {
+					City: { contains: matchedCity },
+					StandardStatus: "Active"
+				},
+				take: 6,
+				orderBy: { ListPrice: 'desc' },
+				select: {
+					FullAddress: true,
+					ListPrice: true,
+					BedroomsTotal: true,
+					BathroomsTotalInteger: true,
+					LivingArea: true,
+					PropertyType: true,
+					City: true,
+					Community: true,
+					MLSNumber: true,
+					PoolPrivateYN: true,
+					WaterfrontYN: true,
+					GulfAccessYN: true,
+				}
+			});
 
-		let propertyContext = "";
-		if (properties.length > 0) {
-			propertyContext = properties.map((p: any, i: number) => {
-				const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
-				const fullUrl = `${baseUrl}${relativeUrl}`;
-				return `${i + 1}. ${p.FullAddress}
+			console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties in ${matchedCity}`);
+
+			let propertyContext = "";
+			if (properties.length > 0) {
+				propertyContext = properties.map((p: any, i: number) => {
+					const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
+					const fullUrl = `${baseUrl}${relativeUrl}`;
+					return `${i + 1}. ${p.FullAddress}
 Price: $${p.ListPrice ? p.ListPrice.toLocaleString() : "Price TBD"}
 Beds: ${p.BedroomsTotal ?? 0} | Baths: ${p.BathroomsTotalInteger ?? 0} | Living Area: ${p.LivingArea ? `${p.LivingArea.toLocaleString()} SqFt` : "N/A"}
 Pool: ${p.PoolPrivateYN ? "Yes" : "No"} | Waterfront: ${p.WaterfrontYN ? "Yes" : "No"}${p.GulfAccessYN ? " | Gulf Access: Yes" : ""}
 Listing Link: ${fullUrl}`;
-			}).join("\n\n");
-		}
+				}).join("\n\n");
+			} else {
+				propertyContext = "No active listings currently matched this exact city search. Please contact us for custom off-market options.";
+			}
 
-		// 5. Construct Dynamic Email Response for BUY, SELL, or BUY & SELL BOTH
-		let finalEmailText = "";
+			if (isSellIntent) {
+				// BOTH BUY AND SELL WITH LOCATION
+				finalEmailText = `Hello,
 
-		if (isSellIntent && !isBuyIntent) {
-			// pure SELLER INTENT
-			finalEmailText = `Hello,
+Thank you for contacting Gulfshore Group Real Estate! We are delighted to assist you with both buying in ${matchedCity} and selling your current property.
 
-Thank you for reaching out to Gulfshore Group Real Estate!
-
-Dimitri Schwarz provides complimentary, high-precision Home Valuations (Comparative Market Analysis) and full listing representation across Southwest Florida.
-
-To list your property for sale or get a free home market valuation immediately, please visit our seller portal:
-${baseUrl}/sell
-
-Here are current active market listings in ${targetCity} for your reference:
-
+1. BUYING - Active Property Matches in ${matchedCity}:
 ${propertyContext}
 
-Please let us know your property address and details if you would like Dimitri to prepare a custom Home Valuation for you.
-
-Best regards,
-Dimitri Schwarz & AI Team
-Gulfshore Group Real Estate
-${baseUrl}`;
-		} else if (isSellIntent && isBuyIntent) {
-			// BOTH BUY AND SELL INTENT
-			finalEmailText = `Hello,
-
-Thank you for contacting Gulfshore Group Real Estate! We are delighted to assist you with both buying your next home and selling your current property in Southwest Florida.
-
-1. BUYING - Active Property Matches in ${targetCity}:
-${propertyContext}
-
-2. SELLING - Complimentary Home Valuation & Listing Service:
-If you are looking to sell your home, Dimitri Schwarz offers expert marketing and free market evaluations. You can list your property or request a valuation here:
+2. SELLING - Free Home Valuation & Listing Service:
+If you are looking to sell your home, Dimitri Schwarz offers expert marketing and complimentary market evaluations. You can list your property or request a valuation here:
 ${baseUrl}/sell
 
 Please reply with any specific criteria (price range, bedrooms, waterfront, pool) or your property address for sale so we can assist you right away!
@@ -280,11 +260,11 @@ Best regards,
 Dimitri Schwarz & AI Team
 Gulfshore Group Real Estate
 ${baseUrl}`;
-		} else {
-			// BUY INTENT or GENERAL PROPERTY INQUIRY (Always includes live active property data!)
-			finalEmailText = `Hello,
+			} else {
+				// PURE BUYING WITH LOCATION
+				finalEmailText = `Hello,
 
-Thank you for reaching out to Gulfshore Group! Here are top active property listings currently available in ${targetCity}:
+Thank you for reaching out to Gulfshore Group! Here are top active property listings currently available in ${matchedCity}:
 
 ${propertyContext}
 
@@ -296,9 +276,70 @@ Best regards,
 Dimitri Schwarz & AI Team
 Gulfshore Group Real Estate
 ${baseUrl}`;
+			}
+		} else if (isBuyIntent) {
+			// User wants to BUY properties, but did NOT specify a location/city!
+			// Ask the user which location they want!
+			finalEmailText = `Hello,
+
+Thank you for reaching out to Gulfshore Group Real Estate!
+
+We would love to send you matching active property listings. Which location or city in Southwest Florida are you looking to buy in?
+
+Our primary active market coverage includes:
+- Naples
+- Sanibel
+- Cape Coral
+- Fort Myers
+- Bonita Springs
+- Estero
+- Marco Island
+
+Please reply with your preferred location, budget, or bedroom count, and I will immediately send you matching active property listings with direct links!
+
+Best regards,
+Dimitri Schwarz & AI Team
+Gulfshore Group Real Estate
+${baseUrl}`;
+		} else if (isSellIntent) {
+			// User wants to SELL a property
+			finalEmailText = `Hello,
+
+Thank you for reaching out to Gulfshore Group Real Estate!
+
+Dimitri Schwarz provides complimentary, high-precision Home Valuations (Comparative Market Analysis) and full listing representation across Southwest Florida.
+
+To list your property for sale or get a free home market valuation immediately, please visit our seller portal:
+${baseUrl}/sell
+
+Please reply with your property address and details if you would like Dimitri to prepare a custom Home Valuation for you.
+
+Best regards,
+Dimitri Schwarz & AI Team
+Gulfshore Group Real Estate
+${baseUrl}`;
+		} else {
+			// General Greeting or Inquiry
+			finalEmailText = `Hello,
+
+Thank you for contacting Gulfshore Group Real Estate!
+
+I am your AI Real Estate Concierge, working on behalf of Dimitri Schwarz. How can I assist you with your real estate needs today?
+
+Are you looking to:
+1. Buy or rent a property in Southwest Florida (Naples, Sanibel, Cape Coral, Fort Myers, Bonita Springs, Estero)?
+2. Sell your home or request a free Comparative Market Analysis (CMA)? Visit ${baseUrl}/sell
+3. Schedule a private property viewing?
+
+Please reply with your preferred location, budget, or criteria so we can send you matching active listings!
+
+Best regards,
+Dimitri Schwarz & AI Team
+Gulfshore Group Real Estate
+${baseUrl}`;
 		}
 
-		console.log(`[Resend Webhook Success] Generated deterministic email response length: ${finalEmailText.length} characters.`);
+		console.log(`[Resend Webhook Success] Generated email response length: ${finalEmailText.length} characters.`);
 
 		// 6. Save response to AIChatHistory
 		await prisma.aIChatHistory.create({
