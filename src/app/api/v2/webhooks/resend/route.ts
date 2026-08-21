@@ -383,7 +383,7 @@ ${baseUrl}`;
 
 		// 8. Send the luxury email card response back via Resend inside the SAME thread
 		try {
-			result = await resend.emails.send({
+			const sendResult = await resend.emails.send({
 				from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
 				to: cleanFromEmail,
 				subject: replySubject,
@@ -391,25 +391,9 @@ ${baseUrl}`;
 				html: htmlContent,
 				headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
 			});
-			console.log("[Resend Email Sent Result]:", JSON.stringify(result));
+			console.log("[Resend Email Sent Result]:", JSON.stringify(sendResult));
 		} catch (sendErr) {
 			console.error("[Resend Email Send Exception]:", sendErr);
-		}
-
-		if (result?.data?.id) {
-			try {
-				await prisma.communicationLog.create({
-					data: {
-						type: "Email",
-						to: cleanFromEmail,
-						subject: replySubject,
-						status: "sent",
-						providerId: result.data.id,
-					},
-				});
-			} catch (logErr) {
-				console.error("Failed to log AI auto reply:", logErr);
-			}
 		}
 
 		return NextResponse.json({ success: true, leadId: lead.id });
