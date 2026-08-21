@@ -7,7 +7,7 @@ import { recalculateLeadScore } from "@/lib/leads/services/scoring.service";
 
 // Initialize Resend client
 const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy");
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gulfshoregroup.com";
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gulfshore-fullcode-next-production.up.railway.app/"
 
 // Helper to normalize location strings (strip state codes, filler words, etc.)
 const cleanLocation = (val: any): string | undefined => {
