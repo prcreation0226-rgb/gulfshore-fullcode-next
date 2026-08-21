@@ -512,7 +512,7 @@ ${baseUrl}`;
 
 			if (searchParams.maxPrice) dbWhere.ListPrice = { lte: searchParams.maxPrice };
 			if (searchParams.beds) dbWhere.BedroomsTotal = { gte: searchParams.beds };
-			if (searchParams.baths) dbWhere.BathroomsTotalInteger = { gte: searchParams.baths };
+		 	if (searchParams.baths) dbWhere.BathroomsTotalInteger = { gte: searchParams.baths };
 			if (searchParams.poolOnly) dbWhere.PoolPrivateYN = true;
 			if (searchParams.waterfrontOnly) dbWhere.WaterfrontYN = true;
 

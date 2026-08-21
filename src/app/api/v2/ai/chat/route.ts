@@ -90,28 +90,11 @@ If the user asks for properties matching specific criteria, ALWAYS use the 'sear
 
 The property database/tool is the sole source of truth. Never guess or fabricate property information.
 
-For broad property searches:
-- use searchProperties
-- write only a short 1-sentence intro (e.g. "Here are active listings matching your criteria in Naples:")
-- DO NOT manually write out property lists, addresses, prices, bedrooms, or markdown links in text — the UI handles rendering property cards visually!
-
-For questions about a specific property (e.g., HOA fees, pool availability, garage spaces, year built, status):
-- use searchProperties before answering
-- answer only the specific facts requested using the tool data
-- property details returned by the tool may be stated directly in your response text
-- the property card may still be rendered by the UI
-
-If a requested field is null, missing, or unavailable:
-- clearly state that the information is not specified in the database
-- never infer or fabricate it
-
-If multiple properties match a specific address lookup:
-- do not guess or pick the first one
-- state the candidates and request enough identifying information (e.g., Ln, Dr, Ct, or MLS number) to select the correct property
-
-Never rely on prior chat knowledge for property facts when the property database can be queried.
-
-If they provide a specific address (e.g., "5100 Seagrass"), use the address parameter in the tool. ONLY include the street address in the address parameter, DO NOT include city, state, or zip code in the address parameter.
+CRITICAL PROPERTY & MLS SEARCH INSTRUCTIONS:
+- For ANY property search OR specific MLS number lookup (e.g. "i want properties in Sanibel", "Tell me about MLS 22405120", "22405120"):
+  1. YOU MUST IMMEDIATELY CALL THE 'searchProperties' TOOL with the extracted city, address, or mlsNumber.
+  2. Write ONLY a short 1-sentence introduction in your text response (e.g. "Here is the property matching MLS# 22405120:" or "Here are active luxury listings in Sanibel:").
+  3. DO NOT write long paragraphs, raw markdown headers (###), or manual spec lists in text — the UI automatically renders rich visual property cards (with cover image, price badge, specs, and a red VIEW DETAILS button) below your message!
 
 CRITICAL NO-FALLBACK RULE WHEN NO PROPERTIES ARE FOUND (FOR BUYERS):
 - If 'searchProperties' returns NO properties (an empty list []), NEVER call 'searchProperties' a second time with relaxed parameters or removed location filters. Accept that 0 properties exist for that search.
@@ -453,6 +436,11 @@ If the user wants to schedule a property tour, viewing, home valuation, or appoi
 							HOAFee: true,
 							StandardStatus: true,
 							GarageSpaces: true,
+							images: true,
+							media: {
+								take: 1,
+								select: { MediaURL: true }
+							}
 						};
 
 						let properties = await prisma.property.findMany({
@@ -479,25 +467,41 @@ If the user wants to schedule a property tour, viewing, home valuation, or appoi
 							}
 						}
 
-						return properties.map((p: any) => ({
-							address: p.FullAddress,
-							price: p.ListPrice ? `$${p.ListPrice.toLocaleString()}` : "Price TBD",
-							beds: p.BedroomsTotal,
-							baths: p.BathroomsTotalInteger,
-							pool: p.PoolPrivateYN ? "Yes" : "No",
-							sqft: p.LivingArea,
-							type: p.PropertyType,
-							yearBuilt: p.YearBuilt,
-							description: p.Description,
-							waterfront: p.WaterfrontYN ? "Yes" : "No",
-							gulfAccess: p.GulfAccessYN ? "Yes" : "No",
-							garage: p.GarageYN ? "Yes" : "No",
-							lotSizeAcres: p.LotSizeAcres,
-							hoaFee: p.HOAFee,
-							link: UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined),
-							status: p.StandardStatus,
-							garageSpaces: p.GarageSpaces ?? 0,
-						}));
+						return properties.map((p: any) => {
+							let coverImage = "";
+							if (p.media && Array.isArray(p.media) && p.media.length > 0 && p.media[0]?.MediaURL) {
+								coverImage = p.media[0].MediaURL;
+							} else if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+								const first = p.images[0];
+								if (typeof first === "string") coverImage = first;
+								else if (typeof first === "object" && first?.MediaURL) coverImage = first.MediaURL;
+							}
+
+							return {
+								id: p.id,
+								address: p.FullAddress,
+								city: p.City,
+								community: p.Community,
+								mlsNumber: p.MLSNumber,
+								price: p.ListPrice ? `$${p.ListPrice.toLocaleString()}` : "Price TBD",
+								beds: p.BedroomsTotal,
+								baths: p.BathroomsTotalInteger,
+								pool: p.PoolPrivateYN ? "Yes" : "No",
+								sqft: p.LivingArea,
+								type: p.PropertyType,
+								yearBuilt: p.YearBuilt,
+								description: p.Description,
+								waterfront: p.WaterfrontYN ? "Yes" : "No",
+								gulfAccess: p.GulfAccessYN ? "Yes" : "No",
+								garage: p.GarageYN ? "Yes" : "No",
+								lotSizeAcres: p.LotSizeAcres,
+								hoaFee: p.HOAFee,
+								image: coverImage,
+								link: UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined),
+								status: p.StandardStatus,
+								garageSpaces: p.GarageSpaces ?? 0,
+							};
+						});
 					},
 				}),
 				// @ts-ignore

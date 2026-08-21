@@ -88,7 +88,7 @@ export default function AIChatWidget() {
 								}`}
 							>
 								<div
-									className={`max-w-[85%] rounded-2xl p-3 text-sm shadow-sm ${
+									className={`max-w-[85%] rounded-2xl p-3 text-sm shadow-sm whitespace-pre-wrap break-words ${
 										m.role === "user"
 											? "bg-primary text-white rounded-tr-sm"
 											: "bg-white text-gray-800 border border-gray-100 rounded-tl-sm"
@@ -110,25 +110,62 @@ export default function AIChatWidget() {
 													);
 												}
 												return (
-													<div key={part.toolCallId} className="mt-3 space-y-2">
-														<p className="text-xs font-semibold text-primary border-b pb-1">Found Properties:</p>
+													<div key={part.toolCallId} className="mt-3 space-y-3">
+														<p className="text-xs font-bold text-gray-900 border-b border-gray-200 pb-1.5 flex items-center justify-between">
+															<span>Active Property Listings ({result.length})</span>
+															<span className="text-[10px] text-gray-500 font-normal">Gulfshore Real Estate</span>
+														</p>
 														{result.map((prop: any, i: number) => (
-															<a href={prop.link} target="_blank" rel="noreferrer" key={i} className="block bg-gray-50 p-2.5 rounded border border-gray-200 hover:border-primary transition-colors text-xs text-gray-700 shadow-sm hover:shadow-md">
-																<span className="font-bold text-gray-900 block truncate">{prop.address}</span>
-																<span className="text-primary font-bold text-sm block mt-0.5">{prop.price}</span> 
-																<div className="flex flex-wrap gap-1 mt-1 text-gray-600">
-																	{(prop.beds != null || prop.baths != null) && (
-																		<span className="bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">{prop.beds ?? 0} Beds, {prop.baths ?? 0} Baths</span>
-																	)}
-																	{prop.sqft && <span className="bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">{prop.sqft} Sqft</span>}
-																	{prop.yearBuilt && <span className="bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">Built {prop.yearBuilt}</span>}
+															<div key={i} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+																{/* COVER IMAGE */}
+																{prop.image && (
+																	<div className="relative w-full h-32 bg-gray-100 overflow-hidden">
+																		<img src={prop.image} alt={prop.address} className="w-full h-full object-cover" />
+																		<span className="absolute top-2 left-2 bg-emerald-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded tracking-wide uppercase shadow-xs">ACTIVE</span>
+																		{prop.mlsNumber && (
+																			<span className="absolute top-2 right-2 bg-black/70 text-white text-[9px] font-medium px-2 py-0.5 rounded backdrop-blur-xs">MLS# {prop.mlsNumber}</span>
+																		)}
+																	</div>
+																)}
+
+																<div className="p-3 space-y-2">
+																	{/* PRICE */}
+																	<div className="text-lg font-black text-gray-900 leading-tight">
+																		{prop.price}
+																	</div>
+
+																	{/* ADDRESS */}
+																	<div className="text-xs font-semibold text-gray-800 leading-snug">
+																		{prop.address}{prop.city ? `, ${prop.city}` : ""}
+																	</div>
+
+																	{/* SPECS GRID */}
+																	<div className="flex items-center gap-2 text-[11px] text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
+																		{(prop.beds != null || prop.baths != null) && (
+																			<span className="font-semibold text-gray-900">{prop.beds ?? 0} Beds • {prop.baths ?? 0} Baths</span>
+																		)}
+																		{prop.sqft && <span className="border-l border-gray-300 pl-2">{prop.sqft.toLocaleString()} sqft</span>}
+																		{prop.yearBuilt && <span className="border-l border-gray-300 pl-2">Built {prop.yearBuilt}</span>}
+																	</div>
+
+																	{/* AMENITIES BADGES */}
+																	<div className="flex flex-wrap gap-1">
+																		{prop.pool === "Yes" && <span className="text-[10px] bg-blue-50 text-blue-700 font-semibold px-2 py-0.5 rounded border border-blue-100">🏊 Private Pool</span>}
+																		{prop.waterfront === "Yes" && <span className="text-[10px] bg-cyan-50 text-cyan-700 font-semibold px-2 py-0.5 rounded border border-cyan-100">🌊 Waterfront</span>}
+																		{prop.gulfAccess === "Yes" && <span className="text-[10px] bg-teal-50 text-teal-700 font-semibold px-2 py-0.5 rounded border border-teal-100">🚤 Gulf Access</span>}
+																	</div>
+
+																	{/* RED VIEW DETAILS BUTTON */}
+																	<a
+																		href={prop.link}
+																		target="_blank"
+																		rel="noreferrer"
+																		className="block w-full text-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg text-xs transition-colors shadow-xs mt-1"
+																	>
+																		VIEW DETAILS
+																	</a>
 																</div>
-																<div className="flex flex-wrap gap-1 mt-1">
-																	{prop.pool === "Yes" && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full border border-blue-100">Pool</span>}
-																	{prop.waterfront === "Yes" && <span className="text-[10px] bg-cyan-50 text-cyan-600 px-1.5 py-0.5 rounded-full border border-cyan-100">Waterfront</span>}
-																	{prop.gulfAccess === "Yes" && <span className="text-[10px] bg-teal-50 text-teal-600 px-1.5 py-0.5 rounded-full border border-teal-100">Gulf Access</span>}
-																</div>
-															</a>
+															</div>
 														))}
 														<div className="pt-2 border-t border-gray-200 mt-2 flex flex-col items-center gap-1 text-[11px] text-gray-500">
 															<span>Looking to sell your current property too?</span>
