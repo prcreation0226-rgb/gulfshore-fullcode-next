@@ -234,9 +234,11 @@ Listing Link: ${fullUrl}`;
 		// 5. Generate AI Email Response
 		const userQueryPrompt = latestUserText || textBody || "I am looking for properties to buy in Southwest Florida";
 
-		const { text } = await generateText({
-			model: openai("gpt-4o-mini"),
-			system: `You are an expert AI Real Estate Concierge for Gulfshore Group, working on behalf of Dimitri Schwarz. 
+		let finalEmailText = "";
+		try {
+			const { text } = await generateText({
+				model: openai("gpt-4o-mini"),
+				system: `You are an expert AI Real Estate Concierge for Gulfshore Group, working on behalf of Dimitri Schwarz. 
 You are replying to a lead via EMAIL inside an ongoing conversation thread. Write a warm, professional, polite, well-structured, and helpful email response.
 
 CRITICAL INSTRUCTIONS FOR EMAIL REPLIES:
@@ -252,24 +254,38 @@ CRITICAL INSTRUCTIONS FOR EMAIL REPLIES:
    Dimitri Schwarz & AI Team
    Gulfshore Group Real Estate
    ${baseUrl}`,
-			messages: [
-				{
-					role: "user",
-					content: `Lead Email Message: "${userQueryPrompt}"\n\n${propertyContext}`,
-				}
-			]
-		});
+				messages: [
+					{
+						role: "user",
+						content: `Lead Email Message: "${userQueryPrompt}"\n\n${propertyContext}`,
+					}
+				]
+			});
+			finalEmailText = text;
+		} catch (aiErr) {
+			console.error("[Resend Webhook AI Error]:", aiErr);
+		}
 
-		// Fallback to guarantee property listings are included if AI outputs generic text
-		let finalEmailText = text;
-		if (propertyContext && (!finalEmailText || finalEmailText.includes("misunderstanding") || finalEmailText.includes("assist you today") || finalEmailText.length < 150)) {
+		// Strict Fallback: Guarantee property listings are included if AI outputs generic text or misses properties
+		const lowerText = (finalEmailText || "").toLowerCase();
+		const isGenericOrCutOff = !finalEmailText || 
+			lowerText.includes("misunderstanding") || 
+			lowerText.includes("assist you today") || 
+			lowerText.includes("how may i assist") || 
+			lowerText.includes("incomplete") || 
+			!lowerText.includes("price:") || 
+			finalEmailText.length < 200;
+
+		if (propertyContext && isGenericOrCutOff) {
 			finalEmailText = `Hello,
 
-Thank you for reaching out to Gulfshore Group! Here are top active properties currently available in ${targetCity}:
+Thank you for reaching out to Gulfshore Group! Here are top active property listings currently available in ${targetCity}:
 
 ${propertyContext}
 
-Dimitri Schwarz is available for private viewings and full buyer representation. If you are also looking to sell your current home or get a free market valuation, please visit ${baseUrl}/sell.
+Dimitri Schwarz and our team are available for private viewings and full buyer representation. If you are also looking to sell your current home or get a free market valuation, please visit ${baseUrl}/sell.
+
+Please let us know if you would like to schedule a showing or need further details on any of these homes.
 
 Best regards,
 Dimitri Schwarz & AI Team
@@ -277,7 +293,7 @@ Gulfshore Group Real Estate
 ${baseUrl}`;
 		}
 
-		console.log(`[Resend Webhook Success] Generated email response length: ${finalEmailText.length} characters.`);
+		console.log(`[Resend Webhook Success] Final email response length: ${finalEmailText.length} characters.`);
 
 		// 6. Save AI response to AIChatHistory
 		await prisma.aIChatHistory.create({
