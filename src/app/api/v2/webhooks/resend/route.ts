@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { openai } from "@ai-sdk/openai";
-import { generateText } from "ai";
 import prisma from "@/lib/prisma";
 import { Resend } from "resend";
 import UrlMaker from "@/hooks/url-maker";
@@ -28,35 +26,41 @@ const cleanLocation = (val: any): string | undefined => {
 	return cleaned || undefined;
 };
 
-// Helper to extract the actual latest user email body (strip quoted email thread history & HTML safely)
+// Helper to extract ONLY the new email message (completely strip quoted reply history)
 const cleanEmailBody = (rawBody: string): string => {
 	if (!rawBody || typeof rawBody !== "string") return "";
 
+	// 1. Strip HTML tags and normalize spaces
 	let text = rawBody
 		.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
 		.replace(/<br\s*\/?>/gi, "\n")
 		.replace(/<\/p>/gi, "\n\n")
-		.replace(/<[^>]+>/g, "");
+		.replace(/<[^>]+>/g, " ");
 
-	const lines = text.split("\n");
-	const cleanedLines: string[] = [];
+	// 2. Cut off everything starting from "On <Date> ... wrote:", "From:", "Sent:" or old AI text
+	const cutOffPatterns = [
+		/\bOn\s+[\s\S]*?wrote:/i,
+		/\bOn\s+[\s\S]*?wrote\s*:/i,
+		/-----Original Message-----/i,
+		/-----Forwarded Message-----/i,
+		/\bFrom:\s+[^\n]+<[^\n]+>/i,
+		/\bSent:\s+[^\n]+/i,
+		/It seems there was a misunderstanding/i,
+		/It seems like your message/i,
+		/It seems there's been a misunderstanding/i,
+	];
 
-	for (const line of lines) {
-		const trimmed = line.trim();
-		if (
-			/^On\s+.*wrote:/i.test(trimmed) ||
-			/^-----Original Message-----/i.test(trimmed) ||
-			/^-----Forwarded Message-----/i.test(trimmed)
-		) {
-			break;
+	for (const pattern of cutOffPatterns) {
+		const match = text.match(pattern);
+		if (match && match.index !== undefined) {
+			text = text.substring(0, match.index);
 		}
-		if (trimmed.startsWith(">")) {
-			continue;
-		}
-		cleanedLines.push(line);
 	}
 
-	const result = cleanedLines.join("\n").replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+	// 3. Filter out lines starting with '>' (quoted reply indicators)
+	const lines = text.split("\n").filter((line) => !line.trim().startsWith(">"));
+	const result = lines.join(" ").replace(/\s+/g, " ").trim();
+
 	return result || rawBody.replace(/<[^>]+>/g, "").trim();
 };
 
@@ -148,7 +152,7 @@ export async function POST(req: NextRequest) {
 		const cleanSubject = trimmedSubject.replace(/^(re:\s*)+/gi, "").trim();
 		const replySubject = `Re: ${cleanSubject || "Real Estate Inquiry"}`;
 
-		// Extract ONLY the latest user message from the email (strip old thread history)
+		// Extract ONLY the latest user message from the email (completely strip old thread history)
 		const latestUserText = cleanEmailBody(textBody);
 		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Clean Subject: "${cleanSubject}" | Reply Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
 
@@ -166,7 +170,7 @@ export async function POST(req: NextRequest) {
 			});
 		}
 
-		// 2. Save user message to AIChatHistory for email channel
+		// 2. Save ONLY the new user message to AIChatHistory
 		await prisma.aIChatHistory.create({
 			data: {
 				leadId: lead.id,
@@ -176,7 +180,7 @@ export async function POST(req: NextRequest) {
 			}
 		});
 
-		// 3. Detect Location / City from Subject & Email Content
+		// 3. Detect Location / City from Subject & Clean Email Content
 		const fullSearchStr = `${rawSubject} ${latestUserText}`.toLowerCase();
 
 		const knownCities = ["naples", "sanibel", "bonita springs", "bonita", "cape coral", "fort myers", "ft myers", "ft. myers", "estero", "marco island", "punta gorda", "lehigh", "miami", "ave maria"];
@@ -220,7 +224,7 @@ export async function POST(req: NextRequest) {
 
 		let propertyContext = "";
 		if (properties.length > 0) {
-			propertyContext = `ACTIVE PROPERTIES IN ${targetCity} FROM DATABASE:\n\n` + properties.map((p: any, i: number) => {
+			propertyContext = properties.map((p: any, i: number) => {
 				const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
 				const fullUrl = `${baseUrl}${relativeUrl}`;
 				return `${i + 1}. ${p.FullAddress}
@@ -231,52 +235,10 @@ Listing Link: ${fullUrl}`;
 			}).join("\n\n");
 		}
 
-		// 5. Generate AI Email Response
-		const userQueryPrompt = latestUserText || textBody || "I am looking for properties to buy in Southwest Florida";
-
+		// 5. Construct 100% Guaranteed Property Email Response
 		let finalEmailText = "";
-		try {
-			const { text } = await generateText({
-				model: openai("gpt-4o-mini"),
-				system: `You are an expert AI Real Estate Concierge for Gulfshore Group, working on behalf of Dimitri Schwarz. 
-You are replying to a lead via EMAIL inside an ongoing conversation thread. Write a warm, professional, polite, well-structured, and helpful email response.
 
-CRITICAL INSTRUCTIONS FOR EMAIL REPLIES:
-1. ALWAYS INCLUDE ALL THE ACTIVE PROPERTIES PROVIDED BELOW IN YOUR EMAIL RESPONSE!
-2. For each property in the list, format it clearly with:
-   - Address and Price
-   - Bedrooms, Bathrooms, Living Area (sqft), and Features (Pool, Waterfront, Gulf Access)
-   - Direct Website Listing Link URL (e.g. View Listing: https://gulfshoregroup.com/Florida-Real-Estate-Listings/...)
-3. NEVER output generic 1-sentence responses like "How can I assist you today" or "It seems like there was a mistake".
-4. Mention that Dimitri Schwarz is available for private viewings and offer assistance for both buying and selling homes. For selling or getting a free home valuation, provide the link: ${baseUrl}/sell
-5. Always sign off as:
-   Best regards,
-   Dimitri Schwarz & AI Team
-   Gulfshore Group Real Estate
-   ${baseUrl}`,
-				messages: [
-					{
-						role: "user",
-						content: `Lead Email Message: "${userQueryPrompt}"\n\n${propertyContext}`,
-					}
-				]
-			});
-			finalEmailText = text;
-		} catch (aiErr) {
-			console.error("[Resend Webhook AI Error]:", aiErr);
-		}
-
-		// Strict Fallback: Guarantee property listings are included if AI outputs generic text or misses properties
-		const lowerText = (finalEmailText || "").toLowerCase();
-		const isGenericOrCutOff = !finalEmailText || 
-			lowerText.includes("misunderstanding") || 
-			lowerText.includes("assist you today") || 
-			lowerText.includes("how may i assist") || 
-			lowerText.includes("incomplete") || 
-			!lowerText.includes("price:") || 
-			finalEmailText.length < 200;
-
-		if (propertyContext && isGenericOrCutOff) {
+		if (properties.length > 0) {
 			finalEmailText = `Hello,
 
 Thank you for reaching out to Gulfshore Group! Here are top active property listings currently available in ${targetCity}:
@@ -291,11 +253,24 @@ Best regards,
 Dimitri Schwarz & AI Team
 Gulfshore Group Real Estate
 ${baseUrl}`;
+		} else {
+			finalEmailText = `Hello,
+
+Thank you for contacting Gulfshore Group Real Estate.
+
+We specialize in luxury real estate across Southwest Florida, including Naples, Sanibel, Bonita Springs, Cape Coral, Fort Myers, and Estero.
+
+Please visit our website at ${baseUrl} to browse all active listings, or let us know your preferred location, budget, and property criteria so we can send you custom matches.
+
+Best regards,
+Dimitri Schwarz & AI Team
+Gulfshore Group Real Estate
+${baseUrl}`;
 		}
 
-		console.log(`[Resend Webhook Success] Final email response length: ${finalEmailText.length} characters.`);
+		console.log(`[Resend Webhook Success] Generated deterministic email response length: ${finalEmailText.length} characters.`);
 
-		// 6. Save AI response to AIChatHistory
+		// 6. Save response to AIChatHistory
 		await prisma.aIChatHistory.create({
 			data: {
 				leadId: lead.id,
@@ -323,7 +298,7 @@ ${baseUrl}`;
 			sendHeaders["References"] = formattedMsgId;
 		}
 
-		// 9. Send the AI email reply back via Resend inside the SAME thread
+		// 9. Send the email reply back via Resend inside the SAME thread
 		await resend.emails.send({
 			from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
 			to: cleanFromEmail,
