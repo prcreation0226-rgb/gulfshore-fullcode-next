@@ -9,7 +9,7 @@ import { recalculateLeadScore } from "@/lib/leads/services/scoring.service";
 const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy");
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gulfshore-fullcode-next-production.up.railway.app";
 
-// Helper to normalize location strings (strip state codes, filler words, etc.)
+// Helper to normalize location strings
 const cleanLocation = (val: any): string | undefined => {
 	if (!val || typeof val !== "string") return undefined;
 	const cleaned = val
@@ -26,42 +26,40 @@ const cleanLocation = (val: any): string | undefined => {
 	return cleaned || undefined;
 };
 
-// Helper to extract ONLY the new email message (completely strip quoted reply history)
+// Robust Helper to extract ONLY the user's latest email message (strip quoted thread history)
 const cleanEmailBody = (rawBody: string): string => {
 	if (!rawBody || typeof rawBody !== "string") return "";
 
-	// 1. Strip HTML tags and normalize spaces
+	// 1. Strip HTML tags and convert <br>/<p> to line breaks
 	let text = rawBody
 		.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
 		.replace(/<br\s*\/?>/gi, "\n")
 		.replace(/<\/p>/gi, "\n\n")
-		.replace(/<[^>]+>/g, " ");
+		.replace(/<[^>]+>/g, "");
 
-	// 2. Cut off everything starting from "On <Date> ... wrote:", "From:", "Sent:" or old AI text
-	const cutOffPatterns = [
-		/\bOn\s+[\s\S]*?wrote:/i,
-		/\bOn\s+[\s\S]*?wrote\s*:/i,
-		/-----Original Message-----/i,
-		/-----Forwarded Message-----/i,
-		/\bFrom:\s+[^\n]+<[^\n]+>/i,
-		/\bSent:\s+[^\n]+/i,
-		/It seems there was a misunderstanding/i,
-		/It seems like your message/i,
-		/It seems there's been a misunderstanding/i,
-		/How can I assist you today/i,
-	];
+	const lines = text.split("\n");
+	const userLines: string[] = [];
 
-	for (const pattern of cutOffPatterns) {
-		const match = text.match(pattern);
-		if (match && match.index !== undefined) {
-			text = text.substring(0, match.index);
+	for (const line of lines) {
+		const trimmed = line.trim();
+		// Stop as soon as we reach thread quote headers
+		if (
+			/^On\s+.*wrote:/i.test(trimmed) ||
+			/^On\s+.*wrote\s*:/i.test(trimmed) ||
+			/^-----Original Message-----/i.test(trimmed) ||
+			/^From:\s+.*<.*>/i.test(trimmed) ||
+			/^Sent:\s+/i.test(trimmed)
+		) {
+			break;
 		}
+		// Skip blockquote lines starting with '>'
+		if (trimmed.startsWith(">")) {
+			continue;
+		}
+		userLines.push(line);
 	}
 
-	// 3. Filter out lines starting with '>' (quoted reply indicators)
-	const lines = text.split("\n").filter((line) => !line.trim().startsWith(">"));
-	const result = lines.join(" ").replace(/\s+/g, " ").trim();
-
+	const result = userLines.join(" ").replace(/\s+/g, " ").trim();
 	return result || rawBody.replace(/<[^>]+>/g, "").trim();
 };
 
@@ -107,7 +105,7 @@ function formatTextToHtml(plainText: string): string {
 	`;
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
 	try {
 		const body = await req.json();
 		console.log("[Resend Webhook Payload Received]:", JSON.stringify(body));
@@ -148,12 +146,14 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: "Missing sender email address" }, { status: 400 });
 		}
 
-		// Keep exact rawSubject string so Gmail matches character-for-character with the original thread
-		const replySubject = (rawSubject || "Real Estate Inquiry").trim();
+		// Clean Subject line for Gmail threading: Ensure a single "Re: " prefix
+		const rawSub = (rawSubject || "Real Estate Inquiry").trim();
+		const hasRe = /^re:\s*/i.test(rawSub);
+		const replySubject = hasRe ? rawSub : `Re: ${rawSub}`;
 
 		// Extract ONLY the latest user message from the email (completely strip old thread history)
 		const latestUserText = cleanEmailBody(textBody);
-		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Thread Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
+		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Reply Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
 
 		// 1. Find or create lead by email
 		let lead = await prisma.lead.findUnique({
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
 			}
 		});
 
-		// 3. Detect Location / City from Subject & Clean Email Content
+		// 3. Detect Location / City & Intent (Buy, Sell, Both) from Subject & Email Content
 		const fullSearchStr = `${rawSubject} ${latestUserText}`.toLowerCase();
 
 		const knownCities = ["naples", "sanibel", "bonita springs", "bonita", "cape coral", "fort myers", "ft myers", "ft. myers", "estero", "marco island", "punta gorda", "lehigh", "miami", "ave maria"];
@@ -192,55 +192,79 @@ export async function POST(req: NextRequest) {
 			}
 		}
 
-		// 4. Query Database for Active Properties (always default to NAPLES if no specific city was mentioned)
-		const targetCity = matchedCity || "NAPLES";
-		console.log(`[Resend Webhook DB Query] Fetching active properties for city: ${targetCity}`);
+		const isSellIntent = fullSearchStr.includes("sell") || fullSearchStr.includes("selling") || fullSearchStr.includes("valuation") || fullSearchStr.includes("cma");
+		const isBuyIntent = fullSearchStr.includes("buy") || fullSearchStr.includes("buying") || fullSearchStr.includes("property") || fullSearchStr.includes("properties") || fullSearchStr.includes("home") || fullSearchStr.includes("listing");
 
-		const properties = await prisma.property.findMany({
-			where: {
-				City: { contains: targetCity },
-				StandardStatus: "Active"
-			},
-			take: 6,
-			orderBy: { ListPrice: 'desc' },
-			select: {
-				FullAddress: true,
-				ListPrice: true,
-				BedroomsTotal: true,
-				BathroomsTotalInteger: true,
-				LivingArea: true,
-				PropertyType: true,
-				City: true,
-				Community: true,
-				MLSNumber: true,
-				PoolPrivateYN: true,
-				WaterfrontYN: true,
-				GulfAccessYN: true,
-			}
-		});
+		let finalEmailText = "";
 
-		console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties in ${targetCity}`);
+		// 4. Require explicit location before dumping properties, otherwise ask the user which city they want!
+		if (matchedCity) {
+			console.log(`[Resend Webhook DB Query] Location detected: ${matchedCity}. Fetching active properties...`);
 
-		let propertyContext = "";
-		if (properties.length > 0) {
-			propertyContext = properties.map((p: any, i: number) => {
-				const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
-				const fullUrl = `${baseUrl}${relativeUrl}`;
-				return `${i + 1}. ${p.FullAddress}
+			const properties = await prisma.property.findMany({
+				where: {
+					City: { contains: matchedCity },
+					StandardStatus: "Active"
+				},
+				take: 6,
+				orderBy: { ListPrice: 'desc' },
+				select: {
+					FullAddress: true,
+					ListPrice: true,
+					BedroomsTotal: true,
+					BathroomsTotalInteger: true,
+					LivingArea: true,
+					PropertyType: true,
+					City: true,
+					Community: true,
+					MLSNumber: true,
+					PoolPrivateYN: true,
+					WaterfrontYN: true,
+					GulfAccessYN: true,
+				}
+			});
+
+			console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties in ${matchedCity}`);
+
+			let propertyContext = "";
+			if (properties.length > 0) {
+				propertyContext = properties.map((p: any, i: number) => {
+					const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
+					const fullUrl = `${baseUrl}${relativeUrl}`;
+					return `${i + 1}. ${p.FullAddress}
 Price: $${p.ListPrice ? p.ListPrice.toLocaleString() : "Price TBD"}
 Beds: ${p.BedroomsTotal ?? 0} | Baths: ${p.BathroomsTotalInteger ?? 0} | Living Area: ${p.LivingArea ? `${p.LivingArea.toLocaleString()} SqFt` : "N/A"}
 Pool: ${p.PoolPrivateYN ? "Yes" : "No"} | Waterfront: ${p.WaterfrontYN ? "Yes" : "No"}${p.GulfAccessYN ? " | Gulf Access: Yes" : ""}
 Listing Link: ${fullUrl}`;
-			}).join("\n\n");
-		}
+				}).join("\n\n");
+			} else {
+				propertyContext = "No active listings currently matched this exact city search. Please contact us for custom off-market options.";
+			}
 
-		// 5. Construct 100% Guaranteed Property Email Response
-		let finalEmailText = "";
+			if (isSellIntent) {
+				// BOTH BUY AND SELL WITH LOCATION
+				finalEmailText = `Hello,
 
-		if (properties.length > 0) {
-			finalEmailText = `Hello,
+Thank you for contacting Gulfshore Group Real Estate! We are delighted to assist you with both buying in ${matchedCity} and selling your current property.
 
-Thank you for reaching out to Gulfshore Group! Here are top active property listings currently available in ${targetCity}:
+1. BUYING - Active Property Matches in ${matchedCity}:
+${propertyContext}
+
+2. SELLING - Free Home Valuation & Listing Service:
+If you are looking to sell your home, Dimitri Schwarz offers expert marketing and complimentary market evaluations. You can list your property or request a valuation here:
+${baseUrl}/sell
+
+Please reply with any specific criteria (price range, bedrooms, waterfront, pool) or your property address for sale so we can assist you right away!
+
+Best regards,
+Dimitri Schwarz & AI Team
+Gulfshore Group Real Estate
+${baseUrl}`;
+			} else {
+				// PURE BUYING WITH LOCATION
+				finalEmailText = `Hello,
+
+Thank you for reaching out to Gulfshore Group! Here are top active property listings currently available in ${matchedCity}:
 
 ${propertyContext}
 
@@ -252,14 +276,62 @@ Best regards,
 Dimitri Schwarz & AI Team
 Gulfshore Group Real Estate
 ${baseUrl}`;
-		} else {
+			}
+		} else if (isBuyIntent) {
+			// User wants to BUY properties, but did NOT specify a location/city!
+			// Ask the user which location they want!
 			finalEmailText = `Hello,
 
-Thank you for contacting Gulfshore Group Real Estate.
+Thank you for reaching out to Gulfshore Group Real Estate!
 
-We specialize in luxury real estate across Southwest Florida, including Naples, Sanibel, Bonita Springs, Cape Coral, Fort Myers, and Estero.
+We would love to send you matching active property listings. Which location or city in Southwest Florida are you looking to buy in?
 
-Please visit our website at ${baseUrl} to browse all active listings, or let us know your preferred location, budget, and property criteria so we can send you custom matches.
+Our primary active market coverage includes:
+- Naples
+- Sanibel
+- Cape Coral
+- Fort Myers
+- Bonita Springs
+- Estero
+- Marco Island
+
+Please reply with your preferred location, budget, or bedroom count, and I will immediately send you matching active property listings with direct links!
+
+Best regards,
+Dimitri Schwarz & AI Team
+Gulfshore Group Real Estate
+${baseUrl}`;
+		} else if (isSellIntent) {
+			// User wants to SELL a property
+			finalEmailText = `Hello,
+
+Thank you for reaching out to Gulfshore Group Real Estate!
+
+Dimitri Schwarz provides complimentary, high-precision Home Valuations (Comparative Market Analysis) and full listing representation across Southwest Florida.
+
+To list your property for sale or get a free home market valuation immediately, please visit our seller portal:
+${baseUrl}/sell
+
+Please reply with your property address and details if you would like Dimitri to prepare a custom Home Valuation for you.
+
+Best regards,
+Dimitri Schwarz & AI Team
+Gulfshore Group Real Estate
+${baseUrl}`;
+		} else {
+			// General Greeting or Inquiry
+			finalEmailText = `Hello,
+
+Thank you for contacting Gulfshore Group Real Estate!
+
+I am your AI Real Estate Concierge, working on behalf of Dimitri Schwarz. How can I assist you with your real estate needs today?
+
+Are you looking to:
+1. Buy or rent a property in Southwest Florida (Naples, Sanibel, Cape Coral, Fort Myers, Bonita Springs, Estero)?
+2. Sell your home or request a free Comparative Market Analysis (CMA)? Visit ${baseUrl}/sell
+3. Schedule a private property viewing?
+
+Please reply with your preferred location, budget, or criteria so we can send you matching active listings!
 
 Best regards,
 Dimitri Schwarz & AI Team
@@ -267,7 +339,7 @@ Gulfshore Group Real Estate
 ${baseUrl}`;
 		}
 
-		console.log(`[Resend Webhook Success] Generated deterministic email response length: ${finalEmailText.length} characters.`);
+		console.log(`[Resend Webhook Success] Generated email response length: ${finalEmailText.length} characters.`);
 
 		// 6. Save response to AIChatHistory
 		await prisma.aIChatHistory.create({
@@ -289,15 +361,16 @@ ${baseUrl}`;
 		// 7. Generate styled HTML version of email for Gmail/Outlook clients
 		const htmlContent = formatTextToHtml(finalEmailText);
 
-		// 8. Build email thread headers so Gmail stacks replies in the SAME thread
+		// 8. Build email thread headers so Gmail stacks replies in the SAME thread (Only if valid RFC Message-ID containing @)
 		const sendHeaders: Record<string, string> = {};
-		if (messageId) {
+		if (messageId && messageId.includes("@")) {
 			const formattedMsgId = messageId.startsWith("<") && messageId.endsWith(">") ? messageId : `<${messageId}>`;
 			sendHeaders["In-Reply-To"] = formattedMsgId;
 			sendHeaders["References"] = formattedMsgId;
 		}
 
 		// 9. Send the email reply back via Resend inside the SAME thread
+<<<<<<< HEAD
 		const result = await resend.emails.send({
 			from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
 			to: cleanFromEmail,
@@ -306,6 +379,21 @@ ${baseUrl}`;
 			html: htmlContent,
 			headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
 		});
+=======
+		try {
+			const sendResult = await resend.emails.send({
+				from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
+				to: cleanFromEmail,
+				subject: replySubject,
+				text: finalEmailText,
+				html: htmlContent,
+				headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
+			});
+			console.log("[Resend Email Sent Result]:", JSON.stringify(sendResult));
+		} catch (sendErr) {
+			console.error("[Resend Email Send Exception]:", sendErr);
+		}
+>>>>>>> 1f41bca07d8e3f077d43320f4190d560d1538ca2
 
 		if (result.data?.id) {
 			try {
