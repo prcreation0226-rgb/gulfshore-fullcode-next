@@ -381,12 +381,7 @@ ${baseUrl}`;
 			sendHeaders["References"] = formattedMsgId;
 		}
 
-<<<<<<< HEAD
 		// 8. Send the luxury email card response back via Resend inside the SAME thread
-=======
-		// 9. Send the email reply back via Resend inside the SAME thread
-		let result: any;
->>>>>>> 1905e21ffb3c4cbd0de679d0c4f029073ee47227
 		try {
 			result = await resend.emails.send({
 				from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
