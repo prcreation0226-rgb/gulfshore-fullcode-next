@@ -30,6 +30,7 @@ export default function CommunicationLogsPage() {
 	const [logs, setLogs] = useState<CommunicationLog[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
+	const [activeTab, setActiveTab] = useState("all"); // "all", "email", "sms"
 
 	const fetchLogs = async () => {
 		try {
@@ -56,13 +57,14 @@ export default function CommunicationLogsPage() {
 
 	// Search Filter
 	const filteredLogs = logs.filter((log) => {
+		const matchesTab = activeTab === "all" || log.type?.toLowerCase() === activeTab;
 		const term = searchTerm.toLowerCase();
-		return (
-			log.to?.toLowerCase().includes(term) ||
+		const matchesSearch = log.to?.toLowerCase().includes(term) ||
 			log.subject?.toLowerCase().includes(term) ||
 			log.status?.toLowerCase().includes(term) ||
-			log.type?.toLowerCase().includes(term)
-		);
+			log.type?.toLowerCase().includes(term);
+		
+		return matchesTab && matchesSearch;
 	});
 
 	const getStatusColor = (status: string) => {
@@ -73,6 +75,7 @@ export default function CommunicationLogsPage() {
 				return "bg-green-100 text-green-800 border-green-200";
 			case "failed":
 			case "bounced":
+			case "undelivered":
 				return "bg-red-100 text-red-800 border-red-200";
 			default:
 				return "bg-gray-100 text-gray-800 border-gray-200";
@@ -90,14 +93,41 @@ export default function CommunicationLogsPage() {
 				</div>
 			</div>
 
-			{/* Search */}
-			<div className="flex items-center gap-2">
-				<div className="relative flex-1 max-w-sm">
+			{/* Tabs & Search */}
+			<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+				<div className="flex bg-muted p-1 rounded-md">
+					<button
+						onClick={() => setActiveTab("all")}
+						className={`px-4 py-1.5 text-sm font-medium rounded-sm transition-all ${
+							activeTab === "all" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+						}`}
+					>
+						All Logs
+					</button>
+					<button
+						onClick={() => setActiveTab("email")}
+						className={`px-4 py-1.5 text-sm font-medium rounded-sm transition-all flex items-center gap-2 ${
+							activeTab === "email" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+						}`}
+					>
+						<Mail className="h-3.5 w-3.5" /> Emails
+					</button>
+					<button
+						onClick={() => setActiveTab("sms")}
+						className={`px-4 py-1.5 text-sm font-medium rounded-sm transition-all flex items-center gap-2 ${
+							activeTab === "sms" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+						}`}
+					>
+						<MessageSquare className="h-3.5 w-3.5" /> SMS
+					</button>
+				</div>
+
+				<div className="relative w-full max-w-sm">
 					<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
 					<Input
 						type="search"
 						placeholder="Search by email, subject or status..."
-						className="pl-8"
+						className="pl-8 w-full"
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
 					/>
