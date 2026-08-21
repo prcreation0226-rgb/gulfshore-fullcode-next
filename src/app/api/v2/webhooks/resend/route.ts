@@ -488,6 +488,17 @@ ${baseUrl}`;
 			const targetLocation = searchParams.location || "Naples";
 			console.log(`[Resend Webhook DB Query] Target Location: "${targetLocation}", Params:`, JSON.stringify(searchParams));
 
+			// Split target location into individual keywords for resilient location matching (e.g. "Bonita Springs" -> ["Bonita", "Springs"])
+			const keywords = targetLocation.split(/\s+/).filter(k => k.length > 2);
+			const keywordConditions = keywords.map(kw => ({
+				OR: [
+					{ City: { contains: kw } },
+					{ Community: { contains: kw } },
+					{ FullAddress: { contains: kw } },
+					{ PostalCode: { contains: kw } },
+				]
+			}));
+
 			const dbWhere: any = {
 				StandardStatus: "Active",
 				OR: [
@@ -495,6 +506,7 @@ ${baseUrl}`;
 					{ Community: { contains: targetLocation } },
 					{ FullAddress: { contains: targetLocation } },
 					{ PostalCode: { contains: targetLocation } },
+					...keywordConditions
 				]
 			};
 
@@ -534,42 +546,10 @@ ${baseUrl}`;
 				}
 			});
 
-			// If specific city returned 0 results, fetch active properties in SWFL area so user ALWAYS receives property cards immediately
-			if (properties.length === 0) {
-				properties = await prisma.property.findMany({
-					where: { StandardStatus: "Active" },
-					take: 6,
-					orderBy: { ListPrice: 'desc' },
-					select: {
-						id: true,
-						FullAddress: true,
-						ListPrice: true,
-						BedroomsTotal: true,
-						BathroomsTotalInteger: true,
-						LivingArea: true,
-						PropertyType: true,
-						PropertySubType: true,
-						City: true,
-						StateOrProvince: true,
-						PostalCode: true,
-						Community: true,
-						MLSNumber: true,
-						PoolPrivateYN: true,
-						WaterfrontYN: true,
-						GulfAccessYN: true,
-						ListOfficeName: true,
-						images: true,
-						media: {
-							take: 1,
-							select: { MediaURL: true }
-						}
-					}
-				});
-			}
-
 			console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties for location "${targetLocation}"`);
 
-			plainTextSummary = `Hello,
+			if (properties.length > 0) {
+				plainTextSummary = `Hello,
 
 Thank you for reaching out to Gulfshore Group! Here are top active property listings currently available in ${targetLocation}:
 
@@ -580,12 +560,37 @@ Dimitri Schwarz & AI Team
 Gulfshore Group Real Estate
 ${baseUrl}`;
 
-			htmlContent = buildHtmlPropertyEmail(
-				targetLocation,
-				properties,
-				`ACTIVE HOMES MATCHING YOUR SEARCH`,
-				`We found ${properties.length} active luxury properties matching your search criteria in ${targetLocation}. Each listing has been curated for quality and value.`
-			);
+				htmlContent = buildHtmlPropertyEmail(
+					targetLocation,
+					properties,
+					`ACTIVE HOMES MATCHING YOUR SEARCH`,
+					`We found ${properties.length} active luxury properties matching your search criteria in ${targetLocation}. Each listing has been curated for quality and value.`
+				);
+			} else {
+				// STRICT NO-FALLBACK RULE (AI Concierge System Prompt Rule):
+				// NEVER present fake Naples fallback cards if requested city has 0 listings!
+				plainTextSummary = `Hello,
+
+Thank you for reaching out to Gulfshore Group Real Estate!
+
+We currently do not have active listings matching your exact search criteria in ${targetLocation.toUpperCase()}.
+
+Gulfshore Group specializes exclusively in Southwest Florida real estate (Naples, Bonita Springs, Cape Coral, Fort Myers, Estero, Marco Island, Sanibel, etc.).
+
+Please let us know if you would like us to set up a custom property alert for you or search another location in Southwest Florida!
+
+Best regards,
+Dimitri Schwarz & AI Team
+Gulfshore Group Real Estate
+${baseUrl}`;
+
+				htmlContent = buildHtmlPropertyEmail(
+					targetLocation,
+					[],
+					`NO ACTIVE HOMES FOUND`,
+					`We currently do not have active listings matching your exact criteria in ${targetLocation.toUpperCase()}.`
+				);
+			}
 		}
 
 		console.log(`[Resend Webhook Success] Generated luxury email response.`);
