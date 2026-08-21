@@ -76,6 +76,82 @@ const cleanEmailBody = (rawBody: string): string => {
 	return result || rawBody.replace(/<[^>]+>/g, "").trim();
 };
 
+interface ExtractedSearch {
+	city?: string;
+	maxPrice?: number;
+	beds?: number;
+	baths?: number;
+	poolOnly?: boolean;
+	waterfrontOnly?: boolean;
+}
+
+// Extract search parameters strictly from the user's fresh message (ignoring subject lines with old city names)
+function extractSearchParamsFromUserText(text: string): ExtractedSearch {
+	const result: ExtractedSearch = {};
+	if (!text || typeof text !== "string") return result;
+
+	const clean = text.toLowerCase().trim();
+
+	// 1. City extraction (Strictly from user body text)
+	const knownCities = [
+		{ key: "sanibel", name: "SANIBEL" },
+		{ key: "bonita springs", name: "BONITA SPRINGS" },
+		{ key: "bonita", name: "BONITA SPRINGS" },
+		{ key: "cape coral", name: "CAPE CORAL" },
+		{ key: "fort myers", name: "FORT MYERS" },
+		{ key: "ft myers", name: "FORT MYERS" },
+		{ key: "ft. myers", name: "FORT MYERS" },
+		{ key: "estero", name: "ESTERO" },
+		{ key: "marco island", name: "MARCO ISLAND" },
+		{ key: "punta gorda", name: "PUNTA GORDA" },
+		{ key: "lehigh", name: "LEHIGH ACRES" },
+		{ key: "miami", name: "MIAMI" },
+		{ key: "ave maria", name: "AVE MARIA" },
+		{ key: "naples", name: "NAPLES" },
+	];
+
+	for (const item of knownCities) {
+		if (clean.includes(item.key)) {
+			result.city = item.name;
+			break;
+		}
+	}
+
+	// 2. Max Price extraction ($500k, $1m, 500000, under 1M)
+	const priceKMatch = clean.match(/(?:under|below|max|up to|\$)\s*(\d+(?:\.\d+)?)\s*k\b/i);
+	if (priceKMatch && priceKMatch[1]) {
+		result.maxPrice = parseFloat(priceKMatch[1]) * 1000;
+	} else {
+		const priceMMatch = clean.match(/(?:under|below|max|up to|\$)\s*(\d+(?:\.\d+)?)\s*m\b/i);
+		if (priceMMatch && priceMMatch[1]) {
+			result.maxPrice = parseFloat(priceMMatch[1]) * 1000000;
+		} else {
+			const priceRawMatch = clean.match(/(?:under|below|max|price)\s*\$?(\d[\d,]{3,})/i);
+			if (priceRawMatch && priceRawMatch[1]) {
+				result.maxPrice = parseInt(priceRawMatch[1].replace(/,/g, ""), 10);
+			}
+		}
+	}
+
+	// 3. Bedrooms extraction (1 bed, 2 beds, 3 bedrooms, 4 bed)
+	const bedMatch = clean.match(/(\d+)\s*(?:bed|beds|bedroom|bedrooms)\b/i);
+	if (bedMatch && bedMatch[1]) {
+		result.beds = parseInt(bedMatch[1], 10);
+	}
+
+	// 4. Bathrooms extraction (1 bath, 2 baths, 3 bathrooms)
+	const bathMatch = clean.match(/(\d+)\s*(?:bath|baths|bathroom|bathrooms)\b/i);
+	if (bathMatch && bathMatch[1]) {
+		result.baths = parseInt(bathMatch[1], 10);
+	}
+
+	// 5. Pool / Waterfront extraction
+	if (clean.includes("pool")) result.poolOnly = true;
+	if (clean.includes("waterfront") || clean.includes("gulf access")) result.waterfrontOnly = true;
+
+	return result;
+}
+
 // Builder for High-End Luxury Property Email Template (Matches User Reference Image)
 function buildHtmlPropertyEmail(
 	matchedCity: string,
@@ -267,40 +343,40 @@ export async function POST(req: Request) {
 			}
 		});
 
-		// 3. Detect Location / City from ONLY the user's fresh message
+		// 3. Extract Search Parameters (City, Price, Beds, Baths, Pool) STRICTLY from user's fresh message
+		const searchParams = extractSearchParamsFromUserText(latestUserText);
 		const freshTextLower = latestUserText.toLowerCase();
-		const knownCities = [
-			"sanibel", "bonita springs", "bonita", "cape coral", "fort myers", 
-			"ft myers", "ft. myers", "estero", "marco island", "punta gorda", 
-			"lehigh", "miami", "ave maria", "naples"
-		];
-
-		let bestMatch: { city: string; index: number } | undefined = undefined;
-
-		for (const city of knownCities) {
-			const idx = freshTextLower.indexOf(city);
-			if (idx !== -1) {
-				const normalizedCityName = (city === "bonita") ? "BONITA SPRINGS" : (city.includes("ft") && city.includes("myers")) ? "FORT MYERS" : city.toUpperCase();
-				if (!bestMatch || idx < bestMatch.index) {
-					bestMatch = { city: normalizedCityName, index: idx };
-				}
-			}
-		}
-
-		let matchedCity: string | undefined = bestMatch ? bestMatch.city : undefined;
 
 		const isSellIntent = freshTextLower.includes("sell") || freshTextLower.includes("selling") || freshTextLower.includes("valuation") || freshTextLower.includes("cma");
-		const isBuyIntent = freshTextLower.includes("buy") || freshTextLower.includes("buying") || freshTextLower.includes("property") || freshTextLower.includes("properties") || freshTextLower.includes("home") || freshTextLower.includes("listing") || matchedCity !== undefined;
+		const isBuyIntent = freshTextLower.includes("buy") || freshTextLower.includes("buying") || freshTextLower.includes("property") || freshTextLower.includes("properties") || freshTextLower.includes("home") || freshTextLower.includes("listing") || searchParams.city !== undefined;
 
-		// 4. Query Database for Active Properties in the detected city (default to NAPLES if no city in user message)
-		const targetCity = matchedCity || "NAPLES";
-		console.log(`[Resend Webhook DB Query] City detected from fresh message: "${targetCity}". Fetching active properties...`);
+		// 4. Query Database for Active Properties matching the extracted criteria (default to NAPLES if no city in user message)
+		const targetCity = searchParams.city || "NAPLES";
+		console.log(`[Resend Webhook DB Query] Extracted Search Params:`, JSON.stringify(searchParams), `Target City: "${targetCity}"`);
 
-		const properties = await prisma.property.findMany({
-			where: {
-				City: { contains: targetCity },
-				StandardStatus: "Active"
-			},
+		const dbWhere: any = {
+			StandardStatus: "Active",
+			City: { contains: targetCity }
+		};
+
+		if (searchParams.maxPrice) {
+			dbWhere.ListPrice = { lte: searchParams.maxPrice };
+		}
+		if (searchParams.beds) {
+			dbWhere.BedroomsTotal = { gte: searchParams.beds };
+		}
+		if (searchParams.baths) {
+			dbWhere.BathroomsTotalInteger = { gte: searchParams.baths };
+		}
+		if (searchParams.poolOnly) {
+			dbWhere.PoolPrivateYN = true;
+		}
+		if (searchParams.waterfrontOnly) {
+			dbWhere.WaterfrontYN = true;
+		}
+
+		let properties = await prisma.property.findMany({
+			where: dbWhere,
 			take: 6,
 			orderBy: { ListPrice: 'desc' },
 			select: {
@@ -328,6 +404,42 @@ export async function POST(req: Request) {
 				}
 			}
 		});
+
+		// Fallback to general city search if strict filters returned 0 results
+		if (properties.length === 0) {
+			properties = await prisma.property.findMany({
+				where: {
+					City: { contains: targetCity },
+					StandardStatus: "Active"
+				},
+				take: 6,
+				orderBy: { ListPrice: 'desc' },
+				select: {
+					id: true,
+					FullAddress: true,
+					ListPrice: true,
+					BedroomsTotal: true,
+					BathroomsTotalInteger: true,
+					LivingArea: true,
+					PropertyType: true,
+					PropertySubType: true,
+					City: true,
+					StateOrProvince: true,
+					PostalCode: true,
+					Community: true,
+					MLSNumber: true,
+					PoolPrivateYN: true,
+					WaterfrontYN: true,
+					GulfAccessYN: true,
+					ListOfficeName: true,
+					images: true,
+					media: {
+						take: 1,
+						select: { MediaURL: true }
+					}
+				}
+			});
+		}
 
 		console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties in ${targetCity}`);
 
