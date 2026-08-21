@@ -65,6 +65,19 @@ const cleanEmailBody = (rawBody: string): string => {
 	return result || rawBody.replace(/<[^>]+>/g, "").trim();
 };
 
+// Helper to detect if email has property search/sell/buy/location intent vs simple greeting
+function hasRealEstateIntent(fullSearchStr: string, matchedCity?: string): boolean {
+	if (matchedCity) return true;
+	const keywords = [
+		"property", "properties", "home", "homes", "house", "houses", 
+		"buy", "buying", "sell", "selling", "listing", "listings", 
+		"mls", "condo", "villa", "naples", "sanibel", "cape coral", 
+		"fort myers", "estero", "bonita", "marco island", "price", 
+		"budget", "bedroom", "bedrooms", "bath", "baths", "sqft", "location"
+	];
+	return keywords.some(kw => fullSearchStr.toLowerCase().includes(kw));
+}
+
 // Format plain text with URLs into styled HTML email for Gmail/Outlook
 function formatTextToHtml(plainText: string): string {
 	const escaped = plainText
@@ -181,7 +194,7 @@ export async function POST(req: Request) {
 			}
 		});
 
-		// 3. Detect Location / City from Subject & Clean Email Content
+		// 3. Detect Location / City & Intent from Subject & Clean Email Content
 		const fullSearchStr = `${rawSubject} ${latestUserText}`.toLowerCase();
 
 		const knownCities = ["naples", "sanibel", "bonita springs", "bonita", "cape coral", "fort myers", "ft myers", "ft. myers", "estero", "marco island", "punta gorda", "lehigh", "miami", "ave maria"];
@@ -194,52 +207,53 @@ export async function POST(req: Request) {
 			}
 		}
 
-		// 4. Query Database for Active Properties (always default to NAPLES if no specific city was mentioned)
-		const targetCity = matchedCity || "NAPLES";
-		console.log(`[Resend Webhook DB Query] Fetching active properties for city: ${targetCity}`);
+		const isRealEstateRequest = hasRealEstateIntent(fullSearchStr, matchedCity);
 
-		const properties = await prisma.property.findMany({
-			where: {
-				City: { contains: targetCity },
-				StandardStatus: "Active"
-			},
-			take: 6,
-			orderBy: { ListPrice: 'desc' },
-			select: {
-				FullAddress: true,
-				ListPrice: true,
-				BedroomsTotal: true,
-				BathroomsTotalInteger: true,
-				LivingArea: true,
-				PropertyType: true,
-				City: true,
-				Community: true,
-				MLSNumber: true,
-				PoolPrivateYN: true,
-				WaterfrontYN: true,
-				GulfAccessYN: true,
-			}
-		});
+		let finalEmailText = "";
 
-		console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties in ${targetCity}`);
+		if (isRealEstateRequest) {
+			// 4. Query Database for Active Properties if user has search/property intent
+			const targetCity = matchedCity || "NAPLES";
+			console.log(`[Resend Webhook DB Query] Fetching active properties for city: ${targetCity}`);
 
-		let propertyContext = "";
-		if (properties.length > 0) {
-			propertyContext = properties.map((p: any, i: number) => {
-				const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
-				const fullUrl = `${baseUrl}${relativeUrl}`;
-				return `${i + 1}. ${p.FullAddress}
+			const properties = await prisma.property.findMany({
+				where: {
+					City: { contains: targetCity },
+					StandardStatus: "Active"
+				},
+				take: 6,
+				orderBy: { ListPrice: 'desc' },
+				select: {
+					FullAddress: true,
+					ListPrice: true,
+					BedroomsTotal: true,
+					BathroomsTotalInteger: true,
+					LivingArea: true,
+					PropertyType: true,
+					City: true,
+					Community: true,
+					MLSNumber: true,
+					PoolPrivateYN: true,
+					WaterfrontYN: true,
+					GulfAccessYN: true,
+				}
+			});
+
+			console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties in ${targetCity}`);
+
+			let propertyContext = "";
+			if (properties.length > 0) {
+				propertyContext = properties.map((p: any, i: number) => {
+					const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
+					const fullUrl = `${baseUrl}${relativeUrl}`;
+					return `${i + 1}. ${p.FullAddress}
 Price: $${p.ListPrice ? p.ListPrice.toLocaleString() : "Price TBD"}
 Beds: ${p.BedroomsTotal ?? 0} | Baths: ${p.BathroomsTotalInteger ?? 0} | Living Area: ${p.LivingArea ? `${p.LivingArea.toLocaleString()} SqFt` : "N/A"}
 Pool: ${p.PoolPrivateYN ? "Yes" : "No"} | Waterfront: ${p.WaterfrontYN ? "Yes" : "No"}${p.GulfAccessYN ? " | Gulf Access: Yes" : ""}
 Listing Link: ${fullUrl}`;
-			}).join("\n\n");
-		}
+				}).join("\n\n");
+			}
 
-		// 5. Construct 100% Guaranteed Property Email Response
-		let finalEmailText = "";
-
-		if (properties.length > 0) {
 			finalEmailText = `Hello,
 
 Thank you for reaching out to Gulfshore Group! Here are top active property listings currently available in ${targetCity}:
@@ -255,13 +269,19 @@ Dimitri Schwarz & AI Team
 Gulfshore Group Real Estate
 ${baseUrl}`;
 		} else {
+			// Polite Greeting Response (Matches AI Chat Widget Script behavior for simple greetings like "hey" or "hi")
 			finalEmailText = `Hello,
 
-Thank you for contacting Gulfshore Group Real Estate.
+Thank you for reaching out to Gulfshore Group Real Estate!
 
-We specialize in luxury real estate across Southwest Florida, including Naples, Sanibel, Bonita Springs, Cape Coral, Fort Myers, and Estero.
+I am your AI Real Estate Concierge, working on behalf of Dimitri Schwarz. How can I assist you with your real estate needs today?
 
-Please visit our website at ${baseUrl} to browse all active listings, or let us know your preferred location, budget, and property criteria so we can send you custom matches.
+Are you looking to:
+1. Buy or rent a property in Southwest Florida (Naples, Sanibel, Bonita Springs, Cape Coral, Fort Myers, Estero)?
+2. Sell your home or request a free Comparative Market Analysis (CMA)? Visit ${baseUrl}/sell
+3. Schedule a private property viewing?
+
+Please reply with your preferred location, budget, or property requirements, and I will gladly share matching active listings!
 
 Best regards,
 Dimitri Schwarz & AI Team
@@ -269,7 +289,7 @@ Gulfshore Group Real Estate
 ${baseUrl}`;
 		}
 
-		console.log(`[Resend Webhook Success] Generated deterministic email response length: ${finalEmailText.length} characters.`);
+		console.log(`[Resend Webhook Success] Generated email response length: ${finalEmailText.length} characters.`);
 
 		// 6. Save response to AIChatHistory
 		await prisma.aIChatHistory.create({
