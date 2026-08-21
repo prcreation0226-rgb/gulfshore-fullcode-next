@@ -148,14 +148,12 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: "Missing sender email address" }, { status: 400 });
 		}
 
-		// Clean Subject line: Prepend "Re: " if not present, keep existing "Re: " if already present
-		const trimmedSubject = (rawSubject || "Real Estate Inquiry").trim();
-		const hasRe = /^re:\s*/i.test(trimmedSubject);
-		const replySubject = hasRe ? trimmedSubject : `Re: ${trimmedSubject}`;
+		// Use exact rawSubject to guarantee Gmail matches subject character-for-character with existing thread
+		const replySubject = (rawSubject || "Real Estate Inquiry").trim();
 
 		// Extract ONLY the latest user message from the email (completely strip old thread history)
 		const latestUserText = cleanEmailBody(textBody);
-		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Clean Subject: "${trimmedSubject}" | Reply Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
+		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Exact Thread Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
 
 		// 1. Find or create lead by email
 		let lead = await prisma.lead.findUnique({
