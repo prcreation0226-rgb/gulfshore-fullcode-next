@@ -29,6 +29,26 @@ const cleanLocation = (val: any): string | undefined => {
 	return cleaned || undefined;
 };
 
+// Helper to extract the actual latest user email body (strip quoted email thread history)
+const cleanEmailBody = (rawBody: string): string => {
+	if (!rawBody) return "";
+	let text = rawBody.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, "\n");
+	// Cut off thread reply headers
+	const markers = [
+		/On\s+.*wrote:/i,
+		/From:\s+.*/i,
+		/[\-\_]{3,}\s*Original Message\s*[\-\_]{3,}/i,
+		/[\-\_]{3,}\s*Forwarded Message\s*[\-\_]{3,}/i,
+	];
+	for (const m of markers) {
+		const index = text.search(m);
+		if (index !== -1) {
+			text = text.substring(0, index);
+		}
+	}
+	return text.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+};
+
 // Format plain text with URLs into styled HTML email for Gmail/Outlook
 function formatTextToHtml(plainText: string): string {
 	const escaped = plainText
@@ -93,6 +113,10 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: "Missing required email or message body" }, { status: 400 });
 		}
 
+		// Extract ONLY the latest user message from the email (strip old thread history)
+		const latestUserText = cleanEmailBody(textBody);
+		console.log(`[Resend Webhook] Inbound email from ${cleanFromEmail}. Latest text: "${latestUserText}"`);
+
 		// 1. Find or create lead by email
 		let lead = await prisma.lead.findUnique({
 			where: { email: cleanFromEmail }
@@ -113,21 +137,17 @@ export async function POST(req: NextRequest) {
 				leadId: lead.id,
 				channel: "email",
 				role: "user",
-				message: `Subject: ${subject}\n\n${textBody}`,
+				message: `Subject: ${subject}\n\n${latestUserText || textBody}`,
 			}
 		});
 
-		// 3. Fetch past conversation history for context (last 10 messages)
-		const pastChats = await prisma.aIChatHistory.findMany({
-			where: { leadId: lead.id, channel: "email" },
-			orderBy: { createdAt: "asc" },
-			take: 10,
-		});
-
-		const messages: any = pastChats.map((chat: any) => ({
-			role: chat.role === "ai" ? "assistant" : chat.role,
-			content: chat.message,
-		}));
+		// 3. Prepare messages context for AI (clean latest input + past context if relevant)
+		const messages: any = [
+			{
+				role: "user",
+				content: latestUserText || textBody,
+			}
+		];
 
 		// Define AI Tools matching the website chat logic
 		const tools = {
@@ -162,6 +182,7 @@ export async function POST(req: NextRequest) {
 				}),
 				// @ts-ignore
 				execute: async (args: any) => {
+					console.log("[Resend Webhook AI Tool] searchProperties called with args:", JSON.stringify(args));
 					let { city, address, propertyType, community, subdivision, mlsNumber, minPrice, maxPrice, beds, baths, hasPool, waterfront, gulfAccess, newConstruction, zipCode, garage, spa, minAcres, maxAcres, minYearBuilt, maxYearBuilt, yearBuilt, maxHoaFee, keyword } = args;
 
 					const parseNumeric = (val: any) => {
@@ -386,6 +407,8 @@ export async function POST(req: NextRequest) {
 						}
 					}
 
+					console.log(`[Resend Webhook AI Tool] searchProperties found ${properties.length} properties.`);
+
 					return properties.map((p: any) => {
 						const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
 						const fullUrl = `${baseUrl}${relativeUrl}`;
@@ -561,30 +584,29 @@ export async function POST(req: NextRequest) {
 			// @ts-ignore
 			maxSteps: 5,
 			system: `You are an expert AI Real Estate Concierge for Gulfshore Group, working on behalf of Dimitri Schwarz. 
-You are replying to a lead via EMAIL. Write a professional, polite, well-structured, and helpful email response.
+You are replying to a lead via EMAIL. Write a professional, polite, well-structured, and detailed email response.
+
+MANDATORY INSTRUCTION FOR SEARCHES & LOCATIONS:
+- IF THE EMAIL CONTAINS A LOCATION (e.g. "naples", "sanibel", "fort myers", "cape coral", "bonita springs", "estero", "miami") OR ASKS FOR PROPERTIES/HOMES/LISTINGS:
+- YOU MUST IMMEDIATELY CALL THE 'searchProperties' TOOL IN STEP 1 WITH THAT CITY (city: "Naples")!
+- YOU ARE STRICTLY FORBIDDEN FROM RESPONDING WITH SHORT GENERIC PHRASES LIKE "Please let me know how I can assist you" OR "If you have any questions feel free to let me know"!
+- YOU MUST LIST THE ACTUAL ACTIVE PROPERTIES FOUND BY THE TOOL IN YOUR EMAIL!
 
 BUYER VS. SELLER INTENT DETECTION:
 
-1. BUYER INTENT (User wants to BUY, RENT, or FIND listings):
-- If the lead is looking to buy, rent, or view available homes (e.g., "i want properties in Naples", "looking for 3 beds in Sanibel under 1M"):
-- You MUST immediately call the 'searchProperties' tool with all parameters extracted (city, address, price, beds, baths, pool, propertyType).
-- CRITICAL: If the user provides ONLY a location (e.g. "properties in Naples", "i want properties in naples location", "show homes in Sanibel"), YOU MUST IMMEDIATELY CALL 'searchProperties' WITH THAT CITY!
-- DO NOT ask for budget or bedrooms BEFORE running the tool! Run the search FIRST and include the active properties found in your email!
-- Format property results clearly in your email with bullet points or numbered lists, specifying Address, Price, Bedrooms/Bathrooms, Living Area (sqft), Features (Pool, Waterfront, Gulf Access), and the direct website Link (URL) for each property!
-
-STRICT PARAMETER MATCHING INSTRUCTIONS FOR BUYERS:
-- Extract ALL criteria specified by the lead: location (city, community, zip), price/budget (minPrice, maxPrice), street address, bedrooms, bathrooms, property type, pool, waterfront, etc.
-- Pass EVERY extracted parameter to 'searchProperties' so database filters properties strictly.
-- DO NOT carry over old/outdated budget limits from past emails when user enters a new location search.
+1. BUYER INTENT (Lead wants to BUY, RENT, or FIND listings):
+- Call 'searchProperties' immediately with all extracted parameters (city, address, price, beds, baths, pool, propertyType).
+- Format property results clearly in your email with bullet points:
+  • Address - Price
+    Bedrooms / Bathrooms | SqFt | Key Features (Pool, Waterfront)
+    View Listing: [URL]
 
 2. SELLER & PROPERTY LOOKUP WORKFLOW:
-- If a user mentions wanting to sell a property or check their listed properties:
-- Call 'checkSellerProperties' with their email.
-- If existing properties are found, summarize them and provide the link to add a new property for sale: ${baseUrl}/sell
-- If no existing properties are found, explain politely and invite them to visit ${baseUrl}/sell to list their home for sale or get a free Home Valuation from Dimitri Schwarz.
+- If lead mentions wanting to sell a property or check their listed properties, call 'checkSellerProperties'.
+- Include the link to list or value their property: ${baseUrl}/sell
 
 3. BOTH BUY & SELL INTENT:
-- Run 'searchProperties' for their purchase criteria, AND offer seller valuation assistance with the ${baseUrl}/sell link.
+- Call 'searchProperties' for purchase criteria, AND offer seller valuation assistance with the ${baseUrl}/sell link.
 
 EMAIL FORMATTING RULES:
 - Write in a polite, professional, and warm tone.
@@ -597,6 +619,8 @@ EMAIL FORMATTING RULES:
 			messages,
 			tools,
 		});
+
+		console.log(`[Resend Webhook] AI generated text length: ${text.length} characters.`);
 
 		// 5. Save AI response to AIChatHistory
 		await prisma.aIChatHistory.create({
