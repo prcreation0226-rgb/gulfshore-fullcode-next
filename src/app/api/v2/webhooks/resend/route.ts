@@ -9,22 +9,21 @@ import { recalculateLeadScore } from "@/lib/leads/services/scoring.service";
 const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy");
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gulfshore-fullcode-next-production.up.railway.app";
 
-// Helper to normalize location strings
-const cleanLocation = (val: any): string | undefined => {
-	if (!val || typeof val !== "string") return undefined;
-	const cleaned = val
-		.replace(/,\s*fl\b/gi, "")
-		.replace(/,\s*florida\b/gi, "")
-		.replace(/\bfl\b/gi, "")
-		.replace(/\bflorida\b/gi, "")
-		.replace(/\blocation\b/gi, "")
-		.replace(/\barea\b/gi, "")
-		.replace(/\bcity\b/gi, "")
-		.replace(/[,;]/g, " ")
-		.replace(/\s+/g, " ")
-		.trim();
-	return cleaned || undefined;
-};
+// Helper to extract best cover image URL for property cards
+function getPropertyImageUrl(p: any): string {
+	if (p.media && Array.isArray(p.media) && p.media.length > 0 && p.media[0]?.MediaURL) {
+		return p.media[0].MediaURL;
+	}
+	if (p.images) {
+		if (Array.isArray(p.images) && p.images.length > 0) {
+			const first = p.images[0];
+			if (typeof first === "string") return first;
+			if (typeof first === "object" && first?.MediaURL) return first.MediaURL;
+		}
+	}
+	// High-resolution luxury real estate fallback photo
+	return "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80";
+}
 
 // Robust Helper to extract ONLY the user's latest email message (strip quoted thread history)
 const cleanEmailBody = (rawBody: string): string => {
@@ -63,45 +62,120 @@ const cleanEmailBody = (rawBody: string): string => {
 	return result || rawBody.replace(/<[^>]+>/g, "").trim();
 };
 
-// Format plain text with URLs into styled HTML email for Gmail/Outlook
-function formatTextToHtml(plainText: string): string {
-	const escaped = plainText
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;");
+// Builder for High-End Luxury Property Email Template (Matches User Reference Image)
+function buildHtmlPropertyEmail(
+	matchedCity: string,
+	properties: any[],
+	introTitle: string = "HOMES MATCHING YOUR SEARCH",
+	subtitle: string = "We found matching active properties for your criteria."
+): string {
+	const propertyCardsHtml = properties.map((p: any) => {
+		const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
+		const fullUrl = `${baseUrl}${relativeUrl}`;
+		const imgUrl = getPropertyImageUrl(p);
+		const formattedPrice = p.ListPrice ? `$${p.ListPrice.toLocaleString()}` : "Price Upon Request";
+		const beds = p.BedroomsTotal ?? 0;
+		const baths = p.BathroomsTotalInteger ?? 0;
+		const sqft = p.LivingArea ? `${p.LivingArea.toLocaleString()} sqft` : "N/A";
+		const poolText = p.PoolPrivateYN ? "Private Pool" : p.WaterfrontYN ? "Waterfront" : "Luxury Residence";
+		const officeName = p.ListOfficeName || "Gulfshore Group Real Estate";
 
-	// Convert markdown links [text](url) to HTML <a href="url">text</a>
-	const withMarkdownLinks = escaped.replace(
-		/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
-		'<a href="$2" target="_blank" style="color: #dc2626; font-weight: bold; text-decoration: underline;">$1</a>'
-	);
-
-	// Convert raw HTTP/HTTPS URLs into clickable links if not inside a tag
-	const withRawLinks = withMarkdownLinks.replace(
-		/(?<!href=")(https?:\/\/[^\s<]+)/g,
-		'<a href="$1" target="_blank" style="color: #dc2626; font-weight: bold; text-decoration: underline;">$1</a>'
-	);
-
-	// Convert paragraphs
-	const formattedParagraphs = withRawLinks
-		.split("\n\n")
-		.map((p) => `<p style="margin-bottom: 14px; line-height: 1.6;">${p.replace(/\n/g, "<br/>")}</p>`)
-		.join("");
-
-	return `
-		<div style="font-family: Arial, Helvetica, sans-serif; font-size: 15px; color: #1f2937; max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
-			<div style="border-bottom: 2px solid #dc2626; padding-bottom: 12px; margin-bottom: 20px;">
-				<h2 style="color: #dc2626; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">GULFSHORE GROUP</h2>
-				<p style="color: #6b7280; font-size: 12px; margin: 4px 0 0 0; font-weight: 500;">Real Estate Concierge | Dimitri Schwarz</p>
+		return `
+		<!-- PROPERTY CARD -->
+		<div style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+			<!-- COVER IMAGE -->
+			<div style="width: 100%; height: 220px; background-color: #f3f4f6; overflow: hidden;">
+				<a href="${fullUrl}" target="_blank" style="text-decoration: none;">
+					<img src="${imgUrl}" alt="${p.FullAddress}" style="width: 100%; height: 220px; object-fit: cover; border: 0; display: block;" />
+				</a>
 			</div>
-			<div style="font-size: 14px; color: #374151;">
-				${formattedParagraphs}
-			</div>
-			<div style="border-top: 1px solid #e5e7eb; margin-top: 24px; padding-top: 14px; font-size: 12px; color: #9ca3af; text-align: center;">
-				<p style="margin: 0;">© ${new Date().getFullYear()} Gulfshore Group Real Estate. All rights reserved.</p>
-				<p style="margin: 4px 0 0 0;"><a href="${baseUrl}" style="color: #dc2626; text-decoration: none;">www.gulfshoregroup.com</a></p>
+
+			<!-- CARD BODY -->
+			<div style="padding: 18px 20px;">
+				<!-- ACTIVE BADGE -->
+				<div style="margin-bottom: 8px;">
+					<span style="background-color: #16a34a; color: #ffffff; font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase;">ACTIVE</span>
+				</div>
+
+				<!-- PRICE -->
+				<div style="font-size: 26px; font-weight: 800; color: #111827; margin: 4px 0 2px 0; letter-spacing: -0.5px;">
+					${formattedPrice}
+				</div>
+
+				<!-- ADDRESS -->
+				<div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 4px;">
+					${p.FullAddress}, ${p.City}, FL ${p.PostalCode || ""}
+				</div>
+
+				<!-- SUBTYPE / COMMUNITY -->
+				<div style="font-size: 11px; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+					${(p.PropertyType || "SINGLE FAMILY").toUpperCase()} ${p.Community ? `• ${p.Community.toUpperCase()}` : ""}
+				</div>
+
+				<!-- SPECS GRID -->
+				<div style="border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; padding: 10px 0; margin-bottom: 14px;">
+					<table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 13px; color: #4b5563; text-align: center;">
+						<tr>
+							<td width="25%" style="border-right: 1px solid #f3f4f6;"><strong>${beds}</strong> Beds</td>
+							<td width="25%" style="border-right: 1px solid #f3f4f6;"><strong>${baths}</strong> Baths</td>
+							<td width="25%" style="border-right: 1px solid #f3f4f6;"><strong>${sqft}</strong></td>
+							<td width="25%"><strong>${poolText}</strong></td>
+						</tr>
+					</table>
+				</div>
+
+				<!-- LISTING OFFICE -->
+				<div style="font-size: 11px; color: #9ca3af; margin-bottom: 14px;">
+					Source: MLS Listing • Listing Office: ${officeName}
+				</div>
+
+				<!-- RED VIEW DETAILS BUTTON -->
+				<a href="${fullUrl}" target="_blank" style="display: block; width: 100%; background-color: #dc2626; color: #ffffff; text-align: center; padding: 13px 0; border-radius: 6px; font-size: 14px; font-weight: 700; text-decoration: none; box-sizing: border-box;">
+					VIEW DETAILS
+				</a>
 			</div>
 		</div>
+		`;
+	}).join("");
+
+	return `
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	</head>
+	<body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased;">
+		<div style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
+			
+			<!-- HEADER LOGO BAR -->
+			<div style="padding: 24px 24px 16px 24px; border-bottom: 2px solid #dc2626; background-color: #ffffff; text-align: center;">
+				<h1 style="margin: 0; color: #dc2626; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">GULFSHORE GROUP</h1>
+				<p style="margin: 4px 0 0 0; color: #6b7280; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Real Estate Concierge | Dimitri Schwarz</p>
+			</div>
+
+			<!-- INTRO SECTION -->
+			<div style="padding: 24px 24px 12px 24px; text-align: center; background-color: #ffffff;">
+				<h2 style="margin: 0 0 8px 0; color: #111827; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">${introTitle} IN ${matchedCity}</h2>
+				<p style="margin: 0; color: #4b5563; font-size: 14px; line-height: 1.5;">${subtitle}</p>
+				<div style="width: 60px; height: 3px; background-color: #d97706; margin: 16px auto 0 auto; border-radius: 2px;"></div>
+			</div>
+
+			<!-- CARDS CONTAINER -->
+			<div style="padding: 16px 24px 24px 24px; background-color: #f9fafb;">
+				${propertyCardsHtml}
+			</div>
+
+			<!-- FOOTER -->
+			<div style="padding: 20px 24px; background-color: #ffffff; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #6b7280;">
+				<p style="margin: 0 0 8px 0; font-weight: 600;">Dimitri Schwarz & AI Concierge Team • Gulfshore Group Real Estate</p>
+				<p style="margin: 0 0 8px 0;">Looking to sell your home or get a free valuation? <a href="${baseUrl}/sell" style="color: #dc2626; font-weight: bold; text-decoration: underline;">Visit Seller Portal</a></p>
+				<p style="margin: 0; color: #9ca3af;">© ${new Date().getFullYear()} Gulfshore Group. All rights reserved. <a href="${baseUrl}" style="color: #dc2626; text-decoration: none;">www.gulfshoregroup.com</a></p>
+			</div>
+
+		</div>
+	</body>
+	</html>
 	`;
 }
 
@@ -193,117 +267,53 @@ export async function POST(req: Request) {
 		}
 
 		const isSellIntent = fullSearchStr.includes("sell") || fullSearchStr.includes("selling") || fullSearchStr.includes("valuation") || fullSearchStr.includes("cma");
-		const isBuyIntent = fullSearchStr.includes("buy") || fullSearchStr.includes("buying") || fullSearchStr.includes("property") || fullSearchStr.includes("properties") || fullSearchStr.includes("home") || fullSearchStr.includes("listing");
+		const isBuyIntent = fullSearchStr.includes("buy") || fullSearchStr.includes("buying") || fullSearchStr.includes("property") || fullSearchStr.includes("properties") || fullSearchStr.includes("home") || fullSearchStr.includes("listing") || matchedCity !== undefined;
 
-		let finalEmailText = "";
+		// 4. Query Database for Active Properties (always default to NAPLES if no specific city was mentioned)
+		const targetCity = matchedCity || "NAPLES";
+		console.log(`[Resend Webhook DB Query] Fetching active properties for city: ${targetCity}`);
 
-		// 4. Require explicit location before dumping properties, otherwise ask the user which city they want!
-		if (matchedCity) {
-			console.log(`[Resend Webhook DB Query] Location detected: ${matchedCity}. Fetching active properties...`);
-
-			const properties = await prisma.property.findMany({
-				where: {
-					City: { contains: matchedCity },
-					StandardStatus: "Active"
-				},
-				take: 6,
-				orderBy: { ListPrice: 'desc' },
-				select: {
-					FullAddress: true,
-					ListPrice: true,
-					BedroomsTotal: true,
-					BathroomsTotalInteger: true,
-					LivingArea: true,
-					PropertyType: true,
-					City: true,
-					Community: true,
-					MLSNumber: true,
-					PoolPrivateYN: true,
-					WaterfrontYN: true,
-					GulfAccessYN: true,
+		const properties = await prisma.property.findMany({
+			where: {
+				City: { contains: targetCity },
+				StandardStatus: "Active"
+			},
+			take: 6,
+			orderBy: { ListPrice: 'desc' },
+			select: {
+				id: true,
+				FullAddress: true,
+				ListPrice: true,
+				BedroomsTotal: true,
+				BathroomsTotalInteger: true,
+				LivingArea: true,
+				PropertyType: true,
+				PropertySubType: true,
+				City: true,
+				StateOrProvince: true,
+				PostalCode: true,
+				Community: true,
+				MLSNumber: true,
+				PoolPrivateYN: true,
+				WaterfrontYN: true,
+				GulfAccessYN: true,
+				ListOfficeName: true,
+				images: true,
+				media: {
+					take: 1,
+					select: { MediaURL: true }
 				}
-			});
-
-			console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties in ${matchedCity}`);
-
-			let propertyContext = "";
-			if (properties.length > 0) {
-				propertyContext = properties.map((p: any, i: number) => {
-					const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
-					const fullUrl = `${baseUrl}${relativeUrl}`;
-					return `${i + 1}. ${p.FullAddress}
-Price: $${p.ListPrice ? p.ListPrice.toLocaleString() : "Price TBD"}
-Beds: ${p.BedroomsTotal ?? 0} | Baths: ${p.BathroomsTotalInteger ?? 0} | Living Area: ${p.LivingArea ? `${p.LivingArea.toLocaleString()} SqFt` : "N/A"}
-Pool: ${p.PoolPrivateYN ? "Yes" : "No"} | Waterfront: ${p.WaterfrontYN ? "Yes" : "No"}${p.GulfAccessYN ? " | Gulf Access: Yes" : ""}
-Listing Link: ${fullUrl}`;
-				}).join("\n\n");
-			} else {
-				propertyContext = "No active listings currently matched this exact city search. Please contact us for custom off-market options.";
 			}
+		});
 
-			if (isSellIntent) {
-				// BOTH BUY AND SELL WITH LOCATION
-				finalEmailText = `Hello,
+		console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties in ${targetCity}`);
 
-Thank you for contacting Gulfshore Group Real Estate! We are delighted to assist you with both buying in ${matchedCity} and selling your current property.
+		let plainTextSummary = "";
+		let htmlContent = "";
 
-1. BUYING - Active Property Matches in ${matchedCity}:
-${propertyContext}
-
-2. SELLING - Free Home Valuation & Listing Service:
-If you are looking to sell your home, Dimitri Schwarz offers expert marketing and complimentary market evaluations. You can list your property or request a valuation here:
-${baseUrl}/sell
-
-Please reply with any specific criteria (price range, bedrooms, waterfront, pool) or your property address for sale so we can assist you right away!
-
-Best regards,
-Dimitri Schwarz & AI Team
-Gulfshore Group Real Estate
-${baseUrl}`;
-			} else {
-				// PURE BUYING WITH LOCATION
-				finalEmailText = `Hello,
-
-Thank you for reaching out to Gulfshore Group! Here are top active property listings currently available in ${matchedCity}:
-
-${propertyContext}
-
-Dimitri Schwarz and our team are available for private viewings and full buyer representation. If you are also looking to sell your current home or get a free market valuation, please visit ${baseUrl}/sell.
-
-Please let us know if you would like to schedule a showing or need further details on any of these homes.
-
-Best regards,
-Dimitri Schwarz & AI Team
-Gulfshore Group Real Estate
-${baseUrl}`;
-			}
-		} else if (isBuyIntent) {
-			// User wants to BUY properties, but did NOT specify a location/city!
-			// Ask the user which location they want!
-			finalEmailText = `Hello,
-
-Thank you for reaching out to Gulfshore Group Real Estate!
-
-We would love to send you matching active property listings. Which location or city in Southwest Florida are you looking to buy in?
-
-Our primary active market coverage includes:
-- Naples
-- Sanibel
-- Cape Coral
-- Fort Myers
-- Bonita Springs
-- Estero
-- Marco Island
-
-Please reply with your preferred location, budget, or bedroom count, and I will immediately send you matching active property listings with direct links!
-
-Best regards,
-Dimitri Schwarz & AI Team
-Gulfshore Group Real Estate
-${baseUrl}`;
-		} else if (isSellIntent) {
-			// User wants to SELL a property
-			finalEmailText = `Hello,
+		if (isSellIntent && !isBuyIntent) {
+			// SELLER INTENT
+			plainTextSummary = `Hello,
 
 Thank you for reaching out to Gulfshore Group Real Estate!
 
@@ -312,34 +322,39 @@ Dimitri Schwarz provides complimentary, high-precision Home Valuations (Comparat
 To list your property for sale or get a free home market valuation immediately, please visit our seller portal:
 ${baseUrl}/sell
 
-Please reply with your property address and details if you would like Dimitri to prepare a custom Home Valuation for you.
-
 Best regards,
 Dimitri Schwarz & AI Team
 Gulfshore Group Real Estate
 ${baseUrl}`;
+
+			htmlContent = buildHtmlPropertyEmail(
+				targetCity,
+				properties,
+				"COMPLIMENTARY HOME VALUATION & SELLER SERVICES",
+				`Dimitri Schwarz offers full listing representation. Visit <a href="${baseUrl}/sell" style="color: #dc2626; font-weight: bold;">Seller Portal</a> to list your home. Here are active market listings in ${targetCity} for reference:`
+			);
 		} else {
-			// General Greeting or Inquiry
-			finalEmailText = `Hello,
+			// BUY INTENT or GENERAL PROPERTY SEARCH
+			plainTextSummary = `Hello,
 
-Thank you for contacting Gulfshore Group Real Estate!
+Thank you for reaching out to Gulfshore Group! Here are top active property listings currently available in ${targetCity}:
 
-I am your AI Real Estate Concierge, working on behalf of Dimitri Schwarz. How can I assist you with your real estate needs today?
-
-Are you looking to:
-1. Buy or rent a property in Southwest Florida (Naples, Sanibel, Cape Coral, Fort Myers, Bonita Springs, Estero)?
-2. Sell your home or request a free Comparative Market Analysis (CMA)? Visit ${baseUrl}/sell
-3. Schedule a private property viewing?
-
-Please reply with your preferred location, budget, or criteria so we can send you matching active listings!
+${properties.map((p, i) => `${i + 1}. ${p.FullAddress} - $${p.ListPrice?.toLocaleString()} (${baseUrl}${UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined)})`).join("\n")}
 
 Best regards,
 Dimitri Schwarz & AI Team
 Gulfshore Group Real Estate
 ${baseUrl}`;
+
+			htmlContent = buildHtmlPropertyEmail(
+				targetCity,
+				properties,
+				`ACTIVE HOMES MATCHING YOUR SEARCH`,
+				`We found ${properties.length} active luxury properties matching your search criteria in ${targetCity}. Each listing has been curated for quality and value.`
+			);
 		}
 
-		console.log(`[Resend Webhook Success] Generated email response length: ${finalEmailText.length} characters.`);
+		console.log(`[Resend Webhook Success] Generated luxury email card HTML response.`);
 
 		// 6. Save response to AIChatHistory
 		await prisma.aIChatHistory.create({
@@ -347,7 +362,7 @@ ${baseUrl}`;
 				leadId: lead.id,
 				channel: "email",
 				role: "ai",
-				message: finalEmailText,
+				message: plainTextSummary,
 			}
 		});
 
@@ -358,10 +373,7 @@ ${baseUrl}`;
 			console.error("Scoring error:", scoreErr);
 		}
 
-		// 7. Generate styled HTML version of email for Gmail/Outlook clients
-		const htmlContent = formatTextToHtml(finalEmailText);
-
-		// 8. Build email thread headers so Gmail stacks replies in the SAME thread (Only if valid RFC Message-ID containing @)
+		// 7. Build email thread headers so Gmail stacks replies in the SAME thread (Only if valid RFC Message-ID containing @)
 		const sendHeaders: Record<string, string> = {};
 		if (messageId && messageId.includes("@")) {
 			const formattedMsgId = messageId.startsWith("<") && messageId.endsWith(">") ? messageId : `<${messageId}>`;
@@ -369,14 +381,18 @@ ${baseUrl}`;
 			sendHeaders["References"] = formattedMsgId;
 		}
 
+<<<<<<< HEAD
+		// 8. Send the luxury email card response back via Resend inside the SAME thread
+=======
 		// 9. Send the email reply back via Resend inside the SAME thread
 		let result: any;
+>>>>>>> 1905e21ffb3c4cbd0de679d0c4f029073ee47227
 		try {
 			result = await resend.emails.send({
 				from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
 				to: cleanFromEmail,
 				subject: replySubject,
-				text: finalEmailText,
+				text: plainTextSummary,
 				html: htmlContent,
 				headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
 			});
