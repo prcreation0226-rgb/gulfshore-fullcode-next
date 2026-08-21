@@ -9,7 +9,7 @@ import { recalculateLeadScore } from "@/lib/leads/services/scoring.service";
 const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy");
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gulfshore-fullcode-next-production.up.railway.app";
 
-// Helper to normalize location strings (strip state codes, filler words, etc.)
+// Helper to normalize location strings
 const cleanLocation = (val: any): string | undefined => {
 	if (!val || typeof val !== "string") return undefined;
 	const cleaned = val
@@ -148,12 +148,14 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: "Missing sender email address" }, { status: 400 });
 		}
 
-		// Keep exact rawSubject string so Gmail matches character-for-character with the original thread
-		const replySubject = (rawSubject || "Real Estate Inquiry").trim();
+		// Clean Subject line: Prepend "Re: " if not present, keep existing "Re: " if already present
+		const trimmedSubject = (rawSubject || "Real Estate Inquiry").trim();
+		const hasRe = /^re:\s*/i.test(trimmedSubject);
+		const replySubject = hasRe ? trimmedSubject : `Re: ${trimmedSubject}`;
 
 		// Extract ONLY the latest user message from the email (completely strip old thread history)
 		const latestUserText = cleanEmailBody(textBody);
-		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Thread Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
+		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Clean Subject: "${trimmedSubject}" | Reply Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
 
 		// 1. Find or create lead by email
 		let lead = await prisma.lead.findUnique({
@@ -298,14 +300,19 @@ ${baseUrl}`;
 		}
 
 		// 9. Send the email reply back via Resend inside the SAME thread
-		await resend.emails.send({
-			from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
-			to: cleanFromEmail,
-			subject: replySubject,
-			text: finalEmailText,
-			html: htmlContent,
-			headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
-		});
+		try {
+			const sendResult = await resend.emails.send({
+				from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
+				to: cleanFromEmail,
+				subject: replySubject,
+				text: finalEmailText,
+				html: htmlContent,
+				headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
+			});
+			console.log("[Resend Email Sent Result]:", JSON.stringify(sendResult));
+		} catch (sendErr) {
+			console.error("[Resend Email Send Exception]:", sendErr);
+		}
 
 		return NextResponse.json({ success: true, leadId: lead.id });
 	} catch (error: any) {
