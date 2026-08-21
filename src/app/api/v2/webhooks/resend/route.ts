@@ -143,14 +143,14 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: "Missing sender email address" }, { status: 400 });
 		}
 
-		// Clean Subject line to maintain exact thread subject in Gmail (avoid "Re: Re: Re: ...")
+		// Clean Subject line: Strip all "Re:" prefixes down to base subject so Gmail keeps replies inside the SAME thread!
 		const trimmedSubject = (rawSubject || "Real Estate Inquiry").trim();
-		const hasRe = /^re:\s*/i.test(trimmedSubject);
-		const replySubject = hasRe ? trimmedSubject : `Re: ${trimmedSubject}`;
+		const cleanSubject = trimmedSubject.replace(/^(re:\s*)+/gi, "").trim();
+		const replySubject = `Re: ${cleanSubject || "Real Estate Inquiry"}`;
 
 		// Extract ONLY the latest user message from the email (strip old thread history)
 		const latestUserText = cleanEmailBody(textBody);
-		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Thread Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
+		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Clean Subject: "${cleanSubject}" | Reply Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
 
 		// 1. Find or create lead by email
 		let lead = await prisma.lead.findUnique({
@@ -240,7 +240,7 @@ Listing Link: ${fullUrl}`;
 You are replying to a lead via EMAIL inside an ongoing conversation thread. Write a warm, professional, polite, well-structured, and helpful email response.
 
 CRITICAL INSTRUCTIONS FOR EMAIL REPLIES:
-1. ALWAYS INCLUDE THE ACTIVE PROPERTIES PROVIDED BELOW IN YOUR EMAIL RESPONSE!
+1. ALWAYS INCLUDE ALL THE ACTIVE PROPERTIES PROVIDED BELOW IN YOUR EMAIL RESPONSE!
 2. For each property in the list, format it clearly with:
    - Address and Price
    - Bedrooms, Bathrooms, Living Area (sqft), and Features (Pool, Waterfront, Gulf Access)
@@ -260,7 +260,24 @@ CRITICAL INSTRUCTIONS FOR EMAIL REPLIES:
 			]
 		});
 
-		console.log(`[Resend Webhook Success] Generated email response length: ${text.length} characters.`);
+		// Fallback to guarantee property listings are included if AI outputs generic text
+		let finalEmailText = text;
+		if (propertyContext && (!finalEmailText || finalEmailText.includes("misunderstanding") || finalEmailText.includes("assist you today") || finalEmailText.length < 150)) {
+			finalEmailText = `Hello,
+
+Thank you for reaching out to Gulfshore Group! Here are top active properties currently available in ${targetCity}:
+
+${propertyContext}
+
+Dimitri Schwarz is available for private viewings and full buyer representation. If you are also looking to sell your current home or get a free market valuation, please visit ${baseUrl}/sell.
+
+Best regards,
+Dimitri Schwarz & AI Team
+Gulfshore Group Real Estate
+${baseUrl}`;
+		}
+
+		console.log(`[Resend Webhook Success] Generated email response length: ${finalEmailText.length} characters.`);
 
 		// 6. Save AI response to AIChatHistory
 		await prisma.aIChatHistory.create({
@@ -268,7 +285,7 @@ CRITICAL INSTRUCTIONS FOR EMAIL REPLIES:
 				leadId: lead.id,
 				channel: "email",
 				role: "ai",
-				message: text,
+				message: finalEmailText,
 			}
 		});
 
@@ -280,7 +297,7 @@ CRITICAL INSTRUCTIONS FOR EMAIL REPLIES:
 		}
 
 		// 7. Generate styled HTML version of email for Gmail/Outlook clients
-		const htmlContent = formatTextToHtml(text);
+		const htmlContent = formatTextToHtml(finalEmailText);
 
 		// 8. Build email thread headers so Gmail stacks replies in the SAME thread
 		const sendHeaders: Record<string, string> = {};
@@ -295,7 +312,7 @@ CRITICAL INSTRUCTIONS FOR EMAIL REPLIES:
 			from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
 			to: cleanFromEmail,
 			subject: replySubject,
-			text: text,
+			text: finalEmailText,
 			html: htmlContent,
 			headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
 		});
