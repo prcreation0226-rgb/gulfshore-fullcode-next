@@ -127,7 +127,7 @@ export async function POST(req: Request) {
 				const found = payloadData.headers.find((h: any) => h.name?.toLowerCase() === "message-id");
 				if (found) messageId = found.value;
 			} else if (typeof payloadData.headers === "object") {
-				messageId = payloadData.headers["message-id"] || payloadData.headers["Message-ID"] || payloadData.headers["message_id"];
+				messageId = payloadData.headers["message-id"] || payloadData.headers["Message-ID"] || payloadData.headers["message_id"] || payloadData.headers["Message-Id"];
 			}
 		}
 
@@ -148,14 +148,12 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: "Missing sender email address" }, { status: 400 });
 		}
 
-		// Clean Subject line: Strip all "Re:" prefixes down to base subject so Gmail keeps replies inside the SAME thread!
-		const trimmedSubject = (rawSubject || "Real Estate Inquiry").trim();
-		const cleanSubject = trimmedSubject.replace(/^(re:\s*)+/gi, "").trim();
-		const replySubject = `Re: ${cleanSubject || "Real Estate Inquiry"}`;
+		// Keep exact rawSubject string so Gmail matches character-for-character with the original thread
+		const replySubject = (rawSubject || "Real Estate Inquiry").trim();
 
 		// Extract ONLY the latest user message from the email (completely strip old thread history)
 		const latestUserText = cleanEmailBody(textBody);
-		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Clean Subject: "${cleanSubject}" | Reply Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
+		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Thread Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
 
 		// 1. Find or create lead by email
 		let lead = await prisma.lead.findUnique({
