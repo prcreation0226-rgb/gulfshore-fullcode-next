@@ -28,23 +28,36 @@ const cleanLocation = (val: any): string | undefined => {
 	return cleaned || undefined;
 };
 
-// Helper to extract the actual latest user email body (strip quoted email thread history)
+// Helper to extract the actual latest user email body (strip quoted email thread history & HTML safely)
 const cleanEmailBody = (rawBody: string): string => {
-	if (!rawBody) return "";
-	let text = rawBody.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, "\n");
-	const markers = [
-		/On\s+.*wrote:/i,
-		/From:\s+.*/i,
-		/[\-\_]{3,}\s*Original Message\s*[\-\_]{3,}/i,
-		/[\-\_]{3,}\s*Forwarded Message\s*[\-\_]{3,}/i,
-	];
-	for (const m of markers) {
-		const index = text.search(m);
-		if (index !== -1) {
-			text = text.substring(0, index);
+	if (!rawBody || typeof rawBody !== "string") return "";
+
+	let text = rawBody
+		.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+		.replace(/<br\s*\/?>/gi, "\n")
+		.replace(/<\/p>/gi, "\n\n")
+		.replace(/<[^>]+>/g, "");
+
+	const lines = text.split("\n");
+	const cleanedLines: string[] = [];
+
+	for (const line of lines) {
+		const trimmed = line.trim();
+		if (
+			/^On\s+.*wrote:/i.test(trimmed) ||
+			/^-----Original Message-----/i.test(trimmed) ||
+			/^-----Forwarded Message-----/i.test(trimmed)
+		) {
+			break;
 		}
+		if (trimmed.startsWith(">")) {
+			continue;
+		}
+		cleanedLines.push(line);
 	}
-	return text.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+
+	const result = cleanedLines.join("\n").replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+	return result || rawBody.replace(/<[^>]+>/g, "").trim();
 };
 
 // Format plain text with URLs into styled HTML email for Gmail/Outlook
@@ -92,11 +105,30 @@ function formatTextToHtml(plainText: string): string {
 export async function POST(req: NextRequest) {
 	try {
 		const body = await req.json();
+		console.log("[Resend Webhook Payload Received]:", JSON.stringify(body));
 
-		// Handle Resend inbound webhook schema (From, Subject, TextBody, etc.)
-		const fromEmail = body.From || body.from || body.headers?.from;
-		const textBody = body.TextBody || body.text || body.html || "";
-		const subject = body.Subject || body.subject || "Real Estate Inquiry";
+		// Support Resend SVIX inbound payload structure (body.data or root body)
+		const payloadData = body.data || body;
+
+		const fromEmail = payloadData.From || payloadData.from || payloadData.email || body.From || body.from || body.headers?.from;
+		const textBody = payloadData.TextBody || payloadData.text || payloadData.html || body.TextBody || body.text || body.html || "";
+		const rawSubject = payloadData.Subject || payloadData.subject || body.Subject || body.subject || "Real Estate Inquiry";
+
+		// Robust Extraction of Message-ID for email threading (In-Reply-To / References)
+		let messageId: string | undefined = undefined;
+
+		if (payloadData.headers) {
+			if (Array.isArray(payloadData.headers)) {
+				const found = payloadData.headers.find((h: any) => h.name?.toLowerCase() === "message-id");
+				if (found) messageId = found.value;
+			} else if (typeof payloadData.headers === "object") {
+				messageId = payloadData.headers["message-id"] || payloadData.headers["Message-ID"] || payloadData.headers["message_id"];
+			}
+		}
+
+		if (!messageId) {
+			messageId = payloadData.email_id || payloadData.id || body.email_id || body.id;
+		}
 
 		// Extract clean email address if passed like "User Name <user@example.com>"
 		let cleanFromEmail = fromEmail || "";
@@ -107,13 +139,18 @@ export async function POST(req: NextRequest) {
 			cleanFromEmail = cleanFromEmail.trim();
 		}
 
-		if (!cleanFromEmail || !textBody) {
-			return NextResponse.json({ error: "Missing required email or message body" }, { status: 400 });
+		if (!cleanFromEmail) {
+			return NextResponse.json({ error: "Missing sender email address" }, { status: 400 });
 		}
+
+		// Clean Subject line: Strip all "Re:" prefixes down to base subject so Gmail keeps replies inside the SAME thread!
+		const trimmedSubject = (rawSubject || "Real Estate Inquiry").trim();
+		const cleanSubject = trimmedSubject.replace(/^(re:\s*)+/gi, "").trim();
+		const replySubject = `Re: ${cleanSubject || "Real Estate Inquiry"}`;
 
 		// Extract ONLY the latest user message from the email (strip old thread history)
 		const latestUserText = cleanEmailBody(textBody);
-		console.log(`[Resend Webhook] Inbound email from ${cleanFromEmail}. Subject: "${subject}". Text: "${latestUserText}"`);
+		console.log(`[Resend Webhook Processed] Sender: ${cleanFromEmail} | Clean Subject: "${cleanSubject}" | Reply Subject: "${replySubject}" | Latest Text: "${latestUserText}" | Msg ID: "${messageId}"`);
 
 		// 1. Find or create lead by email
 		let lead = await prisma.lead.findUnique({
@@ -135,12 +172,12 @@ export async function POST(req: NextRequest) {
 				leadId: lead.id,
 				channel: "email",
 				role: "user",
-				message: `Subject: ${subject}\n\n${latestUserText || textBody}`,
+				message: `Subject: ${replySubject}\n\n${latestUserText || textBody}`,
 			}
 		});
 
 		// 3. Detect Location / City from Subject & Email Content
-		const fullSearchStr = `${subject} ${latestUserText}`.toLowerCase();
+		const fullSearchStr = `${rawSubject} ${latestUserText}`.toLowerCase();
 
 		const knownCities = ["naples", "sanibel", "bonita springs", "bonita", "cape coral", "fort myers", "ft myers", "ft. myers", "estero", "marco island", "punta gorda", "lehigh", "miami", "ave maria"];
 		let matchedCity: string | undefined = undefined;
@@ -152,65 +189,63 @@ export async function POST(req: NextRequest) {
 			}
 		}
 
-		// 4. Query Database for Active Properties if search intent/location detected
+		// 4. Query Database for Active Properties (always default to NAPLES if no specific city was mentioned)
+		const targetCity = matchedCity || "NAPLES";
+		console.log(`[Resend Webhook DB Query] Fetching active properties for city: ${targetCity}`);
+
+		const properties = await prisma.property.findMany({
+			where: {
+				City: { contains: targetCity },
+				StandardStatus: "Active"
+			},
+			take: 6,
+			orderBy: { ListPrice: 'desc' },
+			select: {
+				FullAddress: true,
+				ListPrice: true,
+				BedroomsTotal: true,
+				BathroomsTotalInteger: true,
+				LivingArea: true,
+				PropertyType: true,
+				City: true,
+				Community: true,
+				MLSNumber: true,
+				PoolPrivateYN: true,
+				WaterfrontYN: true,
+				GulfAccessYN: true,
+			}
+		});
+
+		console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties in ${targetCity}`);
+
 		let propertyContext = "";
-		const isSearchQuery = matchedCity || fullSearchStr.includes("property") || fullSearchStr.includes("properties") || fullSearchStr.includes("home") || fullSearchStr.includes("house") || fullSearchStr.includes("buy") || fullSearchStr.includes("listing");
-
-		if (isSearchQuery) {
-			const targetCity = matchedCity || "NAPLES";
-			console.log(`[Resend Webhook DB Query] Fetching active properties for city: ${targetCity}`);
-
-			const properties = await prisma.property.findMany({
-				where: {
-					City: { contains: targetCity },
-					StandardStatus: "Active"
-				},
-				take: 6,
-				orderBy: { ListPrice: 'desc' },
-				select: {
-					FullAddress: true,
-					ListPrice: true,
-					BedroomsTotal: true,
-					BathroomsTotalInteger: true,
-					LivingArea: true,
-					PropertyType: true,
-					City: true,
-					Community: true,
-					MLSNumber: true,
-					PoolPrivateYN: true,
-					WaterfrontYN: true,
-					GulfAccessYN: true,
-				}
-			});
-
-			console.log(`[Resend Webhook DB Query] Found ${properties.length} active properties in ${targetCity}`);
-
-			if (properties.length > 0) {
-				propertyContext = `ACTIVE PROPERTIES IN ${targetCity} FROM DATABASE:\n\n` + properties.map((p: any, i: number) => {
-					const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
-					const fullUrl = `${baseUrl}${relativeUrl}`;
-					return `${i + 1}. ${p.FullAddress}
+		if (properties.length > 0) {
+			propertyContext = `ACTIVE PROPERTIES IN ${targetCity} FROM DATABASE:\n\n` + properties.map((p: any, i: number) => {
+				const relativeUrl = UrlMaker(p.City || "", p.Community || "", p.FullAddress || "", p.MLSNumber || undefined);
+				const fullUrl = `${baseUrl}${relativeUrl}`;
+				return `${i + 1}. ${p.FullAddress}
 Price: $${p.ListPrice ? p.ListPrice.toLocaleString() : "Price TBD"}
 Beds: ${p.BedroomsTotal ?? 0} | Baths: ${p.BathroomsTotalInteger ?? 0} | Living Area: ${p.LivingArea ? `${p.LivingArea.toLocaleString()} SqFt` : "N/A"}
 Pool: ${p.PoolPrivateYN ? "Yes" : "No"} | Waterfront: ${p.WaterfrontYN ? "Yes" : "No"}${p.GulfAccessYN ? " | Gulf Access: Yes" : ""}
 Listing Link: ${fullUrl}`;
-				}).join("\n\n");
-			}
+			}).join("\n\n");
 		}
 
 		// 5. Generate AI Email Response
+		const userQueryPrompt = latestUserText || textBody || "I am looking for properties to buy in Southwest Florida";
+
 		const { text } = await generateText({
 			model: openai("gpt-4o-mini"),
 			system: `You are an expert AI Real Estate Concierge for Gulfshore Group, working on behalf of Dimitri Schwarz. 
-You are replying to a lead via EMAIL. Write a warm, professional, polite, well-structured, and helpful email response.
+You are replying to a lead via EMAIL inside an ongoing conversation thread. Write a warm, professional, polite, well-structured, and helpful email response.
 
-IMPORTANT RULES FOR PROPERTY SEARCH RESPONSES:
-1. If DATABASE PROPERTY DATA is provided below, YOU MUST INCLUDE ALL THE PROPERTIES IN YOUR EMAIL REPLY!
-2. For each property in the database list, format it clearly with:
+CRITICAL INSTRUCTIONS FOR EMAIL REPLIES:
+1. ALWAYS INCLUDE ALL THE ACTIVE PROPERTIES PROVIDED BELOW IN YOUR EMAIL RESPONSE!
+2. For each property in the list, format it clearly with:
    - Address and Price
    - Bedrooms, Bathrooms, Living Area (sqft), and Features (Pool, Waterfront, Gulf Access)
    - Direct Website Listing Link URL (e.g. View Listing: https://gulfshoregroup.com/Florida-Real-Estate-Listings/...)
-3. DO NOT output short generic answers like "Please let me know how I can assist you" when property data is available!
+3. NEVER output generic 1-sentence responses like "How can I assist you today" or "It seems like there was a mistake".
 4. Mention that Dimitri Schwarz is available for private viewings and offer assistance for both buying and selling homes. For selling or getting a free home valuation, provide the link: ${baseUrl}/sell
 5. Always sign off as:
    Best regards,
@@ -220,12 +255,29 @@ IMPORTANT RULES FOR PROPERTY SEARCH RESPONSES:
 			messages: [
 				{
 					role: "user",
-					content: `Lead Email Query: "${latestUserText || textBody}"\n\n${propertyContext ? propertyContext : "No specific city properties found."}`,
+					content: `Lead Email Message: "${userQueryPrompt}"\n\n${propertyContext}`,
 				}
 			]
 		});
 
-		console.log(`[Resend Webhook] AI generated email reply length: ${text.length} characters.`);
+		// Fallback to guarantee property listings are included if AI outputs generic text
+		let finalEmailText = text;
+		if (propertyContext && (!finalEmailText || finalEmailText.includes("misunderstanding") || finalEmailText.includes("assist you today") || finalEmailText.length < 150)) {
+			finalEmailText = `Hello,
+
+Thank you for reaching out to Gulfshore Group! Here are top active properties currently available in ${targetCity}:
+
+${propertyContext}
+
+Dimitri Schwarz is available for private viewings and full buyer representation. If you are also looking to sell your current home or get a free market valuation, please visit ${baseUrl}/sell.
+
+Best regards,
+Dimitri Schwarz & AI Team
+Gulfshore Group Real Estate
+${baseUrl}`;
+		}
+
+		console.log(`[Resend Webhook Success] Generated email response length: ${finalEmailText.length} characters.`);
 
 		// 6. Save AI response to AIChatHistory
 		await prisma.aIChatHistory.create({
@@ -233,7 +285,7 @@ IMPORTANT RULES FOR PROPERTY SEARCH RESPONSES:
 				leadId: lead.id,
 				channel: "email",
 				role: "ai",
-				message: text,
+				message: finalEmailText,
 			}
 		});
 
@@ -245,15 +297,24 @@ IMPORTANT RULES FOR PROPERTY SEARCH RESPONSES:
 		}
 
 		// 7. Generate styled HTML version of email for Gmail/Outlook clients
-		const htmlContent = formatTextToHtml(text);
+		const htmlContent = formatTextToHtml(finalEmailText);
 
-		// 8. Send the AI email reply back via Resend
+		// 8. Build email thread headers so Gmail stacks replies in the SAME thread
+		const sendHeaders: Record<string, string> = {};
+		if (messageId) {
+			const formattedMsgId = messageId.startsWith("<") && messageId.endsWith(">") ? messageId : `<${messageId}>`;
+			sendHeaders["In-Reply-To"] = formattedMsgId;
+			sendHeaders["References"] = formattedMsgId;
+		}
+
+		// 9. Send the AI email reply back via Resend inside the SAME thread
 		await resend.emails.send({
 			from: process.env.RESEND_FROM_EMAIL || "Gulfshore Group <noreply@updates.gulfshoregroup.com>",
 			to: cleanFromEmail,
-			subject: subject.toLowerCase().startsWith("re:") ? subject : `Re: ${subject}`,
-			text: text,
+			subject: replySubject,
+			text: finalEmailText,
 			html: htmlContent,
+			headers: Object.keys(sendHeaders).length > 0 ? sendHeaders : undefined,
 		});
 
 		return NextResponse.json({ success: true, leadId: lead.id });
